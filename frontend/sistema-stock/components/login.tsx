@@ -1,11 +1,11 @@
 "use client" 
-import {Image} from "@nextui-org/image";
+
 import '../styles/globals.css';
 export const Login = () => {
 
     return (
         
-      <section className="flex flex-col md:flex-row h-screen items-center">
+      <section className="flex flex-col md:flex-row h-screen items-center font-serif antialiased">
 
   <div className="bg-yellow-600 hidden lg:block w-full md:w-1/2 xl:w-2/3 h-screen "
  style={{ backgroundImage: 'url(/images/Sun_12.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>

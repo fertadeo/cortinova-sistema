@@ -5,7 +5,7 @@ export const SideBar = () => {
     return (
 
         
-        <section className=" fixed mt-40 font-poppins antialiased">
+        <section className=" fixed mt-60 font-poppins antialiased">
     <div
       id="view"
       className="h-full w-screen flex flex-row"
