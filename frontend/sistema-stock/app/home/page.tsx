@@ -8,7 +8,7 @@ export default function Home() {
           
           {/* <!-- Title --> */}
           <div className="col-span-full mb-3">
-            <p className="text-xl text-gray-800"> Bienvenido!  </p>
+            <p className="text-xl text-gray-800"> Bienvenido User!  </p>
           </div>
 
           {/* <!-- Card 1 --> */}
@@ -16,7 +16,7 @@ export default function Home() {
             <a href="">
               <img src="https://picsum.photos/seed/1/2000/1000" className="rounded-xl brightness-75" />
             </a>
-            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> thick soup </p>
+            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> Agregar Nuevo Cliente </p>
           </div>
 
           {/* <!-- Card 2 --> */}
@@ -24,7 +24,7 @@ export default function Home() {
             <a href="">
               <img src="https://picsum.photos/seed/2/2000/1000" className="rounded-xl brightness-75" />
             </a>
-            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> egg </p>
+            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> Realizar Presupuesto </p>
           </div>
 
           {/* <!-- Card 3 --> */}
@@ -32,7 +32,7 @@ export default function Home() {
             <a href="">
               <img src="https://picsum.photos/seed/3/2000/1000" className="rounded-xl brightness-75" />
             </a>
-            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> french toast </p>
+            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> Actualizar Precios </p>
           </div>
 
           {/* <!-- Card 4 --> */}
@@ -40,7 +40,7 @@ export default function Home() {
             <a href="">
               <img src="https://picsum.photos/seed/4/2000/1000" className="rounded-xl brightness-75" />
             </a>
-            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> bread </p>
+            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> Controlar Stock </p>
           </div>
 
           {/* <!-- Card 5 --> */}
@@ -48,7 +48,7 @@ export default function Home() {
             <a href="">
               <img src="https://picsum.photos/seed/5/2000/1000" className="rounded-xl brightness-75" />
             </a>
-            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> pasta </p>
+            <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3"> Revisar Pedidos </p>
           </div>
         </div>
       </div>
