@@ -1,59 +1,69 @@
-import { Link } from "@nextui-org/link";
-import { Snippet } from "@nextui-org/snippet";
-import { Code } from "@nextui-org/code";
-import { button as buttonStyles } from "@nextui-org/theme";
-
-import { siteConfig } from "@/config/site";
-import { title, subtitle } from "@/components/primitives";
-import { GithubIcon } from "@/components/icons";
-import { Counter } from "@/components/counter";
-import { SideBar } from "@/components/sidebar";
+import Table from '../../components/table'
 
 export default function Home() {
   return (
-    <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-      <SideBar/>
-      <div className="inline-block max-w-lg text-center justify-center">
-        <h1 className={title()}>Make&nbsp;</h1>
-        <h1 className={title({ color: "violet" })}>beautiful&nbsp;</h1>
-        <br />
-        <h1 className={title()}>
-          websites regardless of your design experience.
-        </h1>
-        <h2 className={subtitle({ class: "mt-4" })}>
-          Beautiful, fast and modern React UI library.
-        </h2>
+<section className="flex flex-col md:py-10">
+  <div className="h-screen">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4">
+      {/* <!-- Title --> */}
+      <div className="col-span-full mb-3">
+        <p className="text-xl text-gray-800">Bienvenido User!</p>
       </div>
 
-      <div className="flex gap-3">
-        <Link
-          isExternal
-          className={buttonStyles({
-            color: "primary",
-            radius: "full",
-            variant: "shadow",
-          })}
-          href={siteConfig.links.docs}
-        >
-          Documentation
-        </Link>
-        <Link
-          isExternal
-          className={buttonStyles({ variant: "bordered", radius: "full" })}
-          href={siteConfig.links.github}
-        >
-          <GithubIcon size={20} />
-          GitHub
-        </Link>
+      {/* <!-- Card 1 --> */}
+      <div className="col-span-1 flex flex-col items-center">
+        <a href="">
+          <img src="https://picsum.photos/seed/1/2000/1000" className="rounded-xl brightness-75 w-full" />
+        </a>
+        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
+          Agregar Nuevo Cliente
+        </p>
       </div>
 
-      <div className="mt-8">
-        <Snippet hideCopyButton hideSymbol variant="flat">
-          <span>
-            Get started by editing <Code color="primary">app/page.tsx</Code>
-          </span>
-        </Snippet>
+      {/* <!-- Card 2 --> */}
+      <div className="col-span-1 flex flex-col items-center">
+        <a href="">
+          <img src="https://picsum.photos/seed/2/2000/1000" className="rounded-xl brightness-75 w-full" />
+        </a>
+        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
+          Realizar Presupuesto
+        </p>
       </div>
-    </section>
+
+      {/* <!-- Card 3 --> */}
+      <div className="col-span-1 flex flex-col items-center">
+        <a href="">
+          <img src="https://picsum.photos/seed/3/2000/1000" className="rounded-xl brightness-75 w-full" />
+        </a>
+        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
+          Actualizar Precios
+        </p>
+      </div>
+
+      {/* <!-- Card 4 --> */}
+      <div className="col-span-1 flex flex-col items-center">
+        <a href="">
+          <img src="https://picsum.photos/seed/4/2000/1000" className="rounded-xl brightness-75 w-full" />
+        </a>
+        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
+          Controlar Stock
+        </p>
+      </div>
+
+      {/* <!-- Card 5 --> */}
+      <div className="col-span-1 flex flex-col items-center">
+        <a href="">
+          <img src="https://picsum.photos/seed/5/2000/1000" className="rounded-xl brightness-75 w-full" />
+        </a>
+        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
+          Revisar Pedidos
+        </p>
+      </div>
+    </div>
+    <Table />
+  </div>
+</section>
+
+
   );
 }

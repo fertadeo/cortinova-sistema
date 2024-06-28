@@ -1,3 +1,5 @@
+import ConditionalLayout from '../components/conditionalLayout';
+
 export default function RootLayout({
     children,
   }: {
@@ -6,8 +8,10 @@ export default function RootLayout({
     return (
       <html lang="en">
         <body>
-          {/* Layout UI */}
+        <ConditionalLayout>
           <main>{children}</main>
+        </ConditionalLayout>
+          
         </body>
       </html>
     )
