@@ -8,10 +8,10 @@ export const SideBar = () => {
     return (
 
         
-        <section className=" fixed mt-10 font-poppins antialiased">
+        <section className=" fixed font-sans mt-10 antialiased ">
     <div
       id="view"
-      className="h-full w-screen flex flex-row"
+      className="h-full w-screen flex flex-row "
       x-data="{ sidenav: true }"
       >
       <button
@@ -32,7 +32,7 @@ export const SideBar = () => {
       </button>
       <div
         id="sidebar"
-        className="bg-white h-screen md:block shadow-xl px-3 w-30 md:w-60 lg:w-60 overflow-x-hidden transition-transform duration-300 ease-in-out"
+        className="bg-white h-screen md:block shadow-xl px-3 w-30 md:w-60 lg:w-60 overflow-x-hidden transition-transform duration-300 ease-in-out "
         x-show="sidenav"
         >
         <div className="space-y-6 md:space-y-10 mt-10">
@@ -40,7 +40,7 @@ export const SideBar = () => {
             D<span className="text-teal-600">.</span>
           </h1>
           <h1 className="hidden md:block font-bold text-sm md:text-xl text-center">
-            Dashwind<span className="text-teal-600">.</span>
+            Cortinova<span className=" text-amber-400">.</span>
           </h1>
           <div id="profile" className="space-y-3">
             <img

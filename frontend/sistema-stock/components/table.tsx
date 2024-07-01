@@ -112,7 +112,7 @@ export default function App() {
         );
       case "role":
         return (
-          <div className="flex flex-col">
+          <div className="flex flex-col mt-6">
             <p className="text-bold text-small capitalize">{cellValue}</p>
             <p className="text-bold text-tiny capitalize text-default-500">{user.team}</p>
           </div>
