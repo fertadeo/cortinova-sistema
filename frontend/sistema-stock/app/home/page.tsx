@@ -1,69 +1,28 @@
-import Table from '../../components/table'
+import { Menucards } from '@/components/menucards';
+import SimpleTable from '@/components/simpleTable'; // Asegúrate de que el nombre del archivo y el componente sean correctos
 
 export default function Home() {
   return (
-<section className="flex flex-col md:py-10">
-  <div className="h-screen">
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4">
-      {/* <!-- Title --> */}
-      <div className="col-span-full mb-3">
-        <p className="text-xl text-gray-800">Bienvenido User!</p>
+    <div className="flex flex-col h-screen p-4">
+      {/* Menú cards ocupando el 100% */}
+      <div className="w-full h-24 mb-4">
+        <h2 style={{fontFamily:'revert', fontSize:'1.5rem', marginBottom:'1rem'}}> ¡Bienvenido nuevamente, User! </h2>
+        <Menucards />
       </div>
 
-      {/* <!-- Card 1 --> */}
-      <div className="col-span-1 flex flex-col items-center">
-        <a href="">
-          <img src="https://picsum.photos/seed/1/2000/1000" className="rounded-xl brightness-75 w-full" />
-        </a>
-        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
-          Agregar Nuevo Cliente
-        </p>
-      </div>
+      {/* Grid de dos columnas debajo */}
+      <div className="flex flex-col md:flex-row flex-1">
+        {/* Espacio izquierdo para SimpleTable */}
+        <div className="w-full md:w-1/2 ">
+        <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginTop:'4rem', marginBottom:'1rem', fontStyle:'bold'}}> Últimos 5 pedidos ingresados  </h3>
+          <SimpleTable />
+        </div>
 
-      {/* <!-- Card 2 --> */}
-      <div className="col-span-1 flex flex-col items-center">
-        <a href="">
-          <img src="https://picsum.photos/seed/2/2000/1000" className="rounded-xl brightness-75 w-full" />
-        </a>
-        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
-          Realizar Presupuesto
-        </p>
-      </div>
-
-      {/* <!-- Card 3 --> */}
-      <div className="col-span-1 flex flex-col items-center">
-        <a href="">
-          <img src="https://picsum.photos/seed/3/2000/1000" className="rounded-xl brightness-75 w-full" />
-        </a>
-        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
-          Actualizar Precios
-        </p>
-      </div>
-
-      {/* <!-- Card 4 --> */}
-      <div className="col-span-1 flex flex-col items-center">
-        <a href="">
-          <img src="https://picsum.photos/seed/4/2000/1000" className="rounded-xl brightness-75 w-full" />
-        </a>
-        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
-          Controlar Stock
-        </p>
-      </div>
-
-      {/* <!-- Card 5 --> */}
-      <div className="col-span-1 flex flex-col items-center">
-        <a href="">
-          <img src="https://picsum.photos/seed/5/2000/1000" className="rounded-xl brightness-75 w-full" />
-        </a>
-        <p className="text-xs -translate-y-6 text-white font-semibold sm:-translate-y-8 sm:text-base translate-x-3">
-          Revisar Pedidos
-        </p>
+        {/* Espacio derecho (opcional) */}
+        <div className="w-full md:w-1/2">
+          {/* Contenido del espacio derecho */}
+        </div>
       </div>
     </div>
-    <Table />
-  </div>
-</section>
-
-
   );
 }
