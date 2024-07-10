@@ -62,7 +62,8 @@ export default function Home() {
       <BarChart data={data} options={options} />
         </div>
       </div>
-      <div className="flex flex-col h-screen p-4">
+      <div className="flex flex-col h-screen">
+        <h2 className='pb-5'> Seguimiento de Presupuestos </h2>
       <PedidosTable/> 
       </div>
     </div>
