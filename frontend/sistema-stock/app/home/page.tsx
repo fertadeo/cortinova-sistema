@@ -1,9 +1,46 @@
 import { Menucards } from '@/components/menucards';
-import SimpleTable from '@/components/simpleTable'; // Asegúrate de que el nombre del archivo y el componente sean correctos
+import SimpleTable from '@/components/simpleTable';
+import BarChart from '@/components/chart';
+import {PedidosTable} from '@/components/pedidosTable';
+
+
+
 
 export default function Home() {
+
+
+  const data = {
+    labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio'],
+    datasets: [
+      {
+        label: 'Pedidos Realizados',
+        data: [25, 19, 40, 11, 6, 5, 10],
+        backgroundColor: '#12C0C8',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Clientes Agregados',
+        data: [65, 59, 80, 81, 56, 55, 40],
+        backgroundColor: '#F19C0F',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+  };
+
+
   return (
-    <div className="flex flex-col h-screen p-4">
+    <div className="flex flex-col h-screen p-4" style={{backgroundColor:'#F5F5F5'}}>
       {/* Menú cards ocupando el 100% */}
       <div className="w-full h-24 mb-4">
         <h2 style={{fontFamily:'revert', fontSize:'1.5rem', marginBottom:'1rem'}}> ¡Bienvenido nuevamente, User! </h2>
@@ -13,15 +50,21 @@ export default function Home() {
       {/* Grid de dos columnas debajo */}
       <div className="flex flex-col md:flex-row flex-1">
         {/* Espacio izquierdo para SimpleTable */}
-        <div className="w-full md:w-1/2 ">
-        <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginTop:'4rem', marginBottom:'1rem', fontStyle:'bold'}}> Últimos 5 pedidos ingresados  </h3>
+        <div className="w-full md:w-1/2 m-5">
+        <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginTop:'5rem', marginBottom:'1rem', fontStyle:'bold'}}> Últimos 5 pedidos ingresados  </h3>
           <SimpleTable />
         </div>
 
         {/* Espacio derecho (opcional) */}
-        <div className="w-full md:w-1/2">
-          {/* Contenido del espacio derecho */}
+        <div className="w-full md:w-1/2 m-5">
+          {/* Contenido del espacio derecho */}     
+          <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginTop:'4rem', marginBottom:'1rem', fontStyle:'bold'}}> Resumen de movimientos </h3>
+      <BarChart data={data} options={options} />
         </div>
+      </div>
+      <div className="flex flex-col h-screen">
+        <h2 className='pb-5'> Seguimiento de Presupuestos </h2>
+      <PedidosTable/> 
       </div>
     </div>
   );

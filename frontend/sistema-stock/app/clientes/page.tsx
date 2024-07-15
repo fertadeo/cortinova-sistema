@@ -1,11 +1,13 @@
-import { title } from "@/components/primitives";
-import Table from "@/components/table";
+'use client';
+import ClientesTable from "@/components/clientesTable";
 
 export default function ClientesPage() {
   return (
-    <div>
-      <h1 className={title()}>clientes</h1>
-      <Table/>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <h1 style={{ marginBottom: '16px' }}>Clientes</h1>
+      <div style={{ flex: 1 }}>
+        <ClientesTable />
+      </div>
     </div>
   );
 }
