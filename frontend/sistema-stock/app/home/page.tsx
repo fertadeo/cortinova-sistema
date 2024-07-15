@@ -40,7 +40,7 @@ export default function Home() {
 
 
   return (
-    <div className="flex flex-col h-screen p-4">
+    <div className="flex flex-col h-screen p-4" style={{backgroundColor:'#F5F5F5'}}>
       {/* Menú cards ocupando el 100% */}
       <div className="w-full h-24 mb-4">
         <h2 style={{fontFamily:'revert', fontSize:'1.5rem', marginBottom:'1rem'}}> ¡Bienvenido nuevamente, User! </h2>
