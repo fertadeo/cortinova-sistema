@@ -40,25 +40,25 @@ export default function Home() {
 
 
   return (
-    <div className="flex flex-col h-screen p-4" style={{backgroundColor:'#F5F5F5'}}>
+    <div className="flex flex-col h-screen" style={{backgroundColor:'#F5F5F5'}}>
       {/* Menú cards ocupando el 100% */}
-      <div className="w-full h-24 mb-4">
-        <h2 style={{fontFamily:'revert', fontSize:'1.5rem', marginBottom:'1rem'}}> ¡Bienvenido nuevamente, User! </h2>
+      <div className="w-full h-screen">
+        <h2 style={{fontSize:'1.1rem', marginBottom:'1rem'}}> ¡Bienvenido nuevamente, User! </h2>
         <Menucards />
       </div>
 
       {/* Grid de dos columnas debajo */}
-      <div className="flex flex-col md:flex-row flex-1">
+      <div className="flex flex-col space-x-8 md:flex-row ">
         {/* Espacio izquierdo para SimpleTable */}
-        <div className="w-full md:w-1/2 m-5">
-        <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginTop:'5rem', marginBottom:'1rem', fontStyle:'bold'}}> Últimos 5 pedidos ingresados  </h3>
+        <div className="w-full md:w-1/2">
+        <h3 className="align-middle justify-center"> Últimos 5 pedidos ingresados  </h3>
           <SimpleTable />
         </div>
 
-        {/* Espacio derecho (opcional) */}
-        <div className="w-full md:w-1/2 m-5">
+        {/* Espacio derecho de Tabla */}
+        <div className="w-full md:w-1/2 ">
           {/* Contenido del espacio derecho */}     
-          <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginTop:'4rem', marginBottom:'1rem', fontStyle:'bold'}}> Resumen de movimientos </h3>
+          <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginBottom:'1rem', fontStyle:'bold'}}> Resumen de movimientos </h3>
       <BarChart data={data} options={options} />
         </div>
       </div>

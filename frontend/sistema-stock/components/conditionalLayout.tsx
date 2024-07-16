@@ -15,7 +15,7 @@ const ConditionalLayout: React.FC<PropsWithChildren<{}>> = ({ children }) => {
       ) : (
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <SideBar />
-        <main style={{ flexGrow: 1, overflow: 'auto', padding: '20px' }}>
+        <main className='' style={{ flexGrow: 1, overflow: 'auto', padding: '20px' }}>
             {children}
           </main>
         </div>

@@ -5,7 +5,7 @@ export default function ClientesLayout({
   }) {
     return (
       <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-        <div className="w-auto h-full text-center justify-center">
+        <div className="w-9/12 h-full text-center justify-center">
           {children}
         </div>
       </section>

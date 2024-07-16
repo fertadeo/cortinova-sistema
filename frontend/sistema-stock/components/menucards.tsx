@@ -10,7 +10,7 @@ export const Menucards = () => {
     <div className="grid grid-cols-1 md:grid-cols-5 h-2">
       {/* <!-- Card 1 --> */}
       
-      <Link href="/clientes">
+      <Link href="/clientes" >
       <div
         className="col-span-1 flex flex-col items-center"
         style={{
@@ -21,7 +21,7 @@ export const Menucards = () => {
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'contain',
           display: 'flex',
-          height: '100px', // Asegúrate de ajustar el tamaño según tus necesidades
+          height: '100px', 
           textAlign: 'center',
           cursor: 'pointer'
         }}
@@ -42,7 +42,7 @@ export const Menucards = () => {
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'contain',
           display: 'flex',
-          height: '100px', // Asegúrate de ajustar el tamaño según tus necesidades
+          height: '100px', 
           textAlign: 'center',
           cursor: 'pointer'
         }}

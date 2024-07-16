@@ -40,7 +40,7 @@ export default function HomeLayout({
         style={{backgroundColor:'#F5F5F5'}}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <div className="relative flex flex-col h-screen">
+          <div className="relative flex flex-col h-48">
             <main className="container mx-auto max-w-7xl flex-grow">
               {children}
             </main>
