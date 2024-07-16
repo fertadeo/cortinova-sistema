@@ -1,24 +1,62 @@
-import React, { useState, useCallback } from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, User as NextUser, Tooltip, useDisclosure, Pagination } from "@nextui-org/react";
-import { EditIcon } from "../components/utils/editIcon";
-import { DeleteIcon } from "../components/utils/deleteIcon";
-import { EyeIcon } from "../components/utils/eyeIcon";
-import Modal from "./modalToTable";
-import { columns, users } from "../components/utils/dataclientes";
+import React, { useState, useCallback, useEffect } from "react";
+import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, User as NextUser, Tooltip, useDisclosure, Pagination, Button } from "@nextui-org/react";
+import { EditIcon } from "@/components/utils/editIcon";
+import { DeleteIcon } from "@/components/utils/deleteIcon";
+import { EyeIcon } from "@/components/utils/eyeIcon";
+import Modal from "@/components/modalToTable";
+import NuevoClienteModal from "@/components/nuevoClienteModal";
+import { columns } from "@/components/utils/dataclientes";
 
-// Define the type of User based on the structure of 'users'
-type User = typeof users[0];
+type User = {
+  id: number;
+  nombre: string;
+  telefono: string;
+  email: string;
+};
 
-export default function ClientesTable() {
+interface Props {
+  initialUsers: User[];
+}
+
+const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
+  const [clientes, setClientes] = useState<User[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isNuevoClienteModalOpen, setIsNuevoClienteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState<User[]>(initialUsers || []);
   const itemsPerPage = 5;
 
-  const handleOpenModal = (user: User) => {
+  const handleOpenModal = (user: User | null) => {
     setSelectedUser(user);
     onOpen();
   };
+
+  const handleNuevoClienteModalOpen = () => {
+    setIsNuevoClienteModalOpen(true);
+  };
+
+  const handleNuevoClienteModalClose = () => {
+    setIsNuevoClienteModalOpen(false);
+  };
+
+  const fetchClientes = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/clientes");
+      if (!response.ok) {
+        throw new Error("Error al obtener los clientes");
+      }
+      const data = await response.json();
+      setUsers(data); // Asegúrate de actualizar el estado de 'users'
+    } catch (error) {
+      console.error("Error al obtener los clientes:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchClientes();
+  }, []);
 
   const renderCell = useCallback((user: User, columnKey: React.Key) => {
     const cellValue = user[columnKey as keyof User];
@@ -27,89 +65,114 @@ export default function ClientesTable() {
       case "name":
         return (
           <NextUser
-            avatarProps={{ radius: "lg", src: user.avatar }}
+            avatarProps={{ radius: "lg" }}
+            name={user.nombre}
             description={user.email}
-            name={cellValue as string}
-          >
-            {user.email}
-          </NextUser>
+            style={{ textAlign: "left" }}
+          />
         );
-      case "role":
+      case "telefono":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-sm capitalize">{cellValue}</p>
-            <p className="text-bold text-sm capitalize text-default-400">{user.team}</p>
+            <p className="text-bold text-sm capitalize">{user.telefono}</p>
           </div>
         );
       case "actions":
         return (
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex gap-2">
             <Tooltip content="Ver">
               <span
-                className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                onClick={() => handleOpenModal(user)}
-              >
-                <EyeIcon />
-              </span>
-            </Tooltip>
-            <Tooltip content="Edit user">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <EditIcon />
-              </span>
-            </Tooltip>
-            <Tooltip color="danger" content="Delete user">
-              <span className="text-lg text-danger cursor-pointer active:opacity-50">
-                <DeleteIcon />
-              </span>
-            </Tooltip>
-          </div>
-        );
-      default:
-        return cellValue;
-    }
-  }, []);
+                className="text-lg text-default-400 cursor-pointer active:opacity
 
-  // Remove the 'status' column from the columns definition
-  const filteredColumns = columns.filter(column => column.uid !== 'status');
 
-  // Calculate the items to show on the current page
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const endIdx = startIdx + itemsPerPage;
-  const currentItems = users.slice(startIdx, endIdx);
 
-  return (
-    <div style={{ height: '80%', width: '80%' }}>
-      <Table aria-label="Example table with custom cells" style={{ height: '100%', width: '100%' }}>
-        <TableHeader columns={filteredColumns}>
-          {(column) => (
-            <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
-              {column.name}
-            </TableColumn>
-          )}
-        </TableHeader>
-        <TableBody items={currentItems}>
-          {(item) => (
-            <TableRow key={item.id}>
-              {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      {selectedUser && (
-        <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        user={selectedUser}
-        />
-      )}
-      <div className="flex justify-center mt-4">
-      <Pagination
-        total={Math.ceil(users.length / itemsPerPage)}
-        initialPage={1}
-        page={currentPage}
-        onChange={(page) => setCurrentPage(page)}
-      />
-      </div>
-    </div>
-  );
+
+ChatGPT
+-50"
+onClick={() => handleOpenModal(user)}
+>
+<EyeIcon />
+</span>
+</Tooltip>
+<Tooltip content="Edit user">
+<span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+<EditIcon />
+</span>
+</Tooltip>
+<Tooltip color="danger" content="Delete user">
+<span className="text-lg text-danger cursor-pointer active:opacity-50">
+<DeleteIcon />
+</span>
+</Tooltip>
+</div>
+);
+default:
+return cellValue;
 }
+}, []);
+
+const filteredColumns = columns.filter((column) => column.uid !== "status");
+
+const filteredUsers = users.filter((user) => {
+const name = user.nombre.toLowerCase() || "";
+const telefono = user.telefono.toLowerCase() || "";
+const email = user.email.toLowerCase() || "";
+const search = searchTerm.toLowerCase();
+
+
+return name.includes(search) || telefono.includes(search) || email.includes(search);
+});
+
+const startIdx = (currentPage - 1) * itemsPerPage;
+const endIdx = startIdx + itemsPerPage;
+const currentItems = filteredUsers.slice(startIdx, endIdx);
+
+return (
+<div style={{ height: "80%", width: "80%" }}>
+<div className="flex justify-between items-center p-4 m-4 h-20 bg-white rounded-lg shadow-medium">
+<Input
+isClearable
+placeholder="Buscar"
+onChange={(e) => setSearchTerm(e.target.value)}
+value={searchTerm}
+className="pr-4"
+/>
+<Button color="primary" variant="shadow" className="pr-4" onClick={handleNuevoClienteModalOpen}>
+Agregar Nuevo +
+</Button>
+</div>
+<Table aria-label="Example table with custom cells">
+<TableHeader columns={filteredColumns}>
+{(column) => (
+<TableColumn key={column.uid} align={column.uid === "actions" ? "start" : "center"}>
+{column.name}
+</TableColumn>
+)}
+</TableHeader>
+<TableBody items={currentItems}>
+{(item) => (
+<TableRow key={item.id} className="text-left">
+{(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+</TableRow>
+)}
+</TableBody>
+</Table>
+{selectedUser && <Modal isOpen={isOpen} onClose={onClose} user={selectedUser} />}
+<NuevoClienteModal
+     isOpen={isNuevoClienteModalOpen}
+     onClose={handleNuevoClienteModalClose}
+     onClienteAgregado={fetchClientes}
+   />
+<div className="flex justify-center mt-4">
+<Pagination
+total={Math.ceil(filteredUsers.length / itemsPerPage)}
+initialPage={1}
+page={currentPage}
+onChange={(page) => setCurrentPage(page)}
+/>
+</div>
+</div>
+);
+};
+
+export default ClientesTable;
