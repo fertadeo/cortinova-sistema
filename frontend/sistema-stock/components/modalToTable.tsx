@@ -1,38 +1,76 @@
 import React from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell
+} from "@nextui-org/react";
 
-type ModalComponentProps = {
+type ModalToTableProps = {
   isOpen: boolean;
   onClose: () => void;
-  user: any; // Adjust this type according to your User type
+  cliente: any; 
 };
 
-const ModalComponent: React.FC<ModalComponentProps> = ({ isOpen, onClose, user }) => {
+const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente }) => {
+
   return (
-    <Modal backdrop="opaque" isOpen={isOpen} onClose={onClose}>
+    <Modal backdrop="opaque" isOpen={isOpen} onClose={onClose} size="5xl">
       <ModalContent>
-        {(onClose) => (
-          <>
-            <ModalHeader className="flex flex-col gap-1">{user?.name}</ModalHeader>
-            <ModalBody>
-              <p>Email: {user?.email}</p>
-              <p>Role: {user?.role}</p>
-              <p>Team: {user?.team}</p>
-              {/* Add more user details here as needed */}
-            </ModalBody>
-            <ModalFooter>
-              <Button color="danger" variant="light" onPress={onClose}>
-                Close
-              </Button>
-              <Button color="primary" onPress={onClose}>
-                Action
-              </Button>
-            </ModalFooter>
-          </>
-        )}
+        <ModalHeader className="flex flex-col gap-1">{cliente?.nombre}</ModalHeader>
+        <ModalBody>
+          <p>Teléfono: {cliente?.telefono}</p>
+          <p>Dirección: {cliente?.direccion}</p>
+          <p>Email: {cliente?.email}</p>
+          <div className="flex flex-col gap-3 w-full">
+            <Table 
+              color={"primary"}
+              selectionMode="single" 
+              defaultSelectedKeys={["2"]} 
+              aria-label="Example static collection table"
+            >
+              <TableHeader>
+                <TableColumn>Num Pedido</TableColumn>
+                <TableColumn>Fecha</TableColumn>
+                <TableColumn>Articulos</TableColumn>
+                <TableColumn>Monto</TableColumn>
+                <TableColumn>Estado</TableColumn>
+              </TableHeader>
+              <TableBody>
+                <TableRow key="1">
+                  <TableCell>1</TableCell>
+                  <TableCell>17/07/2024</TableCell>
+                  <TableCell>Cortina Roller Gris x 4 Mtrs</TableCell>
+                  <TableCell>$15.600</TableCell>
+                  <TableCell>Finalizado</TableCell>
+                </TableRow>
+                <TableRow key="2">
+                  <TableCell>2</TableCell>
+                  <TableCell>01/02/23</TableCell>
+                  <TableCell>Cortina Roller Gris x 4 Mtrs</TableCell>
+                  <TableCell>$9.000</TableCell>
+                  <TableCell>Cancelado</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="danger" variant="light" onPress={onClose}>
+            Cerrar
+          </Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );
 };
 
-export default ModalComponent;
+export default ModalToTable;

@@ -1,6 +1,8 @@
 'use client'
 import React, { useState, useEffect } from "react";
 
+
+
 const Notification = ({ message, description, isVisible, onClose }) => {
   useEffect(() => {
     if (isVisible) {
