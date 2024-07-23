@@ -15,6 +15,7 @@ import {
 } from "@nextui-org/react";
 import ModalToTable from "@/components/modalToTable";
 import NuevoClienteModal from "@/components/nuevoClienteModal";
+import ModalConfirmation from "@/components/modalConfirmation"; // Importa el nuevo modal de confirmación
 import { columns } from "@/components/utils/dataclientes";
 import { EyeIcon } from "@/components/utils/eyeIcon";
 import { EditIcon } from "@/components/utils/editIcon";
@@ -39,6 +40,8 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<User[]>(initialUsers || []);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const itemsPerPage = 10;
 
@@ -53,6 +56,33 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
 
   const handleNuevoClienteModalClose = () => {
     setIsNuevoClienteModalOpen(false);
+  };
+
+  const handleOpenDeleteModal = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8080/api/clientes/${userToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Error al eliminar el cliente');
+      }
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userToDelete.id));
+      handleCloseDeleteModal(); // Cierra el modal después de eliminar
+    } catch (error) {
+      console.error('Error al eliminar el cliente:', error);
+    }
   };
 
   const fetchClientes = async () => {
@@ -109,7 +139,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
               </span>
             </Tooltip>
             <Tooltip color="danger" content="Eliminar">
-              <span className="text-lg text-danger cursor-pointer active:opacity-50">
+              <span className="text-lg text-danger cursor-pointer active:opacity-50" onClick={() => handleOpenDeleteModal(user)}>
                 <DeleteIcon />
               </span>
             </Tooltip>
@@ -170,6 +200,11 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         isOpen={isNuevoClienteModalOpen}
         onClose={handleNuevoClienteModalClose}
         onClienteAgregado={fetchClientes}
+      />
+      <ModalConfirmation
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteUser}
       />
       <div className="flex justify-center mt-4">
         <Pagination
