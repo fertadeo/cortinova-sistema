@@ -1,25 +1,15 @@
+import '../styles/globals.css';
 import React, { useState, useCallback, useEffect } from "react";
-import {
-  Input,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Tooltip,
-  useDisclosure,
-  Pagination,
-  Button,
-  User
-} from "@nextui-org/react";
+import {Input,Table,TableHeader,TableColumn,TableBody,TableRow,TableCell,Tooltip,useDisclosure,Pagination,Button,User} from "@nextui-org/react";
 import ModalToTable from "@/components/modalToTable";
 import NuevoClienteModal from "@/components/nuevoClienteModal";
-import ModalConfirmation from "@/components/modalConfirmation"; // Importa el nuevo modal de confirmación
+import ModalConfirmation from "@/components/modalConfirmation";
 import { columns } from "@/components/utils/dataclientes";
 import { EyeIcon } from "@/components/utils/eyeIcon";
 import { EditIcon } from "@/components/utils/editIcon";
 import { DeleteIcon } from "@/components/utils/deleteIcon";
+
+
 
 type User = {
   id: number;
