@@ -1,6 +1,6 @@
 import '../styles/globals.css';
 import React, { useState, useCallback, useEffect } from "react";
-import {Input,Table,TableHeader,TableColumn,TableBody,TableRow,TableCell,Tooltip,useDisclosure,Pagination,Button,User} from "@nextui-org/react";
+import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip, useDisclosure, Pagination, Button, User } from "@nextui-org/react";
 import ModalToTable from "@/components/modalToTable";
 import NuevoClienteModal from "@/components/nuevoClienteModal";
 import ModalConfirmation from "@/components/modalConfirmation";
@@ -8,8 +8,7 @@ import { columns } from "@/components/utils/dataclientes";
 import { EyeIcon } from "@/components/utils/eyeIcon";
 import { EditIcon } from "@/components/utils/editIcon";
 import { DeleteIcon } from "@/components/utils/deleteIcon";
-
-
+import  EditarComponent from  "@/components/editarComponent"
 
 type User = {
   id: number;
@@ -32,8 +31,21 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
   const [users, setUsers] = useState<User[]>(initialUsers || []);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [editarModal, setEditarModal] = useState(false);
+
 
   const itemsPerPage = 10;
+
+
+  const handleEditarCliente = () => {
+    setEditarModal(true);
+    console.log('boton cliqueado')
+  };
+
+  const handleCloseEditarModal = () => {
+    setEditarModal(false)
+  }
+
 
   const handleOpenModal = (user: User) => {
     setSelectedUser(user);
@@ -92,6 +104,8 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
     fetchClientes();
   }, []);
 
+
+
   const renderCell = useCallback((user: User, columnKey: React.Key) => {
     const cellValue = user[columnKey as keyof User];
 
@@ -124,8 +138,9 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
               </span>
             </Tooltip>
             <Tooltip content="Editar">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+              <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={handleEditarCliente}>
                 <EditIcon />
+                
               </span>
             </Tooltip>
             <Tooltip color="danger" content="Eliminar">
@@ -185,6 +200,9 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
           )}
         </TableBody>
       </Table>
+      {editarModal && <EditarComponent isOpen={true} onClose={handleCloseEditarModal} onSave={function (): void {
+        throw new Error('Function not implemented.');
+      } } />}
       {selectedUser && <ModalToTable isOpen={isOpen} onClose={onClose} cliente={selectedUser} />}
       <NuevoClienteModal
         isOpen={isNuevoClienteModalOpen}
