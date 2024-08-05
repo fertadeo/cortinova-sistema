@@ -32,14 +32,18 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [editarModal, setEditarModal] = useState(false);
-
-
   const itemsPerPage = 10;
 
 
-  const handleEditarCliente = () => {
+  const handleEditarModal = (user: User) => {
     setEditarModal(true);
-    console.log('boton cliqueado')
+    setSelectedUser(user);
+    console.log('User seleccionado', user)
+  };
+
+  const handleSave = async () => {
+ 
+    await fetchClientes(); 
   };
 
   const handleCloseEditarModal = () => {
@@ -138,7 +142,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
               </span>
             </Tooltip>
             <Tooltip content="Editar">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={handleEditarCliente}>
+              <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => handleEditarModal(user)}>
                 <EditIcon />
                 
               </span>
@@ -151,7 +155,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
           </div>
         );
       default:
-        return cellValue;
+        return user[columnKey as keyof User];
     }
   }, []);
 
@@ -200,9 +204,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
           )}
         </TableBody>
       </Table>
-      {editarModal && <EditarComponent isOpen={true} onClose={handleCloseEditarModal} onSave={function (): void {
-        throw new Error('Function not implemented.');
-      } } />}
+      {editarModal && <EditarComponent cliente={selectedUser} isOpen={true} onClose={handleCloseEditarModal} onSave={handleSave}  />}
       {selectedUser && <ModalToTable isOpen={isOpen} onClose={onClose} cliente={selectedUser} />}
       <NuevoClienteModal
         isOpen={isNuevoClienteModalOpen}
