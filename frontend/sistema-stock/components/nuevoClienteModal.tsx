@@ -23,6 +23,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
   onClose,
   onClienteAgregado,
 }) => {
+  const [dni, setDni] = useState("")
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [direccion, setDireccion] = useState("");
@@ -30,6 +31,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState({
+    dni: false,
     nombre: false,
     telefono: false,
     direccion: false,
@@ -73,6 +75,12 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
           email: value.trim() === "",
         }));
         break;
+        case "dni":
+          setDni(value); 
+          setFormErrors((prevErrors) => ({
+            ...prevErrors,
+            dni: value.trim() === "",
+          }))
       default:
         break;
     }
@@ -85,6 +93,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
       telefono: telefono.trim() === "",
       direccion: direccion.trim() === "",
       email: email.trim() === "",
+      dni: dni.trim() === "",
     };
 
     setFormErrors(errors);
@@ -128,6 +137,14 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
 
       // Cierra el modal después de 3 segundos
       setTimeout(() => {
+        //Actualiza los campos a strings vacios
+        setDni("");
+        setNombre("");
+        setTelefono("");
+        setEmail("");
+        setDireccion("");
+
+
         setIsSaving(false); // Ocultar spinner después de 3 segundos
         onClose();
       }, 3000);
@@ -148,12 +165,21 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
             <ModalBody>
               <Input
                 fullWidth
-                label="Nombre"
+                label="Nombre completo"
                 placeholder="Ingrese el nombre"
                 value={nombre}
                 required
                 onChange={(e) => handleInputChange(e, "nombre")}
                 color={formErrors.nombre ? "danger" : "default"}
+              />
+                 <Input
+                fullWidth
+                label="DNI (el campo es obligatorio)"
+                placeholder="Ingrese el DNI del cliente"
+                value={dni}
+                required
+                onChange={(e) => handleInputChange(e, "dni")}
+                color={formErrors.dni ? "danger" : "default"}
               />
               <Input
                 fullWidth
