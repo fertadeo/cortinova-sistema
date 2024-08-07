@@ -1,5 +1,6 @@
 // pages/users.tsx
 'use client'
+import '@/styles/globals.css'
 import { useEffect, useState } from 'react';
 import { Users } from '../../types/users'; // Ajusta la ruta según sea necesario
 
@@ -25,14 +26,10 @@ const UsersPage = () => {
 
   return (
     <div>
-      <h1>Users</h1>
+      <h1> Lista de Productos</h1>
       <ul>
-        {users.map(user => (
-          <li key={user.id}>
-        
-         {user.id} - {user.name} - {user.email}
-          </li>
-        ))}
+       
+     
       </ul>
     </div>
   );
