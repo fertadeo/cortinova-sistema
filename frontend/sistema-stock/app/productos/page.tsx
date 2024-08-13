@@ -4,6 +4,7 @@ import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
 import { Button, Input, Spinner } from '@nextui-org/react';
 import { AiOutlineUpload } from 'react-icons/ai';
+import TableProducts from '@/components/tableProducts';
 
 const ProductosPage = () => {
   const [fileName, setFileName] = useState<string | null>(null);
@@ -31,7 +32,7 @@ const ProductosPage = () => {
   };
 
   return (
-    <div className='flex justify-center w-full h-full align-middle'>
+    <div className='flex-col justify-center w-full h-full align-middle columns-1'>
       <TopBar>
         <div className="flex items-center gap-4">
           <Input
@@ -60,7 +61,7 @@ const ProductosPage = () => {
               ) : (
                 <>
                   <AiOutlineUpload className='size-14' />
-                  {fileName ? fileName : 'Cargar desde Excel'}
+                  {fileName ? fileName : 'Cargar archivo Excel'}
                 </>
               )}
             </Button>
@@ -68,6 +69,10 @@ const ProductosPage = () => {
           <Button className='m-2 bg-secondary-100'>Carga Manual</Button>
         </div>
       </TopBar>
+      <div>
+
+      <TableProducts/>
+      </div>
     </div>
   );
 };
