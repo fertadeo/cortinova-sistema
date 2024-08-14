@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
-import { Button, Input, Spinner } from '@nextui-org/react';
+import { Button, Spinner } from '@nextui-org/react';
 import { AiOutlineUpload } from 'react-icons/ai';
 import TableProducts from '@/components/tableProducts';
 
@@ -34,44 +34,41 @@ const ProductosPage = () => {
   return (
     <div className='flex-col justify-center w-full h-full align-middle columns-1'>
       <TopBar>
-        <div className="flex items-center gap-4">
-          <Input
-            type="text"
-            placeholder="Buscar..."
-            className="w-40 px-4 py-2 m-2 border rounded-md"
-          />
-          <div className="relative">
-            <input
-              type="file"
-              accept=".csv"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-            <Button
-              onClick={handleButtonClick}
-              className="flex items-center justify-center gap-2 px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600"
-              disabled={loading} // Desactiva el botón mientras se carga
-            >
-              {loading ? (
-                <>
-                  <Spinner size="sm" color='white' />
-                  Procesando...
-                </>
-              ) : (
-                <>
-                  <AiOutlineUpload className='size-14' />
-                  {fileName ? fileName : 'Cargar archivo Excel'}
-                </>
-              )}
-            </Button>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <input
+                type="file"
+                accept=".csv"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <Button
+                onClick={handleButtonClick}
+                className="flex items-center justify-center gap-2 px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                disabled={loading} // Desactiva el botón mientras se carga
+              >
+                {loading ? (
+                  <>
+                    <Spinner size="sm" color='white' />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <AiOutlineUpload className='size-14' />
+                    {fileName ? fileName : 'Cargar archivo Excel'}
+                  </>
+                )}
+              </Button>
+            </div>
+            <Button className='m-2 bg-secondary-100'> Agregar producto + </Button>
           </div>
-          <Button className='m-2 bg-secondary-100'>Carga Manual</Button>
+          <Button className='m-2 bg-green-700' style={{color:'white'}}>Modificar Precios</Button>
         </div>
       </TopBar>
       <div>
-
-      <TableProducts/>
+        <TableProducts />
       </div>
     </div>
   );
