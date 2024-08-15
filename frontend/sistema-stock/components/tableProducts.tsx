@@ -13,7 +13,6 @@ import {
   DropdownMenu,
   DropdownItem,
   Chip,
-  User,
   Pagination,
   Selection,
   ChipProps,
@@ -23,27 +22,27 @@ import {PlusIcon} from "./utils/plusIcons";
 import {VerticalDotsIcon} from "./utils/verticalDotsIcon";
 import {ChevronDownIcon} from "./utils/chevronDownIcon";
 import {SearchIcon} from "./utils/searchIcon";
-import {columns, users, statusOptions} from "./utils/data";
+import {columns, products , statusOptions} from "./utils/data";
 import {capitalize} from "./utils/utils";
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
-  active: "success",
-  paused: "danger",
-  vacation: "warning",
+  "En Stock": "success",
+  "Stock Medio": "warning",
+  "Stock Muy Bajo": "danger",
 };
 
-const INITIAL_VISIBLE_COLUMNS = ["name", "role", "status", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["id", "producto", "disponible", "descripcion", "precio", "divisa", "descuento"];
 
-type User = typeof users[0];
+type Product = typeof products[0];
 
-export default function App() {
+export default function TableProducts() {
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
   const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
-    column: "age",
+    column: "id",
     direction: "ascending",
   });
 
@@ -58,21 +57,21 @@ export default function App() {
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
-    let filteredUsers = [...users];
+    let filteredProducts = [...products];
 
     if (hasSearchFilter) {
-      filteredUsers = filteredUsers.filter((user) =>
-        user.name.toLowerCase().includes(filterValue.toLowerCase()),
+      filteredProducts = filteredProducts.filter((product) =>
+        product.producto.toLowerCase().includes(filterValue.toLowerCase()),
       );
     }
     if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-      filteredUsers = filteredUsers.filter((user) =>
-        Array.from(statusFilter).includes(user.status),
+      filteredProducts = filteredProducts.filter((product) =>
+        Array.from(statusFilter).includes(product.disponible),
       );
     }
 
-    return filteredUsers;
-  }, [users, filterValue, statusFilter]);
+    return filteredProducts;
+  }, [products, filterValue, statusFilter]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -84,58 +83,24 @@ export default function App() {
   }, [page, filteredItems, rowsPerPage]);
 
   const sortedItems = React.useMemo(() => {
-    return [...items].sort((a: User, b: User) => {
-      const first = a[sortDescriptor.column as keyof User] as number;
-      const second = b[sortDescriptor.column as keyof User] as number;
+    return [...items].sort((a: Product, b: Product) => {
+      const first = a[sortDescriptor.column as keyof Product] as number;
+      const second = b[sortDescriptor.column as keyof Product] as number;
       const cmp = first < second ? -1 : first > second ? 1 : 0;
 
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
   }, [sortDescriptor, items]);
 
-  const renderCell = React.useCallback((user: User, columnKey: React.Key) => {
-    const cellValue = user[columnKey as keyof User];
+  const renderCell = React.useCallback((product: Product, columnKey: React.Key) => {
+    const cellValue = product[columnKey as keyof Product];
 
     switch (columnKey) {
-      case "name":
+      case "disponible":
         return (
-          <User
-            description={user.email}
-            name={cellValue}
-            
-          >
-            {user.email}
-          </User>
-        );
-      case "role":
-        return (
-          <div className="flex flex-col">
-            <p className="capitalize text-bold text-small">{cellValue}</p>
-            <p className="capitalize text-bold text-tiny text-default-400">{user.team}</p>
-          </div>
-        );
-      case "status":
-        return (
-          <Chip className="capitalize" color={statusColorMap[user.status]} size="sm" variant="flat">
+          <Chip className="capitalize" color={statusColorMap[product.disponible]} size="sm" variant="flat">
             {cellValue}
           </Chip>
-        );
-      case "actions":
-        return (
-          <div className="relative flex items-center justify-end gap-2">
-            <Dropdown>
-              <DropdownTrigger>
-                <Button isIconOnly size="sm" variant="light">
-                  <VerticalDotsIcon className="text-default-300" />
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu>
-                <DropdownItem>View</DropdownItem>
-                <DropdownItem>Edit</DropdownItem>
-                <DropdownItem>Delete</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </div>
         );
       default:
         return cellValue;
@@ -168,10 +133,10 @@ export default function App() {
     }
   }, []);
 
-  const onClear = React.useCallback(()=>{
-    setFilterValue("")
-    setPage(1)
-  },[])
+  const onClear = React.useCallback(() => {
+    setFilterValue("");
+    setPage(1);
+  }, []);
 
   const topContent = React.useMemo(() => {
     return (
@@ -180,18 +145,17 @@ export default function App() {
           <Input
             isClearable
             className="w-full sm:max-w-[44%] shadow-sm"
-            placeholder="Search by name..."
+            placeholder="Buscar por producto..."
             startContent={<SearchIcon />}
             value={filterValue}
-            onClear={() => onClear()}
+            onClear={onClear}
             onValueChange={onSearchChange}
-
           />
           <div className="flex gap-3">
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
-                  Status
+                  Estado
                 </Button>
               </DropdownTrigger>
               <DropdownMenu
@@ -230,15 +194,12 @@ export default function App() {
                 ))}
               </DropdownMenu>
             </Dropdown>
-            <Button color="primary" endContent={<PlusIcon width={undefined} height={undefined} />}>
-              Add New
-            </Button>
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-default-400 text-small">Total {users.length} users</span>
+          <span className="text-default-400 text-small">Total {products.length} productos</span>
           <label className="flex items-center text-default-400 text-small">
-            Rows per page:
+            Filas por página:
             <select
               className="bg-transparent outline-none text-default-400 text-small"
               onChange={onRowsPerPageChange}
@@ -257,7 +218,7 @@ export default function App() {
     visibleColumns,
     onSearchChange,
     onRowsPerPageChange,
-    users.length,
+    products.length,
     hasSearchFilter,
   ]);
 
@@ -266,8 +227,8 @@ export default function App() {
       <div className="flex items-center justify-between px-2 py-2">
         <span className="w-[30%] text-small text-default-400">
           {selectedKeys === "all"
-            ? "All items selected"
-            : `${selectedKeys.size} of ${filteredItems.length} selected`}
+            ? "Todos los productos seleccionados"
+            : `${selectedKeys.size} de ${filteredItems.length} seleccionados`}
         </span>
         <Pagination
           isCompact
@@ -280,10 +241,10 @@ export default function App() {
         />
         <div className="hidden sm:flex w-[30%] justify-end gap-2">
           <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onPreviousPage}>
-            Previous
+            Anterior
           </Button>
           <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onNextPage}>
-            Next
+            Siguiente
           </Button>
         </div>
       </div>
@@ -292,7 +253,7 @@ export default function App() {
 
   return (
     <Table
-      aria-label="Example table with custom cells, pagination and sorting"
+      aria-label="Tabla de productos con celdas personalizadas, paginación y ordenamiento"
       isHeaderSticky
       bottomContent={bottomContent}
       bottomContentPlacement="outside"
@@ -300,28 +261,29 @@ export default function App() {
         wrapper: "max-h-[382px]",
       }}
       selectedKeys={selectedKeys}
-      selectionMode="multiple"
+      onSelectionChange={setSelectedKeys}
       sortDescriptor={sortDescriptor}
+      onSortChange={setSortDescriptor}
       topContent={topContent}
       topContentPlacement="outside"
-      onSelectionChange={setSelectedKeys}
-      onSortChange={setSortDescriptor}
     >
       <TableHeader columns={headerColumns}>
         {(column) => (
           <TableColumn
             key={column.uid}
             align={column.uid === "actions" ? "center" : "start"}
-            allowsSorting={column.sortable}
+            allowsSorting={column.uid === "id" || column.uid === "precio"}
           >
             {column.name}
           </TableColumn>
         )}
       </TableHeader>
-      <TableBody emptyContent={"No users found"} items={sortedItems}>
-        {(item) => (
+      <TableBody items={sortedItems}>
+        {(item: Product) => (
           <TableRow key={item.id}>
-            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+            {(columnKey) => (
+              <TableCell>{renderCell(item, columnKey)}</TableCell>
+            )}
           </TableRow>
         )}
       </TableBody>
