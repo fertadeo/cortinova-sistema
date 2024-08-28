@@ -1,22 +1,5 @@
 import React from "react";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Input,
-  Button,
-  DropdownTrigger,
-  Dropdown,
-  DropdownMenu,
-  DropdownItem,
-  Chip,
-  Pagination,
-  Selection,
-  ChipProps,
-  SortDescriptor
+import {Table, TableHeader, TableColumn,TableBody,TableRow,TableCell,Input,Button,DropdownTrigger,Dropdown,DropdownMenu,DropdownItem,Chip,Pagination,Selection,ChipProps,SortDescriptor
 } from "@nextui-org/react";
 import {PlusIcon} from "./utils/plusIcons";
 import {VerticalDotsIcon} from "./utils/verticalDotsIcon";
@@ -27,8 +10,8 @@ import {capitalize} from "./utils/utils";
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
   "En Stock": "success",
-  "Stock Medio": "warning",
-  "Stock Muy Bajo": "danger",
+  "Stock Bajo": "warning",
+  "Sin Stock": "danger",
 };
 
 const INITIAL_VISIBLE_COLUMNS = ["id", "producto", "disponible", "descripcion", "precio", "divisa", "descuento"];
@@ -103,7 +86,7 @@ export default function TableProducts() {
           </Chip>
         );
       default:
-        return cellValue;
+        return <div className="text-left">{cellValue}</div>;
     }
   }, []);
 
@@ -270,12 +253,12 @@ export default function TableProducts() {
       <TableHeader columns={headerColumns}>
         {(column) => (
           <TableColumn
-            key={column.uid}
-            align={column.uid === "actions" ? "center" : "start"}
-            allowsSorting={column.uid === "id" || column.uid === "precio"}
-          >
-            {column.name}
-          </TableColumn>
+          key={column.uid}
+          align="start"
+          allowsSorting={column.uid === "id" || column.uid === "precio"}
+        >
+          {column.name}
+        </TableColumn>
         )}
       </TableHeader>
       <TableBody items={sortedItems}>

@@ -1,8 +1,7 @@
 "use client";
 
-
 import React from "react";
-import {Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, RadioGroup, Radio} from "@nextui-org/react";
+import {Table, TableHeader, TableColumn, TableBody, TableRow, TableCell} from "@nextui-org/react";
 
 export default function SimpleTable() {
 
@@ -20,29 +19,29 @@ export default function SimpleTable() {
         </TableHeader>
         <TableBody>
           <TableRow key="1">
-            <TableCell>Tony Reichert</TableCell>
-            <TableCell>CEO</TableCell>
-            <TableCell>Active</TableCell>
+            <TableCell>Pedido #1203</TableCell>
+            <TableCell>Fernando Tadeo</TableCell>
+            <TableCell>Entregado</TableCell>
           </TableRow>
           <TableRow key="2">
-            <TableCell>Zoey Lang</TableCell>
-            <TableCell>Technical Lead</TableCell>
-            <TableCell>Paused</TableCell>
+            <TableCell>Pedido #1204</TableCell>
+            <TableCell>Mariana Gómez</TableCell>
+            <TableCell>En Proceso</TableCell>
           </TableRow>
           <TableRow key="3">
-            <TableCell>Jane Fisher</TableCell>
-            <TableCell>Senior Developer</TableCell>
-            <TableCell>Active</TableCell>
+            <TableCell>Pedido #1205</TableCell>
+            <TableCell>Carlos Pérez</TableCell>
+            <TableCell>Cancelado</TableCell>
           </TableRow>
           <TableRow key="4">
-            <TableCell>William Howard</TableCell>
-            <TableCell>Community Manager</TableCell>
-            <TableCell>Vacation</TableCell>
+            <TableCell>Pedido #1206</TableCell>
+            <TableCell>Sofía López</TableCell>
+            <TableCell>Pendiente</TableCell>
           </TableRow>
           <TableRow key="5">
-            <TableCell>William Howard</TableCell>
-            <TableCell>Community Manager</TableCell>
-            <TableCell>Vacation</TableCell>
+            <TableCell>Pedido #1207</TableCell>
+            <TableCell>Juan Rodríguez</TableCell>
+            <TableCell>Entregado</TableCell>
           </TableRow>
         </TableBody>
       </Table>
