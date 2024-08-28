@@ -1,4 +1,3 @@
-import React from "react";
 
 const columns = [
   { name: "ID/SKU", uid: "id", sortable: true },
@@ -13,9 +12,9 @@ const columns = [
 ];
 
 const statusOptions = [
-  { name: "En Stock", uid: "en stock" },
-  { name: "Stock Medio", uid: "stock medio" },
-  { name: "Stock Muy Bajo", uid: "stock muy bajo" },
+  { name: "En Stock", uid: "En Stock" },
+  { name: "Stock Bajo", uid: "Stock Bajo" },
+  { name: "Sin Stock", uid: "Sin Stock" },
 ];
 
 const products = [
@@ -33,7 +32,7 @@ const products = [
   {
     id: 2,
     producto: "Cortina Traslúcida 150x180",
-    disponible: "Stock Medio",
+    disponible: "Sin Stock",
     descripcion: "Cortina roller traslúcida, color gris, tamaño 150x180 cm.",
     precio: 12000,
     divisa: "ARS",
@@ -55,7 +54,7 @@ const products = [
   {
     id: 4,
     producto: "Motor para Cortina Automática",
-    disponible: "Stock Muy Bajo",
+    disponible: "Stock Bajo",
     descripcion: "Motor eléctrico compatible con cortinas roller automáticas.",
     precio: 25000,
     divisa: "ARS",
@@ -77,7 +76,7 @@ const products = [
   {
     id: 6,
     producto: "Accesorios de Instalación",
-    disponible: "En Stock",
+    disponible: "Stock Bajo",
     descripcion: "Kit completo de accesorios para instalación de cortinas.",
     precio: 500,
     divisa: "ARS",
@@ -88,7 +87,7 @@ const products = [
   {
     id: 7,
     producto: "Cortina Roller Blackout 220x250",
-    disponible: "Stock Medio",
+    disponible: "Stock Bajo",
     descripcion: "Cortina roller con tela blackout, color negro, tamaño 220x250 cm.",
     precio: 20000,
     divisa: "ARS",
@@ -99,7 +98,7 @@ const products = [
   {
     id: 8,
     producto: "Cortina Blackout Automática 180x200",
-    disponible: "Stock Muy Bajo",
+    disponible: "Sin Stock",
     descripcion: "Cortina roller automática con tela blackout, tamaño 180x200 cm.",
     precio: 35000,
     divisa: "ARS",
@@ -110,7 +109,7 @@ const products = [
   {
     id: 9,
     producto: "Tela Blackout 180x200",
-    disponible: "En Stock",
+    disponible: "Stock Bajo",
     descripcion: "Tela blackout para cortinas, color blanco, tamaño 180x200 cm.",
     precio: 10000,
     divisa: "ARS",
@@ -121,7 +120,7 @@ const products = [
   {
     id: 10,
     producto: "Tela Screen 200x250",
-    disponible: "Stock Medio",
+    disponible: "Sin Stock",
     descripcion: "Tela screen para cortinas, color beige, tamaño 200x250 cm.",
     precio: 13000,
     divisa: "ARS",
