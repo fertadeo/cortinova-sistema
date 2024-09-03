@@ -35,7 +35,7 @@ export const PedidosTable = () => {
                                             Descargar Presupuesto
                                         </th>
                                         <th scope="col" className="relative py-3.5 px-4">
-                                            <span className="sr-only">Actions</span>
+                                            <span className="sr-only">Opciones</span>
                                         </th>
                                     </tr>
                                 </thead>
@@ -49,7 +49,7 @@ export const PedidosTable = () => {
                                             </td>
                                             <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 whitespace-nowrap">{pedido.fecha}</td>
                                             <td className="px-4 py-4 text-sm font-medium text-gray-700 whitespace-nowrap">
-                                                <div className={`inline-flex items-center px-3 py-1 rounded-full gap-x-2 ${pedido.estado === "Paid" ? "text-emerald-500 bg-emerald-100/60 dark:bg-gray-800" : "text-red-500 bg-red-100/60 dark:bg-gray-800"
+                                                <div className={`inline-flex items-center px-3 py-1 rounded-full gap-x-2 ${pedido.estado === "Pagado" ? "text-emerald-500 bg-emerald-100/60 dark:bg-gray-800" : "text-red-500 bg-red-100/60 dark:bg-gray-800"
                                                     }`}>
                                                     <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                         <path d="M16 10L12 14L8 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -59,8 +59,7 @@ export const PedidosTable = () => {
                                             </td>
                                             <td className="px-4 py-4 text-sm font-medium text-gray-700 whitespace-nowrap">
                                                 <div className="inline-flex items-center gap-x-3">
-                                                    <img className="object-cover w-10 h-10 rounded-full" src={pedido.cliente.foto} alt={pedido.cliente.nombre} />
-                                                    <div className="flex-col items-center  gap-x-2">
+                                                    <div className="flex-col items-center gap-x-2">
                                                         <h2 className="font-medium text-gray-800 dark:text-white ">{pedido.cliente.nombre}</h2>
                                                         <p className="text-sm font-normal text-gray-600 dark:text-gray-400">{pedido.cliente.email}</p>
                                                     </div>

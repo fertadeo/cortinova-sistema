@@ -2,7 +2,7 @@ export const pedidosData = [
     {
         id: "#3066",
         fecha: "Jan 6, 2022",
-        estado: "Paid",
+        estado: "Pagado",
         cliente: {
             nombre: "Arthur Melo",
             email: "authurmelo@example.com",
@@ -15,7 +15,7 @@ export const pedidosData = [
     {
         id: "#3065",
         fecha: "Jan 5, 2022",
-        estado: "Cancelled",
+        estado: "Recibo emitido",
         cliente: {
             nombre: "Andi Lane",
             email: "andi@example.com",
@@ -28,7 +28,7 @@ export const pedidosData = [
     {
         id: "#2202",
         fecha: "Jan 5, 2022",
-        estado: "Paid",
+        estado: "Pagado",
         cliente: {
             nombre: "Fernando Tadeo",
             email: "andi@example.com",
