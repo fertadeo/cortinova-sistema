@@ -37,7 +37,7 @@ export default function Home() {
       },
     },
   };
-
+ 
 
   return (
     <div className="flex flex-col h-screen" style={{backgroundColor:'#F5F5F5'}}>
@@ -51,7 +51,7 @@ export default function Home() {
       <div className="flex flex-col space-x-8 md:flex-row ">
         {/* Espacio izquierdo para SimpleTable */}
         <div className="w-full md:w-1/2">
-        <h3 className="align-middle justify-center"> Últimos 5 pedidos ingresados  </h3>
+        <h3 className="justify-center align-middle"> Últimos 5 pedidos ingresados  </h3>
           <SimpleTable />
         </div>
 

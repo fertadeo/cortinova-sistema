@@ -1,15 +1,21 @@
 "use client"
 import Link from "next/link"
-
-
+import { useRouter } from "next/navigation"
 
 export const SideBar = () => {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // Elimina el token de autenticación del almacenamiento local
+    localStorage.removeItem('token');
+
+    // Redirige al usuario a la página de login
+    router.push('/');
+  }
 
   return (
-
-
     <section className="fixed font-sans antialiased ">
-      <div
+      <section
         id="view"
         className="flex flex-row w-screen h-full "
         x-data="{ sidenav: true }"
@@ -40,7 +46,7 @@ export const SideBar = () => {
               D<span className="text-teal-600">.</span>
             </h1>
             <h1 className="hidden text-sm font-bold text-center md:block md:text-xl">
-              Cortinova<span className=" text-amber-400">.</span>
+              Cortinova<span className="text-amber-400">.</span>
             </h1>
             <div id="profile" className="space-y-3">
               <img
@@ -60,7 +66,7 @@ export const SideBar = () => {
             <div id="menu" className="flex flex-col space-y-2">
               <Link
                 href="/home"
-                className="justify-center px-2 py-2 text-gray-700 align-middle transition duration-150 ease-in-out rounded-md  hover:bg-teal-500 hover:text-white hover:text-base"
+                className="justify-center px-2 py-2 text-gray-700 align-middle transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:text-base"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -107,7 +113,7 @@ export const SideBar = () => {
                 <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }} >Productos / Stock</span>
               </Link>
               <Link
-                href="productos"
+                href="/productos"
                 className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
               >
                 <svg
@@ -116,37 +122,17 @@ export const SideBar = () => {
                   viewBox="0 0 20 20"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
                   <path
-                    fillRule="evenodd"
-                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                    clipRule="evenodd"
+                    d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z"
                   ></path>
                 </svg>
-                <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }} >Precios</span>
+                <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }}> Presupuestos  </span>
               </Link>
-              <a
-                href=""
-                className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
-              >
-                <svg
-                  className="inline-block w-6 h-6 fill-current"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"
-                  ></path>
-                  <path
-                    d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"
-                  ></path>
-                </svg>
-                <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }} >Presupuestos</span>
-              </a>
-              <a
-                href=""
-                className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
+
+              {/* Logout button */}
+              <button
+                onClick={handleLogout}
+                className="px-2 py-2 text-sm font-medium text-red-700 transition duration-150 ease-in-out rounded-md hover:bg-red-500 hover:text-white hover:scale-105"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -156,20 +142,16 @@ export const SideBar = () => {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                    d="M7 2a1 1 0 00-1 1v14a1 1 0 102 0V3a1 1 0 00-1-1zM14.707 10.293a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 010-2h8.586l-1.293-1.293a1 1 0 011.414-1.414l3 3z"
                     clipRule="evenodd"
                   ></path>
                 </svg>
-                <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }}>Pedidos</span>
-              </a>
-
-
-
+                <span className="justify-center align-middle" style={{ fontSize: '1.1rem' }}>Cerrar sesión</span>
+              </button>
             </div>
           </div>
         </div>
-
-      </div>
+      </section>
     </section>
   )
 }

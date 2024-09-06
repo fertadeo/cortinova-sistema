@@ -1,9 +1,10 @@
-
 "use client";
 import '../styles/globals.css';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Image from "next/image";
+import { Spinner } from '@nextui-org/react';
 
 export const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,8 +14,7 @@ export const Login = () => {
   const router = useRouter();
 
   const validateEmail = (email: string) => {
-    const regex =
-      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
 
@@ -35,36 +35,26 @@ export const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       });
 
-      if (!response.ok) {
-        throw new Error("Credenciales incorrectas. Intenta de nuevo.");
-      }
-
-      const data = await response.json();
-      // Suponiendo que recibimos un token de autenticación
-      localStorage.setItem("token", data.token);
-      router.push("/home");
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message || "Ocurrió un error. Intenta de nuevo más tarde.");
+      if (result?.error) {
+        setError("Credenciales incorrectas. Intenta de nuevo.");
       } else {
-        setError("Ocurrió un error desconocido. Intenta de nuevo más tarde.");
+        router.push("/home");
       }
+    } catch (err) {
+      setError("Ocurrió un error. Intenta de nuevo más tarde.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    // Lógica para autenticación con Google
-    router.push("/api/auth/google");
+    signIn("google", { callbackUrl: "/home" });
   };
 
   return (
@@ -137,7 +127,7 @@ export const Login = () => {
               className="w-full px-4 py-3 mt-6 font-semibold text-white transition duration-300 bg-yellow-600 rounded-lg hover:bg-yellow-500"
               disabled={loading}
             >
-              {loading ? "Cargando..." : "Iniciar Sesión"}
+              {loading ? <Spinner color="white" size="sm" /> : "Iniciar Sesión"}
             </button>
           </form>
 
