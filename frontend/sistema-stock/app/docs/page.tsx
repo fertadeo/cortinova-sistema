@@ -1,9 +1,13 @@
-import { title } from "@/components/primitives";
+
+import '../../styles/globals.css';
+import ButtonAuth from "@/components/buttonAuth";
+
+
 
 export default function DocsPage() {
   return (
     <div>
-      <h1 className={title()}>Docs</h1>
+    <ButtonAuth/>
     </div>
   );
 }
