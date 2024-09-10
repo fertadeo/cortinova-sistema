@@ -3,7 +3,5 @@ module.exports = {
     images: {
       domains: ['example.com'],  // Si usas imágenes desde dominios externos
     },
-    experimental: {
-      serverComponentsExternalPackages: ['next-auth'],
-    },
-  };
+
+    }

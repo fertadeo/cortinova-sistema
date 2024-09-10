@@ -1,4 +1,3 @@
-import SessionAuthProvider from '@/context/SessionAuthProvider';
 import ConditionalLayout from '../components/conditionalLayout';
 
 export default function RootLayout({
@@ -10,10 +9,9 @@ export default function RootLayout({
       <html lang="en">
         <body>
         <ConditionalLayout>
-          <SessionAuthProvider>
           <main>{children}</main>
-          </SessionAuthProvider>
         </ConditionalLayout>
+      
           
         </body>
       </html>
