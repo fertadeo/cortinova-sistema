@@ -2,7 +2,6 @@
 import '../styles/globals.css';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { Spinner } from '@nextui-org/react';
 
@@ -35,17 +34,28 @@ export const Login = () => {
     setLoading(true);
 
     try {
-      // Inicia sesión con NextAuth usando el proveedor "credentials"
-      const result = await signIn("credentials", {
-        redirect: false, // No redirigir automáticamente después de iniciar sesión
-        email,
-        password,
+      // Realiza la llamada al backend para validar el email y la contraseña
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (result?.error) {
-        setError("Credenciales incorrectas. Intenta de nuevo.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Credenciales incorrectas. Intenta de nuevo.");
       } else {
-        // Redirigir al usuario a la página de inicio después de iniciar sesión
+
+          // Almacena el token recibido en localStorage
+  localStorage.setItem("token", data.token);
+
+  // Almacena el token en cookies en lugar de localStorage
+document.cookie = `token=${data.token}; path=/;`;
+
+        // Si la autenticación es exitosa, redirige al usuario
         router.push("/home");
       }
     } catch (err) {
@@ -54,7 +64,6 @@ export const Login = () => {
       setLoading(false);
     }
   };
-
 
   return (
     <section className="flex flex-col items-center h-screen font-serif antialiased md:flex-row">
@@ -135,7 +144,6 @@ export const Login = () => {
           <button
             type="button"
             className="flex items-center justify-center w-full px-4 py-3 font-semibold text-gray-900 transition duration-300 bg-white border border-gray-300 rounded-lg hover:bg-gray-100"
-            
           >
             <svg
               className="w-6 h-6 mr-4"
