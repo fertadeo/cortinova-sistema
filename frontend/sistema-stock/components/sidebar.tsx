@@ -6,12 +6,16 @@ export const SideBar = () => {
   const router = useRouter();
 
   const handleLogout = () => {
-    // Elimina el token de autenticación del almacenamiento local
-    localStorage.removeItem('token');
-
-    // Redirige al usuario a la página de login
-    router.push('/');
-  }
+    // Borra el token de localStorage
+    localStorage.removeItem("token");
+  
+    // Borra el token de las cookies
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    
+    // Redirige al usuario al login u otra página
+    router.push("/");
+  };
+  
 
   return (
     <section className="fixed font-sans antialiased ">

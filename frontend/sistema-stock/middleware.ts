@@ -1,13 +1,21 @@
-import { getToken } from "next-auth/jwt";
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
+export default function middleware(request: NextRequest) {
+  // Obtener el token de las cookies
+  const token = request.cookies.get("token");
 
+  // Si no hay token, redirigir al login
+  if (!token) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
-export async function middleware (req: NextRequest) {
-    const session = await getToken({req, secret: process.env.NEXTAUTH_SECRET})
+  console.log("El token en middleware es:", token)
 
-    // console.log(`El token de la session es:`, session)
-
-
-    return NextResponse.next()
+  // Continua al siguiente middleware o al request original
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: ["/home", "/clientes", "/control-stock"],
+};
