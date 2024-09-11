@@ -8,14 +8,14 @@ export const SideBar = () => {
   const handleLogout = () => {
     // Borra el token de localStorage
     localStorage.removeItem("token");
-  
+
     // Borra el token de las cookies
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    
+
     // Redirige al usuario al login u otra página
     router.push("/");
   };
-  
+
 
   return (
     <section className="fixed font-sans antialiased ">
@@ -136,10 +136,10 @@ export const SideBar = () => {
               {/* Logout button */}
               <button
                 onClick={handleLogout}
-                className="px-2 py-2 text-sm font-medium text-red-700 transition duration-150 ease-in-out rounded-md hover:bg-red-500 hover:text-white hover:scale-105"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 transition duration-150 ease-in-out rounded-md hover:bg-red-500 hover:text-white hover:scale-105"
               >
                 <svg
-                  className="inline-block w-6 h-6 fill-current"
+                  className="w-6 h-6 fill-current"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                   xmlns="http://www.w3.org/2000/svg"
@@ -150,8 +150,9 @@ export const SideBar = () => {
                     clipRule="evenodd"
                   ></path>
                 </svg>
-                <span className="justify-center align-middle" style={{ fontSize: '1.1rem' }}>Cerrar sesión</span>
+                <span className="text-lg">Cerrar sesión</span>
               </button>
+
             </div>
           </div>
         </div>
