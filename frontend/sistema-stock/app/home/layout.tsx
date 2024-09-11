@@ -7,7 +7,6 @@ import { Providers } from "../providers";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 
-
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
@@ -32,22 +31,32 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   return (
-      <section
-        className={clsx(
-          " bg-background font-sans antialiased",
-          fontSans.variable,
-        )}
-        style={{backgroundColor:'#F5F5F5'}}
-      >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <div className="relative flex flex-col h-48">
-            <main className="container flex-grow mx-auto max-w-7xl">
+    <section
+      className={clsx("bg-background font-sans antialiased", fontSans.variable)}
+      style={{ backgroundColor: "#F5F5F5" }}
+    >
+      <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+        {/* Estructura flexbox para el layout principal */}
+        <div className="flex h-screen ">
+          {/* Sidebar */}
+          <aside className="hidden h-full lg:flex lg:w-64">
+            {/* Aquí iría el contenido de la barra lateral */}
+            <nav className="mt-10 text-white">
+            
+            </nav>
+          </aside>
+
+          {/* Contenido principal */}
+          <div className="flex flex-col flex-1">
+            <header className="p-4 text-white">
+          
+            </header>
+            <main className="container flex-grow p-4 mx-auto max-w-7xl">
               {children}
             </main>
-            
           </div>
-        </Providers>
-      </section>
-
+        </div>
+      </Providers>
+    </section>
   );
 }

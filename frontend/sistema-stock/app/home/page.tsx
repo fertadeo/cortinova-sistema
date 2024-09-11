@@ -1,14 +1,9 @@
 import { Menucards } from '@/components/menucards';
 import SimpleTable from '@/components/simpleTable';
 import BarChart from '@/components/chart';
-import {PedidosTable} from '@/components/pedidosTable';
-
-
-
+import { PedidosTable } from '@/components/pedidosTable';
 
 export default function Home() {
-
-
   const data = {
     labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio'],
     datasets: [
@@ -37,34 +32,44 @@ export default function Home() {
       },
     },
   };
- 
 
   return (
-    <div className="flex flex-col h-screen" style={{backgroundColor:'#F5F5F5'}}>
-      {/* Menú cards ocupando el 100% */}
-      <div className="w-full h-screen">
-        <h2 style={{fontSize:'1.1rem', marginBottom:'1rem'}}> ¡Bienvenido nuevamente, User! </h2>
+    <div className="relative flex flex-col min-h-full " style={{ backgroundColor: '#F5F5F5' }}>
+      {/* Título responsivo */}
+      <div className="w-full px-4 py-2">
+        <h2 className="mb-6 text-lg font-semibold text-center md:text-xl lg:text-2xl"> 
+          ¡Bienvenido nuevamente, User!
+        </h2>
         <Menucards />
       </div>
 
-      {/* Grid de dos columnas debajo */}
-      <div className="flex flex-col space-x-8 md:flex-row ">
-        {/* Espacio izquierdo para SimpleTable */}
-        <div className="w-full md:w-1/2">
-        <h3 className="justify-center align-middle"> Últimos 5 pedidos ingresados  </h3>
+      {/* Añadimos un margen adicional debajo de Menucards */}
+      <div className="mt-28"></div>
+
+      {/* Grid de dos columnas para tabla y gráficos */}
+      <div className="flex flex-col w-full gap-12 px-4 md:flex-row md:space-x-8">
+        {/* Columna izquierda con SimpleTable */}
+        <div className="w-full p-6 bg-white rounded-lg shadow md:w-1/2">
+          <h3 className="mb-4 text-lg font-medium text-center"> Últimos 5 pedidos ingresados </h3>
           <SimpleTable />
         </div>
 
-        {/* Espacio derecho de Tabla */}
-        <div className="w-full md:w-1/2 ">
-          {/* Contenido del espacio derecho */}     
-          <h3 className='' style={{fontFamily:'revert', fontSize:'1.2rem', marginBottom:'1rem', fontStyle:'bold'}}> Resumen de movimientos </h3>
-      <BarChart data={data} options={options} />
+        {/* Columna derecha con BarChart */}
+        <div className="w-full p-6 bg-white rounded-lg shadow md:w-1/2">
+          <h3 className="mb-4 text-lg font-medium text-center"> Resumen de movimientos </h3>
+          <BarChart data={data} options={options} />
         </div>
       </div>
-      <div className="flex flex-col h-screen">
-        <h2 className='pb-5'> Seguimiento de Presupuestos </h2>
-      <PedidosTable/> 
+
+      {/* Añadimos un margen adicional debajo del grid de dos columnas */}
+      <div className="mt-4"></div>
+
+      {/* Seguimiento de Presupuestos - Columna completa */}
+      <div className="w-full px-4 py-6 mt-6">
+        <h2 className="mb-4 text-lg font-medium text-center"> Seguimiento de Presupuestos </h2>
+        <div className="p-6 bg-white rounded-lg shadow">
+          <PedidosTable />
+        </div>
       </div>
     </div>
   );
