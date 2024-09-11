@@ -37,16 +37,12 @@ export default function HomeLayout({
     >
       <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
         {/* Estructura flexbox para el layout principal */}
-        <div className="flex h-screen">
+        <div className="flex h-screen ">
           {/* Sidebar */}
           <aside className="hidden h-full lg:flex lg:w-64">
             {/* Aquí iría el contenido de la barra lateral */}
             <nav className="mt-10 text-white">
-              <ul>
-                <li className="px-4 py-2">Dashboard</li>
-                <li className="px-4 py-2">Usuarios</li>
-                <li className="px-4 py-2">Configuraciones</li>
-              </ul>
+            
             </nav>
           </aside>
 
