@@ -20,50 +20,48 @@ export const Login = () => {
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     setError(null);
-
+  
     if (!email || !password) {
       setError("Por favor, completa todos los campos.");
       return;
     }
-
+  
     if (!validateEmail(email)) {
       setError("Por favor, ingresa un correo electrónico válido.");
       return;
     }
-
+  
     setLoading(true);
-
-    try {
-      // Realiza la llamada al backend para validar el email y la contraseña
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Credenciales incorrectas. Intenta de nuevo.");
-      } else {
-
-          // Almacena el token recibido en localStorage
-  localStorage.setItem("token", data.token);
-
-  // Almacena el token en cookies en lugar de localStorage
-document.cookie = `token=${data.token}; path=/;`;
-
-        // Si la autenticación es exitosa, redirige al usuario
-        router.push("/home");
+  
+    // Simula una demora de 2 segundos antes de realizar la petición
+    setTimeout(async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+  
+        const data = await response.json();
+  
+        if (!response.ok) {
+          setError(data.message || "Credenciales incorrectas. Intenta de nuevo.");
+        } else {
+          localStorage.setItem("token", data.token);
+          document.cookie = `token=${data.token}; path=/;`;
+  
+          router.push("/home");
+        }
+      } catch (err) {
+        setError("Ocurrió un error. Intenta de nuevo más tarde.");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError("Ocurrió un error. Intenta de nuevo más tarde.");
-    } finally {
-      setLoading(false);
-    }
+    }, 2000); // Simula la demora de 2 segundos
   };
+  
 
   return (
     <section className="flex flex-col items-center h-screen font-serif antialiased md:flex-row">
