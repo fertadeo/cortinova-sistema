@@ -37,14 +37,11 @@ export default function Home() {
     <div className="relative flex flex-col min-h-full " style={{ backgroundColor: '#F5F5F5' }}>
       {/* Título responsivo */}
       <div className="w-full px-4 py-2">
-        <h2 className="mb-6 text-lg font-semibold text-center md:text-xl lg:text-2xl"> 
-          ¡Bienvenido nuevamente, User!
-        </h2>
         <Menucards />
       </div>
 
       {/* Añadimos un margen adicional debajo de Menucards */}
-      <div className="mt-28"></div>
+      <div className="mt-4"></div>
 
       {/* Grid de dos columnas para tabla y gráficos */}
       <div className="flex flex-col w-full gap-12 px-4 md:flex-row md:space-x-8">

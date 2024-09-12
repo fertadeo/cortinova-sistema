@@ -130,25 +130,25 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
       case "telefono":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-sm capitalize">{user.telefono}</p>
+            <p className="text-sm capitalize text-bold">{user.telefono}</p>
           </div>
         );
       case "actions":
         return (
           <div className="relative flex gap-2">
             <Tooltip content="Ver">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => handleOpenModal(user)}>
+              <span className="text-lg cursor-pointer text-default-400 active:opacity-50" onClick={() => handleOpenModal(user)}>
                 <EyeIcon />
               </span>
             </Tooltip>
             <Tooltip content="Editar">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => handleEditarModal(user)}>
+              <span className="text-lg cursor-pointer text-default-400 active:opacity-50" onClick={() => handleEditarModal(user)}>
                 <EditIcon />
                 
               </span>
             </Tooltip>
             <Tooltip color="danger" content="Eliminar">
-              <span className="text-lg text-danger cursor-pointer active:opacity-50" onClick={() => handleOpenDeleteModal(user)}>
+              <span className="text-lg cursor-pointer text-danger active:opacity-50" onClick={() => handleOpenDeleteModal(user)}>
                 <DeleteIcon />
               </span>
             </Tooltip>
@@ -175,8 +175,8 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
   const currentItems = filteredUsers.slice(startIdx, endIdx);
 
   return (
-    <div style={{ height: "80%", width: "80%" }}>
-      <div className="flex justify-between items-center p-4 m-4 h-20 bg-white rounded-lg shadow-medium">
+    <div className="flex flex-col w-full h-full">
+      <div className="flex items-center justify-between h-20 p-4 bg-white rounded-lg shadow-medium">
         <Input
           isClearable
           placeholder="Buscar"
@@ -188,23 +188,36 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
           Agregar Nuevo +
         </Button>
       </div>
-      <Table aria-label="Example table with custom cells">
-        <TableHeader columns={filteredColumns}>
-          {(column) => (
-            <TableColumn key={column.uid} align={column.uid === "actions" ? "start" : "center"}>
-              {column.name}
-            </TableColumn>
-          )}
-        </TableHeader>
-        <TableBody items={currentItems}>
-          {(item) => (
-            <TableRow key={item.id} className="text-left">
-              {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      {editarModal && <EditarComponent cliente={selectedUser} isOpen={true} onClose={handleCloseEditarModal} onSave={handleSave}  />}
+
+      <div className="flex-1 mt-4 overflow-auto">
+        <Table aria-label="Tabla de Clientes" className="w-full">
+          <TableHeader columns={filteredColumns}>
+            {(column) => (
+              <TableColumn key={column.uid} align={column.uid === "actions" ? "start" : "center"}>
+                {column.name}
+              </TableColumn>
+            )}
+          </TableHeader>
+          <TableBody items={currentItems}>
+            {(item) => (
+              <TableRow key={item.id}>
+                {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex justify-center mt-4">
+        <Pagination
+          total={Math.ceil(filteredUsers.length / itemsPerPage)}
+          initialPage={1}
+          page={currentPage}
+          onChange={(page) => setCurrentPage(page)}
+        />
+      </div>
+
+      {editarModal && <EditarComponent cliente={selectedUser} isOpen={true} onClose={handleCloseEditarModal} onSave={handleSave} />}
       {selectedUser && <ModalToTable isOpen={isOpen} onClose={onClose} cliente={selectedUser} />}
       <NuevoClienteModal
         isOpen={isNuevoClienteModalOpen}
@@ -216,16 +229,8 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         onClose={handleCloseDeleteModal}
         onConfirm={handleDeleteUser}
       />
-      <div className="flex justify-center mt-4">
-        <Pagination
-          total={Math.ceil(filteredUsers.length / itemsPerPage)}
-          initialPage={1}
-          page={currentPage}
-          onChange={(page) => setCurrentPage(page)}
-        />
-      </div>
     </div>
   );
 };
-
-export default ClientesTable;
+ 
+export default ClientesTable; 
