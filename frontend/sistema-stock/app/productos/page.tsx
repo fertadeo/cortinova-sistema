@@ -32,11 +32,11 @@ const ProductosPage = () => {
   };
 
   return (
-    <div className='flex-col justify-center w-full h-full align-middle columns-1'>
+    <div className='flex-col justify-center w-full h-full m-2 align-middle columns-1'>
       <TopBar>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div >
               <input
                 type="file"
                 accept=".csv"

@@ -41,17 +41,14 @@ export default function HomeLayout({
           {/* Sidebar */}
           <aside className="hidden h-full lg:flex lg:w-64">
             {/* Aquí iría el contenido de la barra lateral */}
-            <nav className="mt-10 text-white">
-            
-            </nav>
           </aside>
 
           {/* Contenido principal */}
           <div className="flex flex-col flex-1">
-            <header className="p-4 text-white">
+            <header className="text-white ">
           
             </header>
-            <main className="container flex-grow p-4 mx-auto max-w-7xl">
+            <main className="container flex-grow mx-auto max-w-7xl">
               {children}
             </main>
           </div>
