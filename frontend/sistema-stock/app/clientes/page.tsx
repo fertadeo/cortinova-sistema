@@ -1,5 +1,5 @@
 'use client';
-import ClientesTable from "@/components/clientesTable";
+import  ClientesTable from "@/components/clientesTable";
 
 export default function ClientesPage() {
   return (
@@ -7,6 +7,6 @@ export default function ClientesPage() {
       <div style={{ flex: 1 }}>
         <ClientesTable initialUsers={[]} />
       </div>
-    </div>
+    </div> 
   );
 }

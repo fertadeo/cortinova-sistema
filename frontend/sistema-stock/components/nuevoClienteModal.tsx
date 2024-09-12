@@ -112,6 +112,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
       telefono,
       email,
       direccion,
+      dni
     };
 
     try {

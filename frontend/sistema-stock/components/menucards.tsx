@@ -3,117 +3,89 @@
 import Link from "next/link";
 
 export const Menucards = () => {
-
-
   return (
+    <div className="flex flex-col items-center justify-center w-full p-4 ">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+        {/* Card 1 */}
+        <Link href="/clientes">
+          <div
+            className="flex flex-col items-center justify-center w-48 h-24 bg-white rounded-lg shadow-md"
+            style={{
+              backgroundImage: `url('/images/cards/clientes.png')`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {/* Puedes añadir contenido aquí si es necesario */}
+          </div>
+        </Link>
 
-    <div className="grid grid-cols-1 md:grid-cols-5 h-2">
-      {/* <!-- Card 1 --> */}
-      
-      <Link href="/clientes" >
-      <div
-        className="col-span-1 flex flex-col items-center"
-        style={{
-          width: '200px',
-          backgroundImage: `url('/images/cards/clientes.png')`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'contain',
-          display: 'flex',
-          height: '100px', 
-          textAlign: 'center',
-          cursor: 'pointer'
-        }}
-      >
+        {/* Card 2 */}
+        <Link href="/lista-precios">
+          <div
+            className="flex flex-col items-center justify-center w-48 h-24 bg-white rounded-lg shadow-md"
+            style={{
+              backgroundImage: `url('/images/cards/listaprecios.png')`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {/* Puedes añadir contenido aquí si es necesario */}
+          </div>
+        </Link>
 
+        {/* Card 3 */}
+        <Link href="/pedidos">
+          <div
+            className="flex flex-col items-center justify-center w-48 h-24 bg-white rounded-lg shadow-md"
+            style={{
+              backgroundImage: `url('/images/cards/pedidos.png')`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {/* Puedes añadir contenido aquí si es necesario */}
+          </div>
+        </Link>
+
+        {/* Card 4 */}
+        <Link href="/presupuestos">
+          <div
+            className="flex flex-col items-center justify-center w-48 h-24 bg-white rounded-lg shadow-md"
+            style={{
+              backgroundImage: `url('/images/cards/presupuestos.png')`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {/* Puedes añadir contenido aquí si es necesario */}
+          </div>
+        </Link>
+
+        {/* Card 5 */}
+        <Link href="/stock">
+          <div
+            className="flex flex-col items-center justify-center w-48 h-24 bg-white rounded-lg shadow-md"
+            style={{
+              backgroundImage: `url('/images/cards/stock.png')`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {/* Puedes añadir contenido aquí si es necesario */}
+          </div>
+        </Link>
       </div>
-    </Link>
-
-      {/* <!-- Card 3 --> */}
-      <Link href="/lista-precios">
-      <div
-        className="col-span-1 flex flex-col items-center"
-        style={{
-          width: '200px',
-          backgroundImage: `url('/images/cards/listaprecios.png')`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'contain',
-          display: 'flex',
-          height: '100px', 
-          textAlign: 'center',
-          cursor: 'pointer'
-        }}
-      >
-
-      </div>
-    </Link>
- {/* <!-- Card 1 --> */}
- <Link href="/pedidos">
-      <div
-        className="col-span-1 flex flex-col items-center"
-        style={{
-          width: '200px',
-          backgroundImage: `url('/images/cards/pedidos.png')`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'contain',
-          display: 'flex',
-          height: '100px', // Asegúrate de ajustar el tamaño según tus necesidades
-          textAlign: 'center',
-          cursor: 'pointer'
-        }}
-      >
-
-      </div>
-    </Link>
-      {/* <!-- Card 4 --> */}
-      <Link href="/presupuestos">
-      <div
-        className="col-span-1 flex flex-col items-center"
-        style={{
-          width: '200px',
-          backgroundImage: `url('/images/cards/presupuestos.png')`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'contain',
-          display: 'flex',
-          height: '100px', // Asegúrate de ajustar el tamaño según tus necesidades
-          textAlign: 'center',
-          cursor: 'pointer'
-        }}
-      >
-
-      </div>
-    </Link>
-
-      {/* <!-- Card 5 --> */}
-      <Link href="/stock">
-      <div
-        className="col-span-1 flex flex-col items-center"
-        style={{
-          width: '200px',
-          backgroundImage: `url('/images/cards/stock.png')`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'contain',
-          display: 'flex',
-          height: '100px', // Asegúrate de ajustar el tamaño según tus necesidades
-          textAlign: 'center',
-          cursor: 'pointer'
-        }}
-      >
-
-      </div>
-    </Link>
-
-      
     </div>
-
- )
+  );
 };
