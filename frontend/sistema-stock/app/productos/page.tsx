@@ -5,6 +5,7 @@ import TopBar from '@/components/topBar';
 import { Button, Spinner } from '@nextui-org/react';
 import { AiOutlineUpload } from 'react-icons/ai';
 import TableProducts from '@/components/tableProducts';
+import Papa from 'papaparse'; // Importa PapaParse
 
 const ProductosPage = () => {
   const [fileName, setFileName] = useState<string | null>(null);
@@ -17,17 +18,26 @@ const ProductosPage = () => {
     }
   };
 
+  // Función para manejar la lectura del archivo CSV y parsearlo con PapaParse
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files && event.target.files[0];
     if (file) {
       setFileName(file.name); // Establece el nombre del archivo seleccionado
       setLoading(true); // Inicia el spinner de carga
 
-      // Simula el procesamiento del archivo durante 3 segundos
-      setTimeout(() => {
-        setLoading(false); // Detiene el spinner después de 3 segundos
-        console.log('Archivo procesado:', file);
-      }, 3000);
+      // Usamos PapaParse para parsear el archivo CSV
+      Papa.parse(file, {
+        header: true, // Parsear con encabezados (opcional)
+        skipEmptyLines: true, // Omitir líneas vacías
+        complete: (results) => {
+          setLoading(false); // Detiene el spinner cuando se completa la lectura
+          console.log('Datos del CSV en formato JSON:', results.data); // Muestra los datos en la consola
+        },
+        error: (error) => {
+          console.error('Error al procesar el archivo CSV:', error);
+          setLoading(false); // Detiene el spinner en caso de error
+        }
+      });
     }
   };
 

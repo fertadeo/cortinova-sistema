@@ -62,9 +62,9 @@ export default function Home() {
       <div className="mt-4"></div>
 
       {/* Seguimiento de Presupuestos - Columna completa */}
-      <div className="w-full px-4 py-6 mt-6">
+      <div className="w-full p-6 px-4 py-6 mt-6 bg-white rounded-lg shadow">
         <h2 className="mb-4 text-lg font-medium text-center"> Seguimiento de Presupuestos </h2>
-        <div className="p-6 bg-white rounded-lg shadow">
+        <div className="">
           <PedidosTable />
         </div>
       </div>
