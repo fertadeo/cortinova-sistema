@@ -12,11 +12,9 @@ export default function ClientesLayout({
       </aside>
 
       {/* Contenido Principal */}
-      <main className="flex-1 h-full md:w-3/4">
-        <div className="w-full h-full">
-          {children}
-        </div>
-      </main>
+      <main className="container flex-grow mx-auto max-w-7xl">
+              {children}
+            </main>
     </section>
   );
 }
