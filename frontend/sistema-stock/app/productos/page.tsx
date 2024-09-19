@@ -1,43 +1,87 @@
 'use client'
-import React, { useRef, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
 import { Button, Spinner } from '@nextui-org/react';
 import { AiOutlineUpload } from 'react-icons/ai';
-import TableProducts from '@/components/tableProducts';
-import Papa from 'papaparse'; // Importa PapaParse
+import handleFileUpload from '../../components/utils/excelUtil'; // Importa la función desde excelUtil.ts
 
-const ProductosPage = () => {
+const ProductosPage = () => { 
   const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<any>(null);
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.click(); // Simula el clic en el input file
+      fileInputRef.current.click();
     }
   };
 
-  // Función para manejar la lectura del archivo CSV y parsearlo con PapaParse
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const TableProducts = forwardRef((props, ref) => {
+    const [data, setData] = useState([]);
+
+    // Exponer métodos que puedes invocar desde el padre utilizando el ref
+    useImperativeHandle(ref, () => ({
+      updateTable() {
+        console.log("Tabla actualizada");
+        // Lógica para actualizar la tabla aquí
+      }
+    }));
+
+    return (
+      <table>
+        {/* Renderiza la tabla aquí */}
+        <tbody>
+          {/* Ejemplo de datos, puedes modificar */}
+          {data.map((item, index) => (
+            <tr key={index}>
+              <td>{item}</td>
+              <td>{item}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  });
+
+  // Manejamos la subida del archivo
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files && event.target.files[0];
     if (file) {
-      setFileName(file.name); // Establece el nombre del archivo seleccionado
-      setLoading(true); // Inicia el spinner de carga
+      setFileName(file.name);
+      setLoading(true);
+      setStatus('loading');
+      setMessage(null);
 
-      // Usamos PapaParse para parsear el archivo CSV
-      Papa.parse(file, {
-        header: true, // Parsear con encabezados (opcional)
-        skipEmptyLines: true, // Omitir líneas vacías
-        complete: (results) => {
-          setLoading(false); // Detiene el spinner cuando se completa la lectura
-          console.log('Datos del CSV en formato JSON:', results.data); // Muestra los datos en la consola
-        },
-        error: (error) => {
-          console.error('Error al procesar el archivo CSV:', error);
-          setLoading(false); // Detiene el spinner en caso de error
-        }
-      });
+      try {
+        // Llamamos a la función de excelUtil.ts para parsear y enviar el archivo
+        await handleFileUpload(file);
+        setLoading(false);
+        setStatus('success');
+        setMessage('Archivo importado exitosamente!');
+        tableRef.current.updateTable(); // Actualiza la tabla
+      } catch (error) {
+        console.error("Error al procesar el archivo:", error);
+        setLoading(false);
+        setStatus('error');
+        setMessage(null);
+      }
+    }
+  };
+
+  const getButtonColor = () => {
+    switch (status) {
+      case 'success':
+        return 'bg-green-500 hover:bg-green-600';
+      case 'error':
+        return 'bg-red-500 hover:bg-red-600';
+      case 'loading':
+        return 'bg-gray-500';
+      default:
+        return 'bg-blue-500 hover:bg-blue-600';
     }
   };
 
@@ -46,18 +90,18 @@ const ProductosPage = () => {
       <TopBar>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div >
+            <div>
               <input
                 type="file"
                 accept=".csv"
                 ref={fileInputRef}
                 className="hidden"
-                onChange={handleFileUpload}
+                onChange={handleFileChange} // Usamos handleFileChange
               />
               <Button
                 onClick={handleButtonClick}
-                className="flex items-center justify-center gap-2 px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600"
-                disabled={loading} // Desactiva el botón mientras se carga
+                className={`flex items-center justify-center gap-2 px-4 py-2 text-white rounded-md ${getButtonColor()}`}
+                disabled={loading}
               >
                 {loading ? (
                   <>
@@ -77,8 +121,15 @@ const ProductosPage = () => {
           <Button className='m-2 bg-green-700' style={{color:'white'}}>Modificar Precios</Button>
         </div>
       </TopBar>
+
+      {message && (
+        <div className="m-2 mt-4 font-bold text-green-600">
+          {message}
+        </div>
+      )}
+
       <div>
-        <TableProducts />
+        <TableProducts ref={tableRef} />
       </div>
     </div>
   );
