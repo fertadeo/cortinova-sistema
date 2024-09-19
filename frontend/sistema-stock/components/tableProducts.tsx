@@ -1,12 +1,13 @@
 import React from "react";
-import {Table, TableHeader, TableColumn,TableBody,TableRow,TableCell,Input,Button,DropdownTrigger,Dropdown,DropdownMenu,DropdownItem,Chip,Pagination,Selection,ChipProps,SortDescriptor
+import {
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Input, Button, DropdownTrigger, Dropdown, DropdownMenu, DropdownItem,
+  Chip, Pagination, Selection, ChipProps, SortDescriptor
 } from "@nextui-org/react";
-import {PlusIcon} from "./utils/plusIcons";
-import {VerticalDotsIcon} from "./utils/verticalDotsIcon";
-import {ChevronDownIcon} from "./utils/chevronDownIcon";
-import {SearchIcon} from "./utils/searchIcon";
-import {columns, products , statusOptions} from "./utils/data";
-import {capitalize} from "./utils/utils";
+import { ChevronDownIcon } from "./utils/chevronDownIcon";
+import { SearchIcon } from "./utils/searchIcon";
+import { columns, statusOptions } from "./utils/data";
+import { capitalize } from "./utils/utils";
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
   "En Stock": "success",
@@ -16,9 +17,18 @@ const statusColorMap: Record<string, ChipProps["color"]> = {
 
 const INITIAL_VISIBLE_COLUMNS = ["id", "producto", "disponible", "descripcion", "precio", "divisa", "descuento"];
 
-type Product = typeof products[0];
+type Product = {
+  id: number;
+  producto: string;
+  disponible: string;
+  descripcion: string;
+  precio: number;
+  divisa: string;
+  descuento: number;
+};
 
 export default function TableProducts() {
+  const [products, setProducts] = React.useState<Product[]>([]);
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -30,6 +40,22 @@ export default function TableProducts() {
   });
 
   const [page, setPage] = React.useState(1);
+
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL; // Usa la variable de entorno aquí
+        const response = await fetch(`${apiUrl}/productos/importar-productos`);
+        if (!response.ok) throw new Error('Error al obtener productos');
+        const data = await response.json();
+        setProducts(data);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -44,12 +70,13 @@ export default function TableProducts() {
 
     if (hasSearchFilter) {
       filteredProducts = filteredProducts.filter((product) =>
-        product.producto.toLowerCase().includes(filterValue.toLowerCase()),
+        product.producto.toLowerCase().includes(filterValue.toLowerCase())
       );
     }
+
     if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
       filteredProducts = filteredProducts.filter((product) =>
-        Array.from(statusFilter).includes(product.disponible),
+        Array.from(statusFilter).includes(product.disponible)
       );
     }
 
@@ -121,81 +148,79 @@ export default function TableProducts() {
     setPage(1);
   }, []);
 
-  const topContent = React.useMemo(() => {
-    return (
-      <div className="flex flex-col gap-4 p-5 bg-white rounded-md shadow-md">
-        <div className="flex items-end justify-between gap-3">
-          <Input
-            isClearable
-            className="w-full sm:max-w-[44%] shadow-sm"
-            placeholder="Buscar por producto..."
-            startContent={<SearchIcon />}
-            value={filterValue}
-            onClear={onClear}
-            onValueChange={onSearchChange}
-          />
-          <div className="flex gap-3">
-            <Dropdown>
-              <DropdownTrigger className="hidden sm:flex">
-                <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
-                  Estado
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label="Table Columns"
-                closeOnSelect={false}
-                selectedKeys={statusFilter}
-                selectionMode="multiple"
-                onSelectionChange={setStatusFilter}
-              >
-                {statusOptions.map((status) => (
-                  <DropdownItem key={status.uid} className="capitalize">
-                    {capitalize(status.name)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-            <Dropdown>
-              <DropdownTrigger className="hidden sm:flex">
-                <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
-                  Categorias
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label="Table Columns"
-                closeOnSelect={false}
-                selectedKeys={visibleColumns}
-                selectionMode="multiple"
-                onSelectionChange={setVisibleColumns}
-              >
-                {columns.map((column) => (
-                  <DropdownItem key={column.uid} className="capitalize">
-                    {capitalize(column.name)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-default-400 text-small">Total {products.length} productos</span>
-          <label className="flex items-center text-default-400 text-small">
-            Filas por página:
-            <select
-              className="bg-transparent outline-none text-default-400 text-small"
-              onChange={onRowsPerPageChange}
+  const topContent = React.useMemo(() => (
+    <div className="flex flex-col gap-4 p-5 bg-white rounded-md shadow-md">
+      <div className="flex items-end justify-between gap-3">
+        <Input
+          isClearable
+          className="w-full sm:max-w-[44%] shadow-sm"
+          placeholder="Buscar por producto..."
+          startContent={<SearchIcon />}
+          value={filterValue}
+          onClear={onClear}
+          onValueChange={onSearchChange}
+        />
+        <div className="flex gap-3">
+          <Dropdown>
+            <DropdownTrigger className="hidden sm:flex">
+              <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
+                Estado
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              disallowEmptySelection
+              aria-label="Estado de producto"
+              closeOnSelect={false}
+              selectedKeys={statusFilter}
+              selectionMode="multiple"
+              onSelectionChange={setStatusFilter}
             >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
-            </select>
-          </label>
+              {statusOptions.map((status) => (
+                <DropdownItem key={status.uid} className="capitalize">
+                  {capitalize(status.name)}
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+          <Dropdown>
+            <DropdownTrigger className="hidden sm:flex">
+              <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
+                Categorías
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              disallowEmptySelection
+              aria-label="Columnas de tabla"
+              closeOnSelect={false}
+              selectedKeys={visibleColumns}
+              selectionMode="multiple"
+              onSelectionChange={setVisibleColumns}
+            >
+              {columns.map((column) => (
+                <DropdownItem key={column.uid} className="capitalize">
+                  {capitalize(column.name)}
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
         </div>
       </div>
-    );
-  }, [
+      <div className="flex items-center justify-between">
+        <span className="text-default-400 text-small">Total {products.length} productos</span>
+        <label className="flex items-center text-default-400 text-small">
+          Filas por página:
+          <select
+            className="bg-transparent outline-none text-default-400 text-small"
+            onChange={onRowsPerPageChange}
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  ), [
     filterValue,
     statusFilter,
     visibleColumns,
@@ -205,68 +230,48 @@ export default function TableProducts() {
     hasSearchFilter,
   ]);
 
-  const bottomContent = React.useMemo(() => {
-    return (
-      <div className="flex items-center justify-between px-2 py-2">
-        <span className="w-[30%] text-small text-default-400">
-          {selectedKeys === "all"
-            ? "Todos los productos seleccionados"
-            : `${selectedKeys.size} de ${filteredItems.length} seleccionados`}
-        </span>
-        <Pagination
-          isCompact
-          showControls
-          showShadow
-          color="primary"
-          page={page}
-          total={pages}
-          onChange={setPage}
-        />
-        <div className="hidden sm:flex w-[30%] justify-end gap-2">
-          <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onPreviousPage}>
-            Anterior
-          </Button>
-          <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onNextPage}>
-            Siguiente
-          </Button>
-        </div>
-      </div>
-    );
-  }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+  const bottomContent = React.useMemo(() => (
+    <div className="flex items-center justify-between px-2 py-2">
+      <span className="w-[30%] text-small text-default-400">
+        {selectedKeys === "all"
+          ? "Todos los productos seleccionados"
+          : `${selectedKeys.size} de ${filteredItems.length} seleccionados`}
+      </span>
+      <Pagination
+        isCompact
+        showControls
+        showShadow
+        color="primary"
+        page={page}
+        total={pages}
+        onChange={setPage}
+      />
+    </div>
+  ), [page, pages, selectedKeys, filteredItems.length]);
 
   return (
     <Table
-      aria-label="Tabla de productos con celdas personalizadas, paginación y ordenamiento"
-      isHeaderSticky
-      bottomContent={bottomContent}
-      bottomContentPlacement="outside"
-      classNames={{
-        wrapper: "max-h-[382px]",
-      }}
-      selectedKeys={selectedKeys}
+      aria-label="Tabla de productos"
+      style={{ height: "auto", minWidth: "100%" }}
+      selectionMode="multiple"
       onSelectionChange={setSelectedKeys}
-      sortDescriptor={sortDescriptor}
-      onSortChange={setSortDescriptor}
+      isCompact
       topContent={topContent}
-      topContentPlacement="outside"
+      bottomContent={bottomContent}
     >
-      <TableHeader columns={headerColumns}>
-        {(column) => (
-          <TableColumn
-          key={column.uid}
-          align="start"
-          allowsSorting={column.uid === "id" || column.uid === "precio"}
-        >
-          {column.name}
-        </TableColumn>
-        )}
+      <TableHeader>
+        {headerColumns.map((column) => (
+          <TableColumn key={column.uid} allowsSorting>
+            {column.name}
+          </TableColumn>
+        ))}
       </TableHeader>
       <TableBody items={sortedItems}>
         {(item: Product) => (
           <TableRow key={item.id}>
-            {(columnKey) => (
-              <TableCell>{renderCell(item, columnKey)}</TableCell>
-            )}
+            {headerColumns.map((column) => (
+              <TableCell key={column.uid}>{renderCell(item, column.uid)}</TableCell>
+            ))}
           </TableRow>
         )}
       </TableBody>
