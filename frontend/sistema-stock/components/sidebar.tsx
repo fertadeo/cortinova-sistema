@@ -151,7 +151,7 @@ export const SideBar = () => {
               </Link>
 
 
-              
+
               <Link
                 href="/home"
                 className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-slate-500 hover:text-white hover:scale-105"
@@ -168,29 +168,50 @@ export const SideBar = () => {
                 </svg>
                 <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }}> Facturación  </span>
               </Link>
-             
-             
-             
-              <div className="mt-auto">
-              {/* Logout button */}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 transition duration-150 ease-in-out rounded-md hover:bg-red-500 hover:text-white hover:scale-105"
+
+              <Link
+                href="https://api.whatsapp.com/send?phone=5493517552258"
+                className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <svg
-                  className="w-6 h-6 fill-current"
+                  width="23"
+                  height="23"
+                  viewBox="0 0 26 26"
                   fill="currentColor"
-                  viewBox="0 0 20 20"
                   xmlns="http://www.w3.org/2000/svg"
+                  className="inline-block hover:bg-white"
+                  style={{ transition: 'fill 0.3s ease-in-out' }}
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M7 2a1 1 0 00-1 1v14a1 1 0 102 0V3a1 1 0 00-1-1zM14.707 10.293a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 010-2h8.586l-1.293-1.293a1 1 0 011.414-1.414l3 3z"
-                    clipRule="evenodd"
-                  ></path>
+                    d="M22.1058 3.77812C19.6741 1.34062 16.4357 0 12.9942 0C5.89062 0 0.110268 5.78036 0.110268 12.8839C0.110268 15.1531 0.702232 17.3701 1.82812 19.3259L0 26L6.8308 24.2067C8.71116 25.2339 10.8295 25.7737 12.9884 25.7737H12.9942C20.092 25.7737 26 19.9933 26 12.8897C26 9.44821 24.5375 6.21562 22.1058 3.77812ZM12.9942 23.6031C11.0674 23.6031 9.18125 23.0866 7.53884 22.1116L7.15 21.8795L3.09911 22.9415L4.17857 18.9893L3.92321 18.583C2.84955 16.8768 2.28661 14.9094 2.28661 12.8839C2.28661 6.9817 7.09196 2.17634 13 2.17634C15.8612 2.17634 18.5482 3.29062 20.5679 5.31607C22.5875 7.34152 23.8295 10.0286 23.8237 12.8897C23.8237 18.7978 18.8964 23.6031 12.9942 23.6031ZM18.8674 15.5826C18.5482 15.4201 16.9638 14.6424 16.6679 14.5379C16.3719 14.4277 16.1571 14.3754 15.9424 14.7004C15.7277 15.0254 15.1125 15.7451 14.921 15.9656C14.7353 16.1804 14.5437 16.2094 14.2246 16.0469C12.3326 15.1009 11.0906 14.358 9.84286 12.2165C9.51205 11.6478 10.1737 11.6884 10.7888 10.458C10.8933 10.2433 10.8411 10.0576 10.7598 9.89509C10.6786 9.73259 10.0344 8.14821 9.76741 7.50402C9.50625 6.87723 9.23929 6.96429 9.04196 6.95268C8.85625 6.94107 8.64152 6.94107 8.42679 6.94107C8.21205 6.94107 7.86384 7.02232 7.56786 7.34152C7.27187 7.66652 6.44196 8.4442 6.44196 10.0286C6.44196 11.6129 7.59688 13.1451 7.75357 13.3598C7.91607 13.5746 10.0228 16.8246 13.2554 18.2232C15.2982 19.1054 16.0991 19.1808 17.1205 19.0299C17.7415 18.9371 19.0241 18.2522 19.2911 17.4978C19.558 16.7433 19.558 16.0991 19.4768 15.9656C19.4013 15.8205 19.1866 15.7393 18.8674 15.5826Z"
+                    fill="#25D366"
+                    style={{ transition: 'fill 0.3s ease-in-out' }}
+                  />
                 </svg>
-                <span className="text-lg">Cerrar sesión</span>
-              </button>
+                <span className="pl-2 text-lg">Contactar a Soporte</span>
+              </Link>
+
+
+
+              <div className="mt-auto">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 transition duration-150 ease-in-out rounded-md hover:bg-red-500 hover:text-white hover:scale-105"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 9V5C10 3.89543 10.8954 3 12 3H16C17.1046 3 18 3.89543 18 5V19C18 20.1046 17.1046 21 16 21H12C10.8954 21 10 20.1046 10 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M15 12H3M3 12L6 9M3 12L6 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+
+                  <span className="text-lg">Cerrar sesión</span>
+                </button>
               </div>
             </div>
           </div>
