@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
 
 interface NotificationProps {
@@ -11,29 +11,73 @@ interface NotificationProps {
 }
 
 const Notification: React.FC<NotificationProps> = ({ message, description, isVisible, onClose, type }) => {
+  const [progress, setProgress] = useState(100); // Estado para controlar el progreso de la barra
+  const [isTransitioning, setIsTransitioning] = useState(false); // Estado para controlar la transición
+  const notificationDuration = 4000; // Duración en milisegundos de la notificación
+  const timerRef = useRef<number | null>(null); // Usamos una referencia para almacenar el temporizador
+
+  // Función para iniciar el progreso de la barra
+  const startProgress = () => {
+    setProgress(100); // Reiniciamos la barra a 100%
+    setIsTransitioning(true); // Activamos la transición después de mostrar la barra
+
+    let start = Date.now();
+    timerRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - start;
+      const newProgress = 100 - (elapsed / notificationDuration) * 100;
+      setProgress(newProgress > 0 ? newProgress : 0);
+
+      if (newProgress <= 0) {
+        clearInterval(timerRef.current!);
+        onClose();
+      }
+    }, 16); // Actualizamos cada ~16ms (aproximadamente 60fps)
+  };
+
+  // Efecto para manejar el ciclo de vida de la notificación
   useEffect(() => {
     if (isVisible) {
-      const timer = setTimeout(onClose, 4000); // Oculta la notificación después de 4 segundos
-      return () => clearTimeout(timer);
+      startProgress(); // Iniciar la barra cuando se muestra la notificación
     }
-  }, [isVisible, onClose]);
+
+    // Limpiar el temporizador cuando la notificación se cierre
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      setProgress(100); // Reiniciamos el progreso cuando la notificación se cierra
+      setIsTransitioning(false); // Desactivamos la transición
+    };
+  }, [isVisible]);
+
+  // Estilo dinámico para el borde inferior según el tipo de notificación
+  const progressBarStyle = {
+    width: `${progress}%`,
+    transition: isTransitioning ? 'width 0.1s linear' : 'none', // La transición solo se aplica cuando isTransitioning es true
+    height: '4px',
+    backgroundColor: type === 'success' ? 'green' : 'red',
+  };
 
   // Definimos el ícono y el color según el tipo de notificación
   const icon = type === 'success' ? (
-    <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" />
-    </svg>
+    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-400">
+      <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" />
+      </svg>
+    </div>
   ) : (
-    <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-    </svg>
+    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-400">
+      <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </div>
   );
 
   const notificationElement = (
     <div
       aria-live="assertive"
       className="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:items-start sm:p-6"
-      style={{ zIndex: 9999 }} // Agregamos un z-index alto
+      style={{ zIndex: 9999 }} // Agregamos un z-index alto para que se muestre sobre todo
     >
       <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
         {isVisible && (
@@ -41,7 +85,7 @@ const Notification: React.FC<NotificationProps> = ({ message, description, isVis
             <div className="p-4">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  {icon} {/* Mostramos el ícono dinámico según el tipo */}
+                  {icon} {/* Mostramos el ícono dinámico dentro del círculo */}
                 </div>
                 <div className="ml-3 w-0 flex-1 pt-0.5">
                   <p className="text-sm font-medium text-gray-900">{message}</p>
@@ -61,13 +105,15 @@ const Notification: React.FC<NotificationProps> = ({ message, description, isVis
                 </div>
               </div>
             </div>
+
+            {/* Barra de progreso */}
+            <div style={progressBarStyle}></div>
           </div>
         )}
       </div>
     </div>
   );
 
-  // Usamos ReactDOM.createPortal para renderizar la notificación en un lugar diferente del DOM
   return ReactDOM.createPortal(notificationElement, document.body);
 };
 
