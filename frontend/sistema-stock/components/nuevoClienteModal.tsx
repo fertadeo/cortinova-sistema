@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 import {
   Modal,
   ModalContent,
@@ -23,12 +23,15 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
   onClose,
   onClienteAgregado,
 }) => {
-  const [dni, setDni] = useState("")
+  const [dni, setDni] = useState("");
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [direccion, setDireccion] = useState("");
   const [email, setEmail] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState(""); // Mensaje dinámico de la notificación
+  const [notificationDescription, setNotificationDescription] = useState(""); // Descripción dinámica de la notificación
   const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success'); // Tipo de notificación
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState({
     dni: false,
@@ -75,12 +78,13 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
           email: value.trim() === "",
         }));
         break;
-        case "dni":
-          setDni(value); 
-          setFormErrors((prevErrors) => ({
-            ...prevErrors,
-            dni: value.trim() === "",
-          }))
+      case "dni":
+        setDni(value);
+        setFormErrors((prevErrors) => ({
+          ...prevErrors,
+          dni: value.trim() === "",
+        }));
+        break;
       default:
         break;
     }
@@ -112,7 +116,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
       telefono,
       email,
       direccion,
-      dni
+      dni,
     };
 
     try {
@@ -127,30 +131,51 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error("Error al guardar el nuevo cliente");
+        const errorData = await response.json();
+
+        // Manejar el caso de duplicación de cliente por DNI
+        if (errorData.message === "El cliente con este DNI ya existe") {
+          setNotificationMessage("Error: Cliente duplicado");
+          setNotificationDescription("No se puede registrar un cliente con un DNI ya registrado.");
+          setNotificationType("error"); // Establece la notificación como error
+        } else {
+          setNotificationMessage("Error al guardar el cliente");
+          setNotificationDescription("Ocurrió un problema al intentar guardar el cliente.");
+          setNotificationType("error"); // Error genérico
+        }
+
+        setNotificationVisible(true);
+        setIsSaving(false);
+        return; // Detener la ejecución aquí si hay un error
       }
 
       // Llama al callback para recargar los clientes
       onClienteAgregado();
 
-      // Muestra la notificación
+      // Muestra la notificación de éxito
+      setNotificationMessage("¡Cliente guardado exitosamente!");
+      setNotificationDescription("El cliente ha sido agregado correctamente.");
+      setNotificationType("success"); // Notificación de éxito
       setNotificationVisible(true);
 
       // Cierra el modal después de 3 segundos
       setTimeout(() => {
-        //Actualiza los campos a strings vacios
+        // Actualiza los campos a strings vacíos
         setDni("");
         setNombre("");
         setTelefono("");
         setEmail("");
         setDireccion("");
 
-
         setIsSaving(false); // Ocultar spinner después de 3 segundos
         onClose();
       }, 3000);
     } catch (error) {
       console.error("Error al guardar el nuevo cliente:", error);
+      setNotificationMessage("Error inesperado");
+      setNotificationDescription("Ocurrió un error inesperado al intentar guardar el cliente.");
+      setNotificationType("error"); // Error inesperado
+      setNotificationVisible(true);
       setIsSaving(false); // En caso de error, ocultar spinner
     }
   };
@@ -163,6 +188,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
             <ModalHeader className="flex flex-col gap-1">
               Nuevo Cliente
             </ModalHeader>
+
             <ModalBody>
               <Input
                 fullWidth
@@ -173,7 +199,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
                 onChange={(e) => handleInputChange(e, "nombre")}
                 color={formErrors.nombre ? "danger" : "default"}
               />
-                 <Input
+              <Input
                 fullWidth
                 label="DNI (el campo es obligatorio)"
                 placeholder="Ingrese el DNI del cliente"
@@ -227,11 +253,13 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
         </ModalContent>
       </Modal>
 
+      {/* Aquí renderizamos el componente Notification fuera del modal */}
       <Notification
-        message="¡Cliente guardado exitosamente!"
-        description="El cliente ha sido agregado correctamente."
+        message={notificationMessage}
+        description={notificationDescription}
         isVisible={notificationVisible}
         onClose={() => setNotificationVisible(false)}
+        type={notificationType}
       />
     </>
   );
