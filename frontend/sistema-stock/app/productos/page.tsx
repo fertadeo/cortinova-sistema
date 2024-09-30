@@ -7,6 +7,7 @@ import { AiOutlineUpload } from 'react-icons/ai';
 import handleFileUpload from '../../components/utils/excelUtil'; // Importa la función desde excelUtil.ts
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
 import OneProductModal from '@/components/oneProductModal';
+import PricesModal from '@/components/pricesModal';
 
 
 
@@ -20,6 +21,7 @@ const ProductosPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<any>(null);
   const [showProdModal, setShowProdModal] = useState(false)
+  const [showPricesModal, setShowPricesModal] = useState(false)
 
 
 
@@ -27,6 +29,9 @@ const ProductosPage = () => {
   const handleOpenModal = () => setShowProdModal(true);
   const handleCloseModal = () => setShowProdModal(false);
 
+  const handleOpenPricesModal = () => setShowPricesModal(true);
+  const handleClosePricesModal = () => setShowPricesModal(false);
+  
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -112,7 +117,9 @@ const ProductosPage = () => {
             </div>
           <Button onPress={handleOpenModal}> Agregar Producto + </Button>
           <OneProductModal isOpen={showProdModal} onClose={handleCloseModal}/>
-          <Button className='m-2 bg-green-700' style={{ color: 'white' }}>Modificar Precios</Button>
+          <Button onPress={handleOpenPricesModal} className='m-2 bg-green-700' style={{ color: 'white' }}>Modificar Precios</Button>
+          <PricesModal isOpen={showPricesModal} onClose={handleClosePricesModal} />
+         
           </div>
         </div>
       </TopBar>
