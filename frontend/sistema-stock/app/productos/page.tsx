@@ -6,15 +6,27 @@ import { Button, Spinner } from '@nextui-org/react';
 import { AiOutlineUpload } from 'react-icons/ai';
 import handleFileUpload from '../../components/utils/excelUtil'; // Importa la función desde excelUtil.ts
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
+import OneProductModal from '@/components/oneProductModal';
+
+
+
 
 const ProductosPage = () => {
   const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
-  const [showSpinner, setShowSpinner] = useState(false); // Nueva variable para controlar el spinner
+  const [showSpinner, setShowSpinner] = useState(false); 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<any>(null);
+  const [showProdModal, setShowProdModal] = useState(false)
+
+
+
+
+  const handleOpenModal = () => setShowProdModal(true);
+  const handleCloseModal = () => setShowProdModal(false);
+
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -66,6 +78,7 @@ const ProductosPage = () => {
     }
   };
 
+
   return (
     <div className='flex-col justify-center w-full h-full m-2 align-middle columns-1'>
       <TopBar>
@@ -97,9 +110,10 @@ const ProductosPage = () => {
                 )}
               </Button>
             </div>
-            <Button className='m-2 bg-secondary-100'> Agregar producto + </Button>
-          </div>
+          <Button onPress={handleOpenModal}> Agregar Producto + </Button>
+          <OneProductModal isOpen={showProdModal} onClose={handleCloseModal}/>
           <Button className='m-2 bg-green-700' style={{ color: 'white' }}>Modificar Precios</Button>
+          </div>
         </div>
       </TopBar>
 
