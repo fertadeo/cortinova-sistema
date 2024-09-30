@@ -96,7 +96,6 @@ const TableProducts = forwardRef((props, ref) => {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         style={{ marginBottom: "20px" }}
-        className="bg-white"
       />
 
       <Table aria-label="Tabla de productos">
