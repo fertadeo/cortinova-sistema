@@ -1,51 +1,38 @@
-'use client'
+'use client';
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
 import { Button, Spinner } from '@nextui-org/react';
 import { AiOutlineUpload } from 'react-icons/ai';
 import handleFileUpload from '../../components/utils/excelUtil'; // Importa la función desde excelUtil.ts
+import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
+import OneProductModal from '@/components/oneProductModal';
 
-const ProductosPage = () => { 
+
+
+
+const ProductosPage = () => {
   const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
+  const [showSpinner, setShowSpinner] = useState(false); 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<any>(null);
+  const [showProdModal, setShowProdModal] = useState(false)
+
+
+
+
+  const handleOpenModal = () => setShowProdModal(true);
+  const handleCloseModal = () => setShowProdModal(false);
+
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-
-  const TableProducts = forwardRef((props, ref) => {
-    const [data, setData] = useState([]);
-
-    // Exponer métodos que puedes invocar desde el padre utilizando el ref
-    useImperativeHandle(ref, () => ({
-      updateTable() {
-        console.log("Tabla actualizada");
-        // Lógica para actualizar la tabla aquí
-      }
-    }));
-
-    return (
-      <table>
-        {/* Renderiza la tabla aquí */}
-        <tbody>
-          {/* Ejemplo de datos, puedes modificar */}
-          {data.map((item, index) => (
-            <tr key={index}>
-              <td>{item}</td>
-              <td>{item}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  });
 
   // Manejamos la subida del archivo
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +49,13 @@ const ProductosPage = () => {
         setLoading(false);
         setStatus('success');
         setMessage('Archivo importado exitosamente!');
-        tableRef.current.updateTable(); // Actualiza la tabla
+        setShowSpinner(true); // Mostrar el spinner
+
+        // Después de 3 segundos, ocultar el spinner y actualizar la tabla
+        setTimeout(() => {
+          setShowSpinner(false);
+          tableRef.current.updateTable(); // Actualiza la tabla
+        }, 3000);
       } catch (error) {
         console.error("Error al procesar el archivo:", error);
         setLoading(false);
@@ -84,6 +77,7 @@ const ProductosPage = () => {
         return 'bg-blue-500 hover:bg-blue-600';
     }
   };
+
 
   return (
     <div className='flex-col justify-center w-full h-full m-2 align-middle columns-1'>
@@ -116,9 +110,10 @@ const ProductosPage = () => {
                 )}
               </Button>
             </div>
-            <Button className='m-2 bg-secondary-100'> Agregar producto + </Button>
+          <Button onPress={handleOpenModal}> Agregar Producto + </Button>
+          <OneProductModal isOpen={showProdModal} onClose={handleCloseModal}/>
+          <Button className='m-2 bg-green-700' style={{ color: 'white' }}>Modificar Precios</Button>
           </div>
-          <Button className='m-2 bg-green-700' style={{color:'white'}}>Modificar Precios</Button>
         </div>
       </TopBar>
 
@@ -129,7 +124,13 @@ const ProductosPage = () => {
       )}
 
       <div>
-        <TableProducts ref={tableRef} />
+        {showSpinner ? (
+          <div className="flex items-center justify-center">
+            <Spinner size="lg" color="primary" />
+          </div>
+        ) : (
+          <TableProducts ref={tableRef} /> // Aquí es donde la tabla se renderiza o actualiza
+        )}
       </div>
     </div>
   );
