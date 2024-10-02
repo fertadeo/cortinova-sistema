@@ -64,7 +64,7 @@ export const SideBar = () => {
                 >
                   Eduard Pantazi
                 </h2>
-                <p className="text-xs text-center text-gray-500">Administrator</p>
+                <p className="text-xs text-center text-gray-500">Administrador/Empleado</p>
               </div>
             </div>
             <div id="menu" className="flex flex-col space-y-2">
