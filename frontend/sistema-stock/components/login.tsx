@@ -77,10 +77,10 @@ export const Login = () => {
 
       <div className="relative flex flex-col items-center justify-center w-full h-screen px-6 bg-white md:max-w-md lg:max-w-full md:w-1/2 xl:w-1/3 lg:px-16 xl:px-12">
         
-        {/* Contenedor del logo */}
-        <div className="absolute transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 top-40 left-1/2">
+    
+        <div className="absolute transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 left-1/2 top-[16%]">
           <Image
-            src="/images/logo.jpg"
+            src="/images/logo-removebg-preview.png"
             alt="Logo"
             layout="fill"
             objectFit="contain"
@@ -88,7 +88,7 @@ export const Login = () => {
           />
         </div>
 
-        <div className="w-full mt-16"> {/* Ajustamos el margen superior para dejar espacio al logo */}
+        <div className="w-full mt-16"> 
           <h1 className="mt-12 text-2xl font-bold leading-tight text-center">
             Inicia sesión en tu cuenta
           </h1>
