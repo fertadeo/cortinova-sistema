@@ -126,16 +126,24 @@ const PricesModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex flex-col gap-2 mt-4">
                     {filteredProducts.map((product) => (
                       <div
-                        key={product.id}
-                        className="p-2 border-b cursor-pointer hover:bg-gray-100"
-                        onClick={() => {
+                      key={product.id}
+                      role="button"
+                      tabIndex={0}
+                      className="p-2 border-b cursor-pointer hover:bg-gray-100"
+                      onClick={() => {
+                        setSelectedProduct(product);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
                           setSelectedProduct(product);
-                        }}
-                      >
-                        <p>{product.name}</p>
-                        <p>ID: {product.id}</p>
-                        <p>Precio: ${product.price.toFixed(2)}</p>
-                      </div>
+                        }
+                      }}
+                    >
+                      <p>{product.name}</p>
+                      <p>ID: {product.id}</p>
+                      <p>Precio: ${product.price.toFixed(2)}</p>
+                    </div>
+                    
                     ))}
                   </div>
                 )}

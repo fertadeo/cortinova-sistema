@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Spinner } from '@nextui-org/react';
+import Link from 'next/link';
 
 export const Login = () => {
   const [email, setEmail] = useState("");
@@ -132,12 +133,12 @@ export const Login = () => {
             </div>
 
             <div className="mt-2 text-right">
-              <a
+              <Link
                 href="#"
                 className="text-sm font-semibold text-gray-700 hover:text-yellow-600"
               >
                 ¿Olvidaste tu contraseña?
-              </a>
+              </Link>
             </div>
 
             <button
@@ -174,12 +175,12 @@ export const Login = () => {
 
           <p className="mt-8 text-center">
             ¿Necesitas una cuenta?{" "}
-            <a
+            <Link
               href="#"
               className="font-semibold text-yellow-600 hover:text-yellow-500"
             >
               Regístrate
-            </a>
+            </Link>
           </p>
         </div>
       </div>

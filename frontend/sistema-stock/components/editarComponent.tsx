@@ -16,7 +16,7 @@ const ModalEditar: React.FC<ModalEditarProps> = ({ cliente, isOpen, onClose, onS
   const [email, setEmail] = useState(cliente?.email || "");
   const [direccion, setDireccion] = useState(cliente?.direccion || "");
 
-console.log(cliente)
+// console.log(cliente)
 
   useEffect(() => {
     if (cliente) {
@@ -41,7 +41,7 @@ console.log(cliente)
         onSave();
         onClose();
       } catch (error) {
-        console.error('Error al actualizar el cliente:', error);
+        // console.error('Error al actualizar el cliente:', error);
       }
     }
   };

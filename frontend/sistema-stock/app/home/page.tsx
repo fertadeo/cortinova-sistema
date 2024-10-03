@@ -41,7 +41,7 @@ export default function Home() {
       </div>
 
       {/* Añadimos un margen adicional debajo de Menucards */}
-      <div className="mt-4"></div>
+      <div className="mt-4" />
 
       {/* Grid de dos columnas para tabla y gráficos */}
       <div className="flex flex-col w-full gap-12 px-4 md:flex-row md:space-x-8">
@@ -59,7 +59,7 @@ export default function Home() {
       </div>
 
       {/* Añadimos un margen adicional debajo del grid de dos columnas */}
-      <div className="mt-4"></div>
+      <div className="mt-4" />
 
       {/* Seguimiento de Presupuestos - Columna completa */}
       <div className="w-full p-6 px-4 py-6 mt-6 bg-white rounded-lg shadow">

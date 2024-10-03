@@ -1,5 +1,4 @@
 import ConditionalLayout from '../components/conditionalLayout';
-import { lightLayout } from '@nextui-org/react';
 export default function RootLayout({
     children,
   }: {

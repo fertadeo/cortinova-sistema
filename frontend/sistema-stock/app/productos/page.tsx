@@ -1,5 +1,5 @@
 'use client';
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
 import { Button, Spinner } from '@nextui-org/react';
@@ -17,7 +17,7 @@ const ProductosPage = () => {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
-  const [showSpinner, setShowSpinner] = useState(false); 
+  const [showSpinner, setShowSpinner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<any>(null);
   const [showProdModal, setShowProdModal] = useState(false)
@@ -31,7 +31,7 @@ const ProductosPage = () => {
 
   const handleOpenPricesModal = () => setShowPricesModal(true);
   const handleClosePricesModal = () => setShowPricesModal(false);
-  
+
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -42,6 +42,7 @@ const ProductosPage = () => {
   // Manejamos la subida del archivo
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files && event.target.files[0];
+    
     if (file) {
       setFileName(file.name);
       setLoading(true);
@@ -62,7 +63,7 @@ const ProductosPage = () => {
           tableRef.current.updateTable(); // Actualiza la tabla
         }, 3000);
       } catch (error) {
-        console.error("Error al procesar el archivo:", error);
+        // console.error("Error al procesar el archivo:", error);
         setLoading(false);
         setStatus('error');
         setMessage(null);
@@ -91,20 +92,24 @@ const ProductosPage = () => {
           <div className="flex items-center gap-4">
             <div>
               <input
-                type="file"
-                accept=".csv"
                 ref={fileInputRef}
+                accept=".csv"
                 className="hidden"
-                onChange={handleFileChange} // Usamos handleFileChange
+                type="file"
+                onChange={handleFileChange}
               />
+
               <Button
-                onClick={handleButtonClick}
                 className={`flex items-center justify-center gap-2 px-4 py-2 text-white rounded-md ${getButtonColor()}`}
                 disabled={loading}
+                onClick={handleButtonClick}
               >
                 {loading ? (
                   <>
-                    <Spinner size="sm" color='white' />
+                    <Spinner
+                      color='white'
+                      size="sm"
+                    />
                     Procesando...
                   </>
                 ) : (
@@ -115,11 +120,20 @@ const ProductosPage = () => {
                 )}
               </Button>
             </div>
-          <Button onPress={handleOpenModal}> Agregar Producto + </Button>
-          <OneProductModal isOpen={showProdModal} onClose={handleCloseModal}/>
-          <Button onPress={handleOpenPricesModal} className='m-2 bg-green-700' style={{ color: 'white' }}>Modificar Precios</Button>
-          <PricesModal isOpen={showPricesModal} onClose={handleClosePricesModal} />
-         
+            <Button onPress={handleOpenModal}> Agregar Producto + </Button>
+            <OneProductModal
+              isOpen={showProdModal}
+              onClose={handleCloseModal}
+            />
+            <Button
+              className='m-2 bg-green-700'
+              style={{ color: 'white' }}
+              onPress={handleOpenPricesModal}
+            >
+              Modificar Precios
+            </Button>
+            <PricesModal isOpen={showPricesModal} onClose={handleClosePricesModal} />
+
           </div>
         </div>
       </TopBar>
@@ -133,7 +147,10 @@ const ProductosPage = () => {
       <div>
         {showSpinner ? (
           <div className="flex items-center justify-center">
-            <Spinner size="lg" color="primary" />
+            <Spinner
+              color="primary"
+              size="lg"
+            />
           </div>
         ) : (
           <TableProducts ref={tableRef} /> // Aquí es donde la tabla se renderiza o actualiza

@@ -36,15 +36,15 @@ export default function HomeLayout({
       <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
         <div className="flex h-screen ">
           {/* Sidebar */}
-          <aside className="hidden h-full lg:flex lg:w-[18%]">
-            {/* Aquí iría el contenido de la barra lateral */}
-          </aside>
+          <aside className="hidden h-full lg:flex lg:w-[18%]" />
+         
+         
 
           {/* Contenido principal */}
           <div className="flex flex-col flex-1 w-[100%]">
-            <header className="text-white ">
+            <header className="text-white " />
           
-            </header>
+      
             <main className="container flex-grow mx-auto ">
               {children}
             </main>

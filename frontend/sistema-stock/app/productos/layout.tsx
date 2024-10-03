@@ -6,9 +6,9 @@ export default function ProductLayout({
   return (
     <div className="flex flex-col md:flex-row">
     {/* Sidebar */}
-    <aside className="w-[70%] md:w-1/5">
+    <aside className="w-[70%] md:w-1/5"/>
    
-    </aside>
+  
 
     {/* Contenido principal */}
     <main className="w-[98%] h-[100%] mx-auto">

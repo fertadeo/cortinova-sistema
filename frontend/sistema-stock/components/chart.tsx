@@ -1,24 +1,28 @@
-// components/BarChart.js
 'use client'
-import React, { useEffect, useRef } from 'react';
-import { Chart } from 'chart.js/auto';
+import { Chart, ChartData, ChartOptions } from 'chart.js/auto';
+import { useEffect, useRef } from 'react';
 
-const BarChart = ({ data, options }) => {
-  const chartRef = useRef(null);
+interface BarChartProps {
+  data: ChartData;
+  options: ChartOptions;
+}
+
+const BarChart = ({ data, options }: BarChartProps) => {
+  const chartRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const ctx = chartRef.current.getContext('2d');
+    if (chartRef.current) {
+      const myChart = new Chart(chartRef.current, {
+        type: 'bar',
+        data: data,
+        options: options
+      });
 
-    const chartInstance = new Chart(ctx, {
-      type: 'bar',
-      data: data,
-      options: options,
-    });
-
-    // Cleanup function to destroy chart instance when component unmounts
-    return () => {
-      chartInstance.destroy();
-    };
+      // Cleanup to avoid memory leaks
+      return () => {
+        myChart.destroy();
+      };
+    }
   }, [data, options]);
 
   return <canvas ref={chartRef}></canvas>;
