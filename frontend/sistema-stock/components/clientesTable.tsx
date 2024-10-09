@@ -78,7 +78,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
     if (!userToDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/api/clientes/${userToDelete.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${userToDelete.id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
