@@ -95,7 +95,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
   const fetchClientes = async () => {
     try {
 
-      const response = await fetch("http://localhost:8080/api/clientes");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/clientes`);
       if (!response.ok) {
         throw new Error("Error al obtener los clientes");
       }
