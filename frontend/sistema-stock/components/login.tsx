@@ -134,7 +134,7 @@ export const Login = () => {
 
             <div className="mt-2 text-right">
               <Link
-                href="#"
+                href="/recuperar-password"
                 className="text-sm font-semibold text-gray-700 hover:text-yellow-600"
               >
                 ¿Olvidaste tu contraseña?
