@@ -1,4 +1,7 @@
-import React, { forwardRef, useImperativeHandle, useState, useEffect } from "react";
+// src/components/TableProducts.tsx
+"use client";
+
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -9,72 +12,122 @@ import {
   Input,
   Pagination,
 } from "@nextui-org/react";
+import { FaEye } from "react-icons/fa";
+import ProductModal from "./productModal";
 
-const columns = [
-  { name: "ID/SKU", uid: "id", sortable: true },
-  { name: "Producto", uid: "nombreProducto", sortable: true },
-  { name: "Disponible", uid: "cantidad_stock", sortable: true },
-  { name: "Descripción", uid: "descripcion" },
-  { name: "Precio", uid: "precio", sortable: true },
-  { name: "Divisa", uid: "divisa" },
-  { name: "Descuento", uid: "descuento", sortable: true },
-];
-
-// const statusOptions = [
-//   { name: "Active", uid: "active" },
-//   { name: "Paused", uid: "paused" },
-//   { name: "Vacation", uid: "vacation" },
-// ];
-
+// **Definición del tipo Product**
 type Product = {
   id: number;
   nombreProducto: string;
   descripcion: string;
-  precio: number;
-  divisa: string;
-  cantidad_stock: number;
+  proveedor: string;
+  cantidadDisponible: number;
+  /*divisa: string;*/
+  precioCosto: number;
+  precioLista: number;
   descuento: number;
+  precioPublico: number;
+  habilitado: boolean;
 };
 
-const TableProducts = forwardRef((props, ref) => {
+// **Simulación de datos de productos**
+const productsData: Product[] = [
+  {
+    id: 1,
+    nombreProducto: "Producto A",
+    descripcion: "Descripción del Producto A",
+    proveedor: "Proveedor X",
+    cantidadDisponible: 10,
+    /*divisa: 'ARS',*/
+    precioCosto: 50.0,
+    precioLista: 120.0,
+    descuento: 0,
+    precioPublico: 120.0,
+    habilitado: true,
+  },
+  {
+    id: 2,
+    nombreProducto: "Producto B",
+    descripcion: "Descripción del Producto B",
+    proveedor: "Proveedor Y",
+    cantidadDisponible: 3,
+    /*divisa: 'ARS',*/
+    precioCosto: 75.0,
+    precioLista: 150.0,
+    descuento: 5,
+    precioPublico: 142.5,
+    habilitado: true,
+  },
+  {
+    id: 3,
+    nombreProducto: "Producto C",
+    descripcion: "Descripción del Producto C",
+    proveedor: "Proveedor Z",
+    cantidadDisponible: 0,
+    /*divisa: 'ARS',*/
+    precioCosto: 100.0,
+    precioLista: 200.0,
+    descuento: 10,
+    precioPublico: 180.0,
+    habilitado: false, // Deshabilitado automáticamente por cantidad 0
+  },
+  // Puedes agregar más productos simulados aquí
+];
+
+// **Definición de las columnas de la tabla**
+const columns = [
+  { name: "ID/SKU", uid: "id" },
+  { name: "Producto", uid: "nombreProducto" },
+  { name: "Descripción", uid: "descripcion" },
+  { name: "Cantidad Disponible", uid: "cantidadDisponible" },
+  /*{ name: "Divisa", uid: "ARS" },*/
+  { name: "Precio de Lista", uid: "precioLista" },
+  { name: "Descuento", uid: "descuento" },
+  { name: "Precio al Público", uid: "precioPublico" },
+  { name: "Acciones", uid: "acciones" },
+];
+
+// **Estilo para resaltar Precio al Público**
+const precioPublicoStyle = {
+  fontWeight: "bold",
+  color: "#0070f3", // Azul para resaltar
+};
+
+// **Declaración del componente TableProducts**
+const TableProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchTerm, setSearchTerm] = useState(""); // Estado para búsqueda
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]); // Productos filtrados
-  const [currentPage, setCurrentPage] = useState(1); // Paginación
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const itemsPerPage = 10;
 
-  useImperativeHandle(ref, () => ({
-    updateTable: async () => {
-      console.log("Tabla actualizada");
-      await fetchProducts();
-    },
-  }));
-
-  const fetchProducts = async () => {
-
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/productos/importar-productos`);
-      
-      if (!response.ok) throw new Error("Error al obtener productos");
-      const data = await response.json();
-      setProducts(data);
-      setFilteredProducts(data); // Inicialmente, sin filtros
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
+  // **Simulación de obtención de productos**
+  const fetchProducts = () => {
+    // Simulamos una llamada a la API con un retraso
+    setTimeout(() => {
+      // Actualizamos el estado de habilitado según la cantidad disponible
+      const updatedProducts = productsData.map((product) => ({
+        ...product,
+        habilitado:
+          product.cantidadDisponible === 0 ? false : product.habilitado,
+      }));
+      setProducts(updatedProducts);
+      setFilteredProducts(updatedProducts);
+    }, 500);
   };
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  // Actualiza los productos filtrados cuando cambia la búsqueda
   useEffect(() => {
-
     if (searchTerm) {
       const filtered = products.filter((product) =>
-        product.nombreProducto.toLowerCase().includes(searchTerm.toLowerCase())
+        product.nombreProducto
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       );
       setFilteredProducts(filtered);
     } else {
@@ -82,16 +135,67 @@ const TableProducts = forwardRef((props, ref) => {
     }
   }, [searchTerm, products]);
 
-  // Paginación
-  const handlePageChange = (page: React.SetStateAction<number>) => {
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  const getCantidadStyle = (cantidad: number) => {
+    if (cantidad > 5) return { color: "green" };
+    if (cantidad >= 1 && cantidad <= 5) return { color: "orange" };
+    return { color: "red" };
+  };
+
+  const getRowStyle = (product: Product) => {
+    return product.habilitado
+      ? {}
+      : { backgroundColor: "#f0f0f0", color: "#a0a0a0", opacity: 0.6 }; // Color gris claro y opacidad
+  };
+
+  const handleViewProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveProduct = (updatedProduct: Product) => {
+    // Simulamos la actualización del producto en el frontend
+    const updatedProducts = products.map((product) =>
+      product.id === updatedProduct.id ? updatedProduct : product
+    );
+    setProducts(updatedProducts);
+    setFilteredProducts(updatedProducts);
+    setIsModalOpen(false);
+  };
+
+  const handleDeleteProduct = (productId: number) => {
+    // Simulamos la eliminación del producto
+    const updatedProducts = products.filter(
+      (product) => product.id !== productId
+    );
+    setProducts(updatedProducts);
+    setFilteredProducts(updatedProducts);
+    setIsModalOpen(false);
+  };
+
+  const handleToggleProduct = (productId: number) => {
+    // Simulamos el cambio de estado habilitado/deshabilitado
+    const updatedProducts = products.map((product) =>
+      product.id === productId
+        ? { ...product, habilitado: !product.habilitado }
+        : product
+    );
+    setProducts(updatedProducts);
+    setFilteredProducts(updatedProducts);
+  };
 
   return (
     <>
+      {/* Input de búsqueda */}
       <Input
         isClearable
         placeholder="Buscar producto"
@@ -100,6 +204,7 @@ const TableProducts = forwardRef((props, ref) => {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
+      {/* Tabla de productos */}
       <Table aria-label="Tabla de productos">
         <TableHeader>
           {columns.map((column) => (
@@ -108,20 +213,30 @@ const TableProducts = forwardRef((props, ref) => {
         </TableHeader>
         <TableBody>
           {paginatedProducts.map((product) => (
-            <TableRow key={product.id}>
+            <TableRow key={product.id} style={getRowStyle(product)}>
               <TableCell>{product.id}</TableCell>
               <TableCell>{product.nombreProducto}</TableCell>
-              <TableCell>{product.cantidad_stock}</TableCell>
               <TableCell>{product.descripcion}</TableCell>
-              <TableCell>{product.precio}</TableCell>
-              <TableCell>{product.divisa}</TableCell>
-              <TableCell>{product.descuento}</TableCell>
+              <TableCell style={getCantidadStyle(product.cantidadDisponible)}>
+                {product.cantidadDisponible}
+              </TableCell>
+              <TableCell>{product.precioLista}</TableCell>
+              <TableCell>{product.descuento}%</TableCell>
+              <TableCell style={precioPublicoStyle}>
+                {product.precioPublico}
+              </TableCell>
+              <TableCell>
+                <FaEye
+                  style={{ cursor: "pointer" }}
+                  onClick={() => handleViewProduct(product)}
+                />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-
+      {/* Paginación */}
       <Pagination
         initialPage={1}
         onChange={handlePageChange}
@@ -130,11 +245,17 @@ const TableProducts = forwardRef((props, ref) => {
         total={Math.ceil(filteredProducts.length / itemsPerPage)}
       />
 
+      {/* Modal para ver/editar producto */}
+      <ProductModal
+        product={selectedProduct}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveProduct}
+        onDelete={handleDeleteProduct}
+        onToggle={handleToggleProduct}
+      />
     </>
   );
-});
-
-TableProducts.displayName = "TableProducts";
-
+};
 
 export default TableProducts;
