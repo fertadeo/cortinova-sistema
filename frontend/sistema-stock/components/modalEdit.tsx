@@ -36,7 +36,7 @@ const ModalEdit: React.FC<ModalEditProps> = ({ cliente, onUpdateCliente, isOpen,
   const handleSave = async () => {
     if (cliente) {
       try {
-        const response = await fetch(`http://localhost:8080/api/clientes/${cliente.id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${cliente.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nombre, telefono, email, direccion }),
@@ -48,13 +48,13 @@ const ModalEdit: React.FC<ModalEditProps> = ({ cliente, onUpdateCliente, isOpen,
         onUpdateCliente();
         onClose();
       } catch (error) {
-        console.error('Error al actualizar el cliente:', error);
+         console.error('Error al actualizar el cliente:', error);
       }
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-lg z-50 absolute">
+    <Modal isOpen={isOpen} onClose={onClose} className="absolute z-50 max-w-lg">
       <ModalHeader> <p>Edita el Cliente</p></ModalHeader>
       <ModalBody>
         <Input

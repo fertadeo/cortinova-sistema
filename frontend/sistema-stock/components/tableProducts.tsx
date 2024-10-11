@@ -8,7 +8,6 @@ import {
   TableCell,
   Input,
   Pagination,
-  Dropdown
 } from "@nextui-org/react";
 
 const columns = [
@@ -21,11 +20,11 @@ const columns = [
   { name: "Descuento", uid: "descuento", sortable: true },
 ];
 
-const statusOptions = [
-  { name: "Active", uid: "active" },
-  { name: "Paused", uid: "paused" },
-  { name: "Vacation", uid: "vacation" },
-];
+// const statusOptions = [
+//   { name: "Active", uid: "active" },
+//   { name: "Paused", uid: "paused" },
+//   { name: "Vacation", uid: "vacation" },
+// ];
 
 type Product = {
   id: number;
@@ -52,9 +51,11 @@ const TableProducts = forwardRef((props, ref) => {
   }));
 
   const fetchProducts = async () => {
+
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/productos/importar-productos`);
+      
       if (!response.ok) throw new Error("Error al obtener productos");
       const data = await response.json();
       setProducts(data);
@@ -70,6 +71,7 @@ const TableProducts = forwardRef((props, ref) => {
 
   // Actualiza los productos filtrados cuando cambia la búsqueda
   useEffect(() => {
+
     if (searchTerm) {
       const filtered = products.filter((product) =>
         product.nombreProducto.toLowerCase().includes(searchTerm.toLowerCase())
@@ -94,8 +96,8 @@ const TableProducts = forwardRef((props, ref) => {
         isClearable
         placeholder="Buscar producto"
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
         style={{ marginBottom: "20px" }}
+        onChange={(e) => setSearchTerm(e.target.value)}
       />
 
       <Table aria-label="Tabla de productos">
@@ -119,16 +121,20 @@ const TableProducts = forwardRef((props, ref) => {
         </TableBody>
       </Table>
 
-      {/* Paginación */}
+
       <Pagination
-        total={Math.ceil(filteredProducts.length / itemsPerPage)}
         initialPage={1}
-        page={currentPage}
         onChange={handlePageChange}
+        page={currentPage}
         style={{ marginTop: "20px", justifyContent: "center" }}
+        total={Math.ceil(filteredProducts.length / itemsPerPage)}
       />
+
     </>
   );
 });
+
+TableProducts.displayName = "TableProducts";
+
 
 export default TableProducts;

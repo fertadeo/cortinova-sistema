@@ -1,12 +1,11 @@
 import ConditionalLayout from '../components/conditionalLayout';
-
 export default function RootLayout({
     children,
   }: {
     children: React.ReactNode
   }) {
     return (
-      <html lang="en">
+      <html lang="es">
         <body>
         <ConditionalLayout>
           <main>{children}</main>

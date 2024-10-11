@@ -100,7 +100,7 @@ export default function App() {
       case "name":
         return (
           <User
-            avatarProps={{radius: "full", size: "sm", src: user.avatar}}
+            
             classNames={{
               description: "text-default-500",
             }}

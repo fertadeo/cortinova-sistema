@@ -1,4 +1,6 @@
-// pages/api/users.ts
+
+/* eslint-disable */
+
 import { NextApiRequest, NextApiResponse } from 'next';
 import connection from '../../components/utils/db';
 import { Users} from '../../types/users'; // Ajusta la ruta según sea necesario

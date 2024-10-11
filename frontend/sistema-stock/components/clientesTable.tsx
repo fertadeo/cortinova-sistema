@@ -8,7 +8,7 @@ import { columns } from "@/components/utils/dataclientes";
 import { EyeIcon } from "@/components/utils/eyeIcon";
 import { EditIcon } from "@/components/utils/editIcon";
 import { DeleteIcon } from "@/components/utils/deleteIcon";
-import  EditarComponent from  "@/components/editarComponent"
+import EditarComponent from "@/components/editarComponent"
 
 type User = {
   id: number;
@@ -38,12 +38,12 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
   const handleEditarModal = (user: User) => {
     setEditarModal(true);
     setSelectedUser(user);
-    console.log('User seleccionado', user)
+    // console.log('User seleccionado', user)
   };
 
   const handleSave = async () => {
- 
-    await fetchClientes(); 
+
+    await fetchClientes();
   };
 
   const handleCloseEditarModal = () => {
@@ -76,31 +76,34 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
-    
+
     try {
-      const response = await fetch(`http://localhost:8080/api/clientes/${userToDelete.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${userToDelete.id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
+
         throw new Error('Error al eliminar el cliente');
       }
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userToDelete.id));
       handleCloseDeleteModal(); // Cierra el modal después de eliminar
     } catch (error) {
-      console.error('Error al eliminar el cliente:', error);
+      // console.error('Error al eliminar el cliente:', error);
     }
   };
 
   const fetchClientes = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/clientes");
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes`);
       if (!response.ok) {
         throw new Error("Error al obtener los clientes");
       }
+
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      console.error("Error al obtener los clientes:", error);
+      // console.error("Error al obtener los clientes:", error);
     }
   };
 
@@ -111,21 +114,31 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
 
 
   const renderCell = useCallback((user: User, columnKey: React.Key) => {
-    const cellValue = user[columnKey as keyof User];
+
 
     switch (columnKey) {
       case "name":
         return (
-          <span className="cursor-pointer" onClick={() => handleOpenModal(user)}>
-            <User
-            avatarProps={{radius: "lg"}}
+          <span
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer"
+          onClick={() => handleOpenModal(user)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleOpenModal(user);
+            }
+          }}
+        >
+          <User
+            avatarProps={{ radius: "lg" }}
             description={user.email}
             name={user.nombre}
           >
             {user.email}
           </User>
-
-          </span>
+        </span>
+        
         );
       case "telefono":
         return (
@@ -137,21 +150,53 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         return (
           <div className="relative flex gap-2">
             <Tooltip content="Ver">
-              <span className="text-lg cursor-pointer text-default-400 active:opacity-50" onClick={() => handleOpenModal(user)}>
+              <span
+                role="button"
+                tabIndex={0}
+                className="text-lg cursor-pointer text-default-400 active:opacity-50"
+                onClick={() => handleOpenModal(user)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleOpenModal(user);
+                  }
+                }}
+              >
                 <EyeIcon />
               </span>
             </Tooltip>
+
             <Tooltip content="Editar">
-              <span className="text-lg cursor-pointer text-default-400 active:opacity-50" onClick={() => handleEditarModal(user)}>
+              <span
+                role="button"
+                tabIndex={0}
+                className="text-lg cursor-pointer text-default-400 active:opacity-50"
+                onClick={() => handleEditarModal(user)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleEditarModal(user);
+                  }
+                }}
+              >
                 <EditIcon />
-                
               </span>
             </Tooltip>
+
             <Tooltip color="danger" content="Eliminar">
-              <span className="text-lg cursor-pointer text-danger active:opacity-50" onClick={() => handleOpenDeleteModal(user)}>
+              <span
+                role="button"
+                tabIndex={0}
+                className="text-lg cursor-pointer text-danger active:opacity-50"
+                onClick={() => handleOpenDeleteModal(user)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleOpenDeleteModal(user);
+                  }
+                }}
+              >
                 <DeleteIcon />
               </span>
             </Tooltip>
+
           </div>
         );
       default:
@@ -232,5 +277,5 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
     </div>
   );
 };
- 
+
 export default ClientesTable; 

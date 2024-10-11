@@ -1,6 +1,7 @@
 "use client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 export const SideBar = () => {
   const router = useRouter();
@@ -20,9 +21,8 @@ export const SideBar = () => {
   return (
     <section className="fixed font-sans antialiased ">
       <section
+        className="flex flex-row w-screen h-full"
         id="view"
-        className="flex flex-row w-screen h-full "
-        x-data="{ sidenav: true }"
       >
         <button
           className="absolute top-0 left-0 p-2 text-gray-500 bg-white border-2 border-gray-200 rounded-md shadow-lg focus:bg-teal-500 focus:outline-none focus:text-white sm:hidden"
@@ -41,9 +41,8 @@ export const SideBar = () => {
           </svg>
         </button>
         <div
+          className="h-screen px-3 overflow-x-hidden transition-transform duration-300 ease-in-out bg-white shadow-xl md:block w-30 md:w-60 lg:w-60"
           id="sidebar"
-          className="h-screen px-3 overflow-x-hidden transition-transform duration-300 ease-in-out bg-white shadow-xl md:block w-30 md:w-60 lg:w-60 "
-          x-show="sidenav"
         >
           <div className="mt-10 space-y-6 md:space-y-10">
             <h1 className="text-4xl font-bold text-center md:hidden">
@@ -53,11 +52,13 @@ export const SideBar = () => {
               Cortinova<span className="text-amber-400">.</span>
             </h1>
             <div id="profile" className="space-y-3">
-              <img
+              {/* <Image
                 src="https://images.unsplash.com/photo-1628157588553-5eeea00af15c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=880&q=80"
                 alt="Avatar user"
                 className="w-10 mx-auto rounded-full md:w-16"
-              />
+                width={150} // Añade las dimensiones
+                height={150} // Añade las dimensiones
+              /> */}
               <div>
                 <h2
                   className="text-xs font-medium text-center text-teal-500 md:text-sm"
@@ -206,8 +207,8 @@ export const SideBar = () => {
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 9V5C10 3.89543 10.8954 3 12 3H16C17.1046 3 18 3.89543 18 5V19C18 20.1046 17.1046 21 16 21H12C10.8954 21 10 20.1046 10 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M15 12H3M3 12L6 9M3 12L6 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M10 9V5C10 3.89543 10.8954 3 12 3H16C17.1046 3 18 3.89543 18 5V19C18 20.1046 17.1046 21 16 21H12C10.8954 21 10 20.1046 10 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M15 12H3M3 12L6 9M3 12L6 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
 
                   <span className="text-lg">Cerrar sesión</span>

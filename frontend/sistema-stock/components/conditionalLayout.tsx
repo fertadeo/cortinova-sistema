@@ -2,24 +2,26 @@
 "use client"
 import React, { PropsWithChildren } from 'react';
 import { usePathname } from 'next/navigation';
-import {SideBar} from './sidebar';
+import { SideBar } from './sidebar';
 
 const ConditionalLayout: React.FC<PropsWithChildren<{}>> = ({ children }) => {
   const pathname = usePathname();
-  const isLoginPage = pathname === '/'; // Ajusta esta condición si tu ruta de login es diferente
+
+  // Ajusta estas condiciones si tus rutas de login o recuperar contraseña son diferentes
+  const isLoginPage = pathname === '/'; // Página de login
+  const isRecoverPasswordPage = pathname === '/recuperar-password'; // Página de recuperar contraseña
 
   return (
     <>
-      {isLoginPage ? (
+      {isLoginPage || isRecoverPasswordPage ? ( // Si es login o recuperar contraseña, no muestra el sidebar
         <>{children}</>
       ) : (
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-        <SideBar />
-        <main className='' style={{ flexGrow: 1, overflow: 'auto', padding: '20px' }}>
+          <SideBar />
+          <main style={{ flexGrow: 1, overflow: 'auto', padding: '20px' }}>
             {children}
           </main>
         </div>
-
       )}
     </>
   );

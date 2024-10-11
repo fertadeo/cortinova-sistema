@@ -1,4 +1,43 @@
 
+export const users = [
+  {
+    id: 1,
+    name: 'John Doe',
+    status: 'Active',
+    email: 'john.doe@example.com',
+    team: 'Engineering',
+  },
+  {
+    id: 2,
+    name: 'Jane Smith',
+    status: 'Inactive',
+    email: 'jane.smith@example.com',
+    team: 'Marketing',
+  },
+  {
+    id: 3,
+    name: 'Michael Johnson',
+    status: 'Active',
+    email: 'michael.johnson@example.com',
+    team: 'Sales',
+  },
+  {
+    id: 4,
+    name: 'Emily Davis',
+    status: 'Pending',
+    email: 'emily.davis@example.com',
+    team: 'Product',
+  },
+  {
+    id: 5,
+    name: 'Robert Brown',
+    status: 'Active',
+    email: 'robert.brown@example.com',
+    team: 'Support',
+  },
+];
+
+
 const columns = [
   { name: "ID/SKU", uid: "id", sortable: true },
   { name: "Producto", uid: "producto", sortable: true },
@@ -130,4 +169,4 @@ const products = [
   },
 ];
 
-export { columns, products, statusOptions };
+export { columns, products, statusOptions, users };
