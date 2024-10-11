@@ -21,19 +21,19 @@ export const Login = () => {
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     setError(null);
-  
+
     if (!email || !password) {
       setError("Por favor, completa todos los campos.");
       return;
     }
-  
+
     if (!validateEmail(email)) {
       setError("Por favor, ingresa un correo electrónico válido.");
       return;
     }
-  
+
     setLoading(true);
-  
+
     // Simula una demora de 2 segundos antes de realizar la petición
     setTimeout(async () => {
       try {
@@ -44,15 +44,15 @@ export const Login = () => {
           },
           body: JSON.stringify({ email, password }),
         });
-  
+
         const data = await response.json();
-  
+
         if (!response.ok) {
           setError(data.message || "Credenciales incorrectas. Intenta de nuevo.");
         } else {
           localStorage.setItem("token", data.token);
           document.cookie = `token=${data.token}; path=/;`;
-  
+
           router.push("/home");
         }
       } catch (err) {
@@ -62,7 +62,7 @@ export const Login = () => {
       }
     }, 2000); // Simula la demora de 2 segundos
   };
-  
+
 
   return (
     <section className="flex flex-col items-center h-screen font-serif antialiased md:flex-row">
@@ -77,8 +77,8 @@ export const Login = () => {
       </div>
 
       <div className="relative flex flex-col items-center justify-center w-full h-screen px-6 bg-white md:max-w-md lg:max-w-full md:w-1/2 xl:w-1/3 lg:px-16 xl:px-12">
-        
-    
+
+
         <div className="absolute transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 left-1/2 top-[16%]">
           <Image
             src="/images/logo-removebg-preview.png"
@@ -89,7 +89,7 @@ export const Login = () => {
           />
         </div>
 
-        <div className="w-full mt-16"> 
+        <div className="w-full mt-16">
           <h1 className="mt-12 text-2xl font-bold leading-tight text-center">
             Inicia sesión en tu cuenta
           </h1>
@@ -134,7 +134,7 @@ export const Login = () => {
 
             <div className="mt-2 text-right">
               <Link
-                href="#"
+                href="/recuperar-password"
                 className="text-sm font-semibold text-gray-700 hover:text-yellow-600"
               >
                 ¿Olvidaste tu contraseña?
@@ -153,8 +153,9 @@ export const Login = () => {
           <hr className="w-full my-6 border-gray-300" />
 
           <button
+            disabled={true} // Deshabilitado
             type="button"
-            className="flex items-center justify-center w-full px-4 py-3 font-semibold text-gray-900 transition duration-300 bg-white border border-gray-300 rounded-lg hover:bg-gray-100"
+            className="flex items-center justify-center w-full px-4 py-3 font-semibold text-gray-500 transition duration-300 bg-gray-200 border border-gray-300 rounded-lg cursor-not-allowed"
           >
             <svg
               className="w-6 h-6 mr-4"
@@ -162,16 +163,19 @@ export const Login = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
+              {/* Aplicamos color gris a los paths del logo */}
               <path
                 d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"
-                fill="#FFC107"
+                fill="#D1D5DB" // Color gris para el primer path
               />
-              <path d="M0 11l17 13 7-6.1L48 14V0H0z" fill="#FF3D00" />
-              <path d="M0 37l30-23 7.9 1L48 0v48H0z" fill="#4CAF50" />
-              <path d="M48 48L17 24l-4-3 35-10z" fill="#1976D2" />
+              <path d="M0 11l17 13 7-6.1L48 14V0H0z" fill="#9CA3AF" />
+              <path d="M0 37l30-23 7.9 1L48 0v48H0z" fill="#6B7280" />
+              <path d="M48 48L17 24l-4-3 35-10z" fill="#4B5563" />
             </svg>
             Iniciar sesión con Google
           </button>
+
+
 
           <p className="mt-8 text-center">
             ¿Necesitas una cuenta?{" "}
