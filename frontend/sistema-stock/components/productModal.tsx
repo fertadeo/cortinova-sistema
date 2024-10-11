@@ -9,23 +9,20 @@ import {
   ModalBody,
   ModalFooter,
   Button,
-  Input,
 } from "@nextui-org/react";
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
 
-
 type Product = {
   id: number;
   nombreProducto: string;
-  proveedor: string;
   descripcion: string;
-  precioCosto: number;
-  precioPublico: number;
-  precioLista: number;
-  /*divisa: string;*/
+  proveedor: string;
   cantidadDisponible: number;
+  precioCosto: number;
+  precioLista: number;
   descuento: number;
+  precioPublico: number;
   habilitado: boolean;
 };
 
@@ -52,114 +49,151 @@ const ProductModal: React.FC<ProductModalProps> = ({
     setEditedProduct(product);
   }, [product]);
 
+  // **Cálculo Automático del Precio al Público**
+  useEffect(() => {
+    if (editedProduct) {
+      const precioPublicoCalculado =
+        editedProduct.precioLista -
+        (editedProduct.precioLista * editedProduct.descuento) / 100;
+      setEditedProduct({
+        ...editedProduct,
+        precioPublico: Number(precioPublicoCalculado.toFixed(2)), // Redondeamos a 2 decimales
+      });
+    }
+  }, [editedProduct?.precioLista, editedProduct?.descuento]);
+
   const handleSaveChanges = () => {
     if (editedProduct) {
+      // Simulación de envío de datos al backend
+      console.log("Guardar Cambios:", JSON.stringify(editedProduct, null, 2));
       onSave(editedProduct);
     }
   };
 
-  useEffect(() => {
+  const handleDelete = () => {
     if (editedProduct) {
-      const precioPublicoCalculado =
-        editedProduct.precioLista - (editedProduct.precioLista * editedProduct.descuento) / 100;
-      setEditedProduct({
-        ...editedProduct,
-        precioPublico: precioPublicoCalculado,
-      });
+      // Simulación de eliminación al backend
+      console.log("Eliminar Producto ID:", editedProduct.id);
+      onDelete(editedProduct.id);
     }
-  }, [editedProduct?.precioLista, editedProduct?.descuento]);
+  };
+
+  const handleToggle = () => {
+    if (editedProduct) {
+      // Simulación de habilitar/deshabilitar al backend
+      console.log(
+        `Toggle Habilitado para ID: ${editedProduct.id}, Nuevo Estado: ${
+          !editedProduct.habilitado
+        }`
+      );
+      onToggle(editedProduct.id);
+    }
+  };
 
   return (
     <Modal isOpen={isOpen} onOpenChange={onClose}>
       <ModalContent>
         <ModalHeader>
-          <h2>{editedProduct ? editedProduct.nombreProducto : "Producto"}</h2>
+          <h2>
+            {editedProduct ? editedProduct.nombreProducto : "Detalles del Producto"}
+          </h2>
         </ModalHeader>
         <ModalBody>
-        {editedProduct && (
+          {editedProduct && (
             <div>
-            {/* ID/SKU (no editable) */}
-            <EditableField
+              {/* ID/SKU (no editable) */}
+              <EditableField
                 label="ID/SKU"
                 value={editedProduct.id}
                 onChange={() => {}}
                 isEditable={false}
-            />
+              />
 
-            {/* Campos editables */}
-            <EditableField
+              {/* Campos editables */}
+              <EditableField
                 label="Producto"
                 value={editedProduct.nombreProducto}
                 onChange={(value) =>
-                setEditedProduct({ ...editedProduct, nombreProducto: value.toString() })
+                  setEditedProduct({
+                    ...editedProduct,
+                    nombreProducto: value.toString(),
+                  })
                 }
-            />
-            <EditableField
+              />
+              <EditableField
                 label="Descripción"
                 value={editedProduct.descripcion}
                 onChange={(value) =>
-                setEditedProduct({ ...editedProduct, descripcion: value.toString() })
+                  setEditedProduct({
+                    ...editedProduct,
+                    descripcion: value.toString(),
+                  })
                 }
-            />
-            <EditableField
+              />
+              <EditableField
                 label="Proveedor"
                 value={editedProduct.proveedor}
                 onChange={(value) =>
-                setEditedProduct({ ...editedProduct, proveedor: value.toString() })
+                  setEditedProduct({
+                    ...editedProduct,
+                    proveedor: value.toString(),
+                  })
                 }
-            />
-            <EditableField
+              />
+              <EditableField
                 label="Cantidad Disponible"
                 value={editedProduct.cantidadDisponible}
                 onChange={(value) =>
-                setEditedProduct({
+                  setEditedProduct({
                     ...editedProduct,
                     cantidadDisponible: Number(value),
-                })
+                  })
                 }
-            />
-            <EditableField
+                type="number"
+              />
+              <EditableField
                 label="Precio de Costo"
                 value={editedProduct.precioCosto}
                 onChange={(value) =>
-                setEditedProduct({
+                  setEditedProduct({
                     ...editedProduct,
                     precioCosto: Number(value),
-                })
+                  })
                 }
-            />
-            <EditableField
+                type="number"
+              />
+              <EditableField
                 label="Precio de Lista"
                 value={editedProduct.precioLista}
                 onChange={(value) =>
-                setEditedProduct({
+                  setEditedProduct({
                     ...editedProduct,
                     precioLista: Number(value),
-                })
+                  })
                 }
-            />
-            <EditableField
+                type="number"
+              />
+              <EditableField
                 label="Descuento (%)"
                 value={editedProduct.descuento}
                 onChange={(value) =>
-                setEditedProduct({
+                  setEditedProduct({
                     ...editedProduct,
                     descuento: Number(value),
-                })
+                  })
                 }
-            />
-            <EditableField
+                type="number"
+              />
+              <EditableField
                 label="Precio al Público"
                 value={editedProduct.precioPublico}
-                onChange={(value) =>
-                setEditedProduct({
-                    ...editedProduct,
-                    precioPublico: Number(value),
-                })
-                }
-            />
+                onChange={() => {
+                  /* Precio al público calculado automáticamente */
+                }}
+                isEditable={false}
+              />
             </div>
-        )}
+          )}
         </ModalBody>
         <ModalFooter>
           <Button variant="flat" color="danger" onClick={onClose}>
@@ -170,8 +204,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
           </Button>
           <Button
             variant="flat"
-            color="warning"
-            onClick={() => onToggle(editedProduct!.id)}
+            color={editedProduct?.habilitado ? "warning" : "success"}
+            onClick={handleToggle}
           >
             {editedProduct?.habilitado ? "Deshabilitar" : "Habilitar"}
             {editedProduct?.habilitado ? (
@@ -184,7 +218,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <Button
               variant="flat"
               color="danger"
-              onClick={() => onDelete(editedProduct!.id)}
+              onClick={handleDelete}
             >
               <FaTrash style={{ marginRight: "5px" }} />
               Eliminar

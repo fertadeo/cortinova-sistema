@@ -10,7 +10,7 @@ type EditableFieldProps = {
   value: string | number;
   onChange: (value: string | number) => void;
   isEditable?: boolean;
-  type?: string; // Añadimos un prop para especificar el tipo de input
+  type?: string; // Para especificar el tipo de input
 };
 
 const EditableField: React.FC<EditableFieldProps> = ({
@@ -18,7 +18,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
   value,
   onChange,
   isEditable = true,
-  type = "text", // Por defecto, el tipo es texto
+  type = "text", // Por defecto, tipo texto
 }) => {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -31,10 +31,10 @@ const EditableField: React.FC<EditableFieldProps> = ({
     <div style={{ position: "relative", marginBottom: "15px" }}>
       <Input
         label={label}
-        value={String(value)} // Convertimos el valor a string
+        value={String(value)} // Convertimos a string para evitar errores de tipo
         readOnly={!isEditing}
         onChange={handleInputChange}
-        type={type} // Especificamos el tipo de input
+        type={type} // Tipo de input
       />
       {isEditable && (
         <FaEdit

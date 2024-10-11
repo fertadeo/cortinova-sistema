@@ -22,7 +22,6 @@ type Product = {
   descripcion: string;
   proveedor: string;
   cantidadDisponible: number;
-  /*divisa: string;*/
   precioCosto: number;
   precioLista: number;
   descuento: number;
@@ -38,7 +37,6 @@ const productsData: Product[] = [
     descripcion: "Descripción del Producto A",
     proveedor: "Proveedor X",
     cantidadDisponible: 10,
-    /*divisa: 'ARS',*/
     precioCosto: 50.0,
     precioLista: 120.0,
     descuento: 0,
@@ -51,7 +49,6 @@ const productsData: Product[] = [
     descripcion: "Descripción del Producto B",
     proveedor: "Proveedor Y",
     cantidadDisponible: 3,
-    /*divisa: 'ARS',*/
     precioCosto: 75.0,
     precioLista: 150.0,
     descuento: 5,
@@ -64,7 +61,6 @@ const productsData: Product[] = [
     descripcion: "Descripción del Producto C",
     proveedor: "Proveedor Z",
     cantidadDisponible: 0,
-    /*divisa: 'ARS',*/
     precioCosto: 100.0,
     precioLista: 200.0,
     descuento: 10,
@@ -80,7 +76,6 @@ const columns = [
   { name: "Producto", uid: "nombreProducto" },
   { name: "Descripción", uid: "descripcion" },
   { name: "Cantidad Disponible", uid: "cantidadDisponible" },
-  /*{ name: "Divisa", uid: "ARS" },*/
   { name: "Precio de Lista", uid: "precioLista" },
   { name: "Descuento", uid: "descuento" },
   { name: "Precio al Público", uid: "precioPublico" },
@@ -169,16 +164,27 @@ const TableProducts = () => {
     );
     setProducts(updatedProducts);
     setFilteredProducts(updatedProducts);
+
+    // Console.log del producto actualizado
+    console.log("Producto Actualizado:", JSON.stringify(updatedProduct, null, 2));
+
     setIsModalOpen(false);
   };
 
   const handleDeleteProduct = (productId: number) => {
     // Simulamos la eliminación del producto
+    const productToDelete = products.find((p) => p.id === productId);
+    if (!productToDelete) return;
+
     const updatedProducts = products.filter(
       (product) => product.id !== productId
     );
     setProducts(updatedProducts);
     setFilteredProducts(updatedProducts);
+
+    // Console.log de la eliminación del producto
+    console.log("Producto Eliminado:", JSON.stringify({ id: productId }, null, 2));
+
     setIsModalOpen(false);
   };
 
@@ -191,6 +197,15 @@ const TableProducts = () => {
     );
     setProducts(updatedProducts);
     setFilteredProducts(updatedProducts);
+
+    const toggledProduct = updatedProducts.find((p) => p.id === productId);
+    if (toggledProduct) {
+      // Console.log del cambio de estado
+      console.log("Producto Habilitado/Deshabilitado:", JSON.stringify({
+        id: toggledProduct.id,
+        habilitado: toggledProduct.habilitado,
+      }, null, 2));
+    }
   };
 
   return (
