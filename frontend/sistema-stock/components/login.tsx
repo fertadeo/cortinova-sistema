@@ -109,7 +109,7 @@ export const Login = () => {
                 type="email"
                 id="email"
                 placeholder="Ingresa tu correo electrónico"
-                className="w-full px-4 py-3 mt-2 bg-gray-200 border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
+                className="w-full px-4 py-3 mt-2  border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -125,7 +125,7 @@ export const Login = () => {
                 id="password"
                 placeholder="Ingresa tu contraseña"
                 minLength={6}
-                className="w-full px-4 py-3 mt-2 bg-gray-200 border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
+                className="w-full px-4 py-3 mt-2  border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
