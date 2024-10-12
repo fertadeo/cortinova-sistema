@@ -180,7 +180,7 @@ const MultifilterModal: React.FC<MultifilterModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose}>
+    <Modal isOpen={isOpen} onOpenChange={onClose} size="3xl">
       <ModalContent className="w-[90%]">
         <ModalHeader>
           <h2>
