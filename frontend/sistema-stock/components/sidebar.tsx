@@ -2,6 +2,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { Divider } from "@nextui-org/react"
 
 export const SideBar = () => {
   const router = useRouter();
@@ -45,10 +46,7 @@ export const SideBar = () => {
           id="sidebar"
         >
           <div className="mt-10 space-y-6 md:space-y-10">
-            <h1 className="text-4xl font-bold text-center md:hidden">
-              D<span className="text-teal-600">.</span>
-            </h1>
-            <h1 className="hidden text-sm font-bold text-center md:block md:text-xl">
+            <h1 className="text-sm font-bold text-center md:block md:text-xl">
               Cortinova<span className="text-amber-400">.</span>
             </h1>
             <div id="profile" className="space-y-3">
@@ -61,14 +59,14 @@ export const SideBar = () => {
               /> */}
               <div>
                 <h2
-                  className="text-xs font-medium text-center text-teal-500 md:text-sm"
+                  className="hidden text-xs font-medium text-center text-teal-500 md:text-sm"
                 >
                   Eduard Pantazi
                 </h2>
-                <p className="text-xs text-center text-gray-500">Administrador/Empleado</p>
+                <p className=" hidden text-xs text-center text-gray-500">Administrador/Empleado</p>
               </div>
             </div>
-            <div id="menu" className="flex flex-col space-y-2">
+            <div id="menu" className="flex flex-col space-y-2 self-end">
               <Link
                 href="/home"
                 className="justify-center px-2 py-2 text-gray-700 align-middle transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:text-base"
@@ -117,6 +115,14 @@ export const SideBar = () => {
                 </svg>
                 <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }} >Productos</span>
               </Link>
+
+
+                <Divider/>
+
+            
+
+
+
               <Link
                 href="/home"
                 className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-slate-500 hover:text-white hover:scale-105"
@@ -170,6 +176,9 @@ export const SideBar = () => {
                 <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }}> Facturación  </span>
               </Link>
 
+
+              <Divider/>
+
               <Link
                 href="https://api.whatsapp.com/send?phone=5493517552258"
                 className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
@@ -211,7 +220,8 @@ export const SideBar = () => {
                     <path d="M15 12H3M3 12L6 9M3 12L6 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
 
-                  <span className="text-lg">Cerrar sesión</span>
+                  <span className="text-lg pr-10">
+                    Cerrar sesión</span>
                 </button>
               </div>
             </div>
