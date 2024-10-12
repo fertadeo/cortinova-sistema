@@ -194,7 +194,7 @@ const MultifilterModal: React.FC<MultifilterModalProps> = ({
             {/* Filtro por Proveedor */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <Input
-                isClearable
+               
                 label="Proveedor"
                 placeholder="Buscar por proveedor"
                 value={filterCriteria.proveedor}
@@ -221,7 +221,7 @@ const MultifilterModal: React.FC<MultifilterModalProps> = ({
             {/* Filtro por Nombre del Producto */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <Input
-                isClearable
+             
                 label="Nombre del Producto"
                 placeholder="Buscar por nombre"
                 value={filterCriteria.nombreProducto}

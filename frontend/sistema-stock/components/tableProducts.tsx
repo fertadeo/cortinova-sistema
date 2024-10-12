@@ -19,7 +19,7 @@ import {
   Button,
 } from "@nextui-org/react";
 import { FaEye, FaFilter } from "react-icons/fa";
-import ProductModal from "../components/ProductModal";
+import ProductModal from "./productModal";
 import MultifilterModal from "./MultifilterModal";
 
 type Product = {
@@ -256,7 +256,6 @@ const TableProducts = forwardRef((props, ref) => {
       {/* Botón para Abrir el Modal de Multifiltro */}
       <div className="flex justify-between mb-5">
         <Input
-          isClearable
           placeholder="Buscar producto"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
