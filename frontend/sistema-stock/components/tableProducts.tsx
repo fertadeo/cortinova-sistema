@@ -71,54 +71,24 @@ const TableProducts = forwardRef((props, ref) => {
   const [isMultifilterOpen, setIsMultifilterOpen] = useState(false);
   const itemsPerPage = 10;
 
-  // Simulación de datos de productos (puedes reemplazar esto con props o una llamada a la API)
-  const productsData: Product[] = [
-    {
-      id: 1,
-      nombreProducto: "Producto A",
-      descripcion: "Descripción del Producto A",
-      proveedor: "Proveedor X",
-      cantidadDisponible: 10,
-      precioCosto: 50.0,
-      precioLista: 120.0,
-      descuento: 0,
-      precioPublico: 120.0,
-      habilitado: true,
-    },
-    {
-      id: 2,
-      nombreProducto: "Producto B",
-      descripcion: "Descripción del Producto B",
-      proveedor: "Proveedor Y",
-      cantidadDisponible: 3,
-      precioCosto: 75.0,
-      precioLista: 150.0,
-      descuento: 5,
-      precioPublico: 142.5,
-      habilitado: true,
-    },
-    {
-      id: 3,
-      nombreProducto: "Producto C",
-      descripcion: "Descripción del Producto C",
-      proveedor: "Proveedor Z",
-      cantidadDisponible: 0,
-      precioCosto: 100.0,
-      precioLista: 200.0,
-      descuento: 10,
-      precioPublico: 180.0,
-      habilitado: false, // Deshabilitado automáticamente por cantidad 0
-    },
-    // Puedes agregar más productos simulados aquí
-  ];
+  // Llamada a la API para obtener los productos
+  const fetchProducts = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/productos`);
+      
+      if (!response.ok) throw new Error("Error al obtener productos");
+      const data = await response.json();
+      setProducts(data);
+      setFilteredProducts(data); // Inicialmente, sin filtros
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
 
-  // Carga inicial de productos
+  // Carga inicial de productos desde la API
   useEffect(() => {
-    // Simulamos una llamada a la API
-    setTimeout(() => {
-      setProducts(productsData);
-      setFilteredProducts(productsData);
-    }, 500);
+    fetchProducts();
   }, []);
 
   useEffect(() => {

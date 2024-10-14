@@ -1,7 +1,7 @@
 // src/components/ProductModal.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import {
   Modal,
   ModalContent,
@@ -9,6 +9,8 @@ import {
   ModalBody,
   ModalFooter,
   Button,
+  Select,
+  SelectItem
 } from "@nextui-org/react";
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
@@ -24,6 +26,11 @@ type Product = {
   descuento: number;
   precioPublico: number;
   habilitado: boolean;
+};
+
+type Proveedor = {
+  id: number;
+  nombre: string;
 };
 
 type ProductModalProps = {
@@ -44,10 +51,29 @@ const ProductModal: React.FC<ProductModalProps> = ({
   onToggle,
 }) => {
   const [editedProduct, setEditedProduct] = useState<Product | null>(product);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
 
   useEffect(() => {
     setEditedProduct(product);
   }, [product]);
+
+  // Cargar proveedores desde la API
+  const fetchProveedores = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/proveedores`); // Llamada a la API para obtener los proveedores
+      if (!response.ok) throw new Error("Error al obtener proveedores");
+      const data = await response.json();
+      setProveedores(data); // Guardar proveedores en el estado
+    } catch (error) {
+      console.error("Error fetching proveedores:", error);
+    }
+  };
+
+  // Llamar a fetchProveedores cuando se monta el componente
+  useEffect(() => {
+    fetchProveedores();
+  }, []);
 
   // **Cálculo Automático del Precio al Público**
   useEffect(() => {
@@ -90,6 +116,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
+  const handleProveedorChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    setEditedProduct((prevProduct) =>
+      prevProduct ? { ...prevProduct, proveedor: value } : prevProduct
+    );
+  };
+
   return (
     <Modal isOpen={isOpen} onOpenChange={onClose}>
       <ModalContent>
@@ -130,16 +163,22 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   })
                 }
               />
-              <EditableField
-                label="Proveedor"
-                value={editedProduct.proveedor}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    proveedor: value.toString(),
-                  })
-                }
-              />
+
+              {/* Proveedor como Select */}
+              <div className="mb-4">
+                <label className="block mb-1 font-medium">Proveedor</label>
+                <select
+                  value={editedProduct.proveedor}
+                  onChange={handleProveedorChange}
+                >
+                  {proveedores.map((proveedor) => (
+                    <option key={proveedor.id} value={proveedor.nombre}>
+                      {proveedor.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <EditableField
                 label="Cantidad Disponible"
                 value={editedProduct.cantidadDisponible}
