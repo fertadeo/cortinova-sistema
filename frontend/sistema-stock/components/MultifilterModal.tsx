@@ -1,7 +1,7 @@
 // src/components/MultifilterModal.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Modal,
   ModalContent,
@@ -18,18 +18,17 @@ import {
   TableRow,
   TableCell,
 } from "@nextui-org/react";
-import { FaFilter, FaCheck, FaTimes } from "react-icons/fa";
+import { FaFilter } from "react-icons/fa";
 
 type Product = {
   id: number;
   nombreProducto: string;
   descripcion: string;
   proveedor: string;
-  cantidadDisponible: number;
+  cantidad_stock: number;
   precioCosto: number;
-  precioLista: number;
   descuento: number;
-  precioPublico: number;
+  precio: number;
   habilitado: boolean;
 };
 
@@ -299,7 +298,7 @@ const MultifilterModal: React.FC<MultifilterModalProps> = ({
                       <TableCell>{product.nombreProducto}</TableCell>
                       <TableCell>{product.proveedor}</TableCell>
                       <TableCell>{product.precioCosto}</TableCell>
-                      <TableCell>{product.precioLista}</TableCell>
+                      <TableCell>{product.precio}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -326,7 +325,7 @@ const MultifilterModal: React.FC<MultifilterModalProps> = ({
                       <TableCell>{product.nombreProducto}</TableCell>
                       <TableCell>{product.proveedor}</TableCell>
                       <TableCell>{product.precioCosto}</TableCell>
-                      <TableCell>{product.precioLista}</TableCell>
+                      <TableCell>{product.precio}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
