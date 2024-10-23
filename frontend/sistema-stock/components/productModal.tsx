@@ -9,6 +9,8 @@ import {
   ModalBody,
   ModalFooter,
   Button,
+  Select,
+  SelectItem
 } from "@nextui-org/react";
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
@@ -17,13 +19,21 @@ type Product = {
   id: number;
   nombreProducto: string;
   descripcion: string;
-  proveedor: string;
+  proveedor: {
+    id: number;
+    nombreProveedores: string;
+  };
   cantidadDisponible: number;
   precioCosto: number;
   precioLista: number;
   descuento: number;
   precioPublico: number;
   habilitado: boolean;
+};
+
+type Proveedor = {
+  id: number;
+  nombreProveedores: string;
 };
 
 type ProductModalProps = {
@@ -44,49 +54,68 @@ const ProductModal: React.FC<ProductModalProps> = ({
   onToggle,
 }) => {
   const [editedProduct, setEditedProduct] = useState<Product | null>(product);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
 
   useEffect(() => {
     setEditedProduct(product);
   }, [product]);
 
-  // **Cálculo Automático del Precio al Público**
+  // Cargar proveedores desde la API
+  const fetchProveedores = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/proveedores`);
+      if (!response.ok) throw new Error("Error al obtener proveedores");
+      const data = await response.json();
+      setProveedores(data);
+    } catch (error) {
+      console.error("Error fetching proveedores:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProveedores();
+  }, []);
+
   useEffect(() => {
     if (editedProduct) {
       const precioPublicoCalculado =
-        editedProduct.precioLista -
+        editedProduct.precioLista - 
         (editedProduct.precioLista * editedProduct.descuento) / 100;
       setEditedProduct({
         ...editedProduct,
-        precioPublico: Number(precioPublicoCalculado.toFixed(2)), // Redondeamos a 2 decimales
+        precioPublico: Number(precioPublicoCalculado.toFixed(2)),
       });
     }
   }, [editedProduct?.precioLista, editedProduct?.descuento]);
 
   const handleSaveChanges = () => {
     if (editedProduct) {
-      // Simulación de envío de datos al backend
-      console.log("Guardar Cambios:", JSON.stringify(editedProduct, null, 2));
       onSave(editedProduct);
     }
   };
 
   const handleDelete = () => {
     if (editedProduct) {
-      // Simulación de eliminación al backend
-      console.log("Eliminar Producto ID:", editedProduct.id);
       onDelete(editedProduct.id);
     }
   };
 
   const handleToggle = () => {
     if (editedProduct) {
-      // Simulación de habilitar/deshabilitar al backend
-      console.log(
-        `Toggle Habilitado para ID: ${editedProduct.id}, Nuevo Estado: ${
-          !editedProduct.habilitado
-        }`
-      );
       onToggle(editedProduct.id);
+    }
+  };
+
+  const handleProveedorChange = (value: string) => {
+    const selectedProveedor = proveedores.find(
+      (p) => p.nombreProveedores === value
+    );
+    if (selectedProveedor) {
+      console.log("Proveedor seleccionado:", selectedProveedor);
+      setEditedProduct((prevProduct) =>
+        prevProduct ? { ...prevProduct, proveedor: selectedProveedor } : prevProduct
+      );
     }
   };
 
@@ -101,15 +130,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
         <ModalBody>
           {editedProduct && (
             <div>
-              {/* ID/SKU (no editable) */}
               <EditableField
                 label="ID/SKU"
                 value={editedProduct.id}
-                onChange={() => {}}
+                onChange={() => { }}
                 isEditable={false}
               />
-
-              {/* Campos editables */}
               <EditableField
                 label="Producto"
                 value={editedProduct.nombreProducto}
@@ -130,16 +156,23 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   })
                 }
               />
-              <EditableField
-                label="Proveedor"
-                value={editedProduct.proveedor}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    proveedor: value.toString(),
-                  })
-                }
-              />
+
+              {/* Proveedor como Select */}
+              <div className="mb-4">
+                <label className="block mb-1 font-medium">Proveedor</label>
+                <Select
+                  value={editedProduct.proveedor.nombreProveedores}
+                  onChange={(event) => handleProveedorChange(event.target.value)}
+                  aria-label="Seleccionar proveedor"
+                >
+                  {proveedores.map((proveedor) => (
+                    <SelectItem key={proveedor.id} value={proveedor.nombreProveedores}>
+                      {proveedor.nombreProveedores}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+
               <EditableField
                 label="Cantidad Disponible"
                 value={editedProduct.cantidadDisponible}
@@ -187,9 +220,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <EditableField
                 label="Precio al Público"
                 value={editedProduct.precioPublico}
-                onChange={() => {
-                  /* Precio al público calculado automáticamente */
-                }}
+                onChange={() => { }}
                 isEditable={false}
               />
             </div>

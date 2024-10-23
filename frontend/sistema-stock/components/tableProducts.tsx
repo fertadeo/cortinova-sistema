@@ -20,18 +20,17 @@ import {
 } from "@nextui-org/react";
 import { FaEye, FaFilter } from "react-icons/fa";
 import ProductModal from "./productModal";
-import MultifilterModal from "./MultifilterModal";
 
 type Product = {
   id: number;
   nombreProducto: string;
   descripcion: string;
   proveedor: string;
-  cantidadDisponible: number;
+  cantidad_stock: number;
   precioCosto: number;
-  precioLista: number;
+  precio: number;
   descuento: number;
-  precioPublico: number;
+  precioLista: number;
   habilitado: boolean;
 };
 
@@ -46,9 +45,10 @@ const columns = [
   { name: "Producto", uid: "nombreProducto" },
   { name: "Descripción", uid: "descripcion" },
   { name: "Cantidad Disponible", uid: "cantidadDisponible" },
-  { name: "Precio de Lista", uid: "precioLista" },
+  { name: "Precio Costo", uid: "precioCosto" },
   { name: "Descuento", uid: "descuento" },
-  { name: "Precio al Público", uid: "precioPublico" },
+  { name: "Precio", uid: "precio" },
+  // { name: "Proveedor", uid: "proveedor" },
   { name: "Acciones", uid: "acciones" },
 ];
 
@@ -71,54 +71,35 @@ const TableProducts = forwardRef((props, ref) => {
   const [isMultifilterOpen, setIsMultifilterOpen] = useState(false);
   const itemsPerPage = 10;
 
-  // Simulación de datos de productos (puedes reemplazar esto con props o una llamada a la API)
-  const productsData: Product[] = [
-    {
-      id: 1,
-      nombreProducto: "Producto A",
-      descripcion: "Descripción del Producto A",
-      proveedor: "Proveedor X",
-      cantidadDisponible: 10,
-      precioCosto: 50.0,
-      precioLista: 120.0,
-      descuento: 0,
-      precioPublico: 120.0,
-      habilitado: true,
-    },
-    {
-      id: 2,
-      nombreProducto: "Producto B",
-      descripcion: "Descripción del Producto B",
-      proveedor: "Proveedor Y",
-      cantidadDisponible: 3,
-      precioCosto: 75.0,
-      precioLista: 150.0,
-      descuento: 5,
-      precioPublico: 142.5,
-      habilitado: true,
-    },
-    {
-      id: 3,
-      nombreProducto: "Producto C",
-      descripcion: "Descripción del Producto C",
-      proveedor: "Proveedor Z",
-      cantidadDisponible: 0,
-      precioCosto: 100.0,
-      precioLista: 200.0,
-      descuento: 10,
-      precioPublico: 180.0,
-      habilitado: false, // Deshabilitado automáticamente por cantidad 0
-    },
-    // Puedes agregar más productos simulados aquí
-  ];
+ // Modificar la función fetchProducts para reflejar el estado correcto
+ const fetchProducts = async () => {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const response = await fetch(`${apiUrl}/productos`);
 
-  // Carga inicial de productos
+    if (!response.ok) throw new Error("Error al obtener productos");
+    const data = await response.json();
+
+    // Asegurar que los productos se muestren correctamente según su estado y stock
+    const updatedData = data.map((product: Product) => ({
+      ...product,
+      habilitado: product.cantidad_stock > 0, // Ahora solo depende del stock
+    }));
+
+    console.log("Productos obtenidos:", data);
+    console.log("Productos después de actualizar el estado habilitado:", updatedData);
+
+    setProducts(updatedData);
+    setFilteredProducts(updatedData); // Inicialmente, sin filtros
+  } catch (error) {
+    console.error("Error fetching products:", error);
+  }
+};
+
+
+  // Carga inicial de productos desde la API
   useEffect(() => {
-    // Simulamos una llamada a la API
-    setTimeout(() => {
-      setProducts(productsData);
-      setFilteredProducts(productsData);
-    }, 500);
+    fetchProducts();
   }, []);
 
   useEffect(() => {
@@ -148,11 +129,16 @@ const TableProducts = forwardRef((props, ref) => {
     return { color: "red" };
   };
 
-  const getRowStyle = (product: Product) => {
-    return product.habilitado
-      ? {}
-      : { backgroundColor: "#f0f0f0", color: "#a0a0a0", opacity: 0.6 }; // Color gris claro y opacidad
-  };
+// Función para definir el estilo de las filas de la tabla
+const getRowStyle = (product: Product) => {
+  // Deshabilitar si el producto no está habilitado o si no tiene stock
+  const isDisabled = !product.habilitado || product.cantidad_stock === 0;
+  console.log('Esta deshabilitado: ',isDisabled)
+  return isDisabled
+    ? { backgroundColor: "#f0f0f0", color: "#a0a0a0", opacity: 0.6 } // Color gris claro y opacidad para indicar deshabilitado
+    : {}; // Sin estilo adicional si está habilitado y tiene stock
+};
+
 
   const handleViewProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -177,11 +163,11 @@ const TableProducts = forwardRef((props, ref) => {
           changes.precioListaPercentage !== 0
             ? Number(
                 (
-                  product.precioLista *
+                  product.precio *
                   (1 + changes.precioListaPercentage / 100)
                 ).toFixed(2)
               )
-            : product.precioLista;
+            : product.precio;
 
         const newPrecioPublico =
           newPrecioLista - (newPrecioLista * product.descuento) / 100;
@@ -284,14 +270,15 @@ const TableProducts = forwardRef((props, ref) => {
               <TableCell>{product.id}</TableCell>
               <TableCell>{product.nombreProducto}</TableCell>
               <TableCell>{product.descripcion}</TableCell>
-              <TableCell style={getCantidadStyle(product.cantidadDisponible)}>
-                {product.cantidadDisponible}
+              <TableCell style={getCantidadStyle(product.cantidad_stock)}>
+                {product.cantidad_stock}
               </TableCell>
-              <TableCell>{product.precioLista}</TableCell>
+              <TableCell>{product.precioCosto}</TableCell>
               <TableCell>{product.descuento}%</TableCell>
               <TableCell style={precioPublicoStyle}>
-                {product.precioPublico}
+                {product.precio}
               </TableCell>
+              {/* <TableCell>{product.proveedor}</TableCell> */}
               <TableCell>
                 <FaEye
                   className="cursor-pointer"
@@ -308,7 +295,7 @@ const TableProducts = forwardRef((props, ref) => {
         initialPage={1}
         onChange={handlePageChange}
         page={currentPage}
-        className="mt-5 flex justify-center"
+        className="flex justify-center mt-5"
         total={Math.ceil(filteredProducts.length / itemsPerPage)}
       />
 
@@ -317,18 +304,11 @@ const TableProducts = forwardRef((props, ref) => {
         product={selectedProduct}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveProduct}
+        // onSave={handleSaveProduct}
         onDelete={handleDeleteProduct}
         onToggle={handleToggleProduct}
       />
 
-      {/* Modal de Multifiltro */}
-      <MultifilterModal
-        isOpen={isMultifilterOpen}
-        onClose={() => setIsMultifilterOpen(false)}
-        products={products}
-        onBatchUpdate={handleBatchUpdate}
-      />
     </>
   );
 });
