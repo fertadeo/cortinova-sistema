@@ -50,7 +50,7 @@ const BarChart = ({ options }: BarChartProps) => {
         const processedData: ChartData<'bar', number[], string> = {
           labels: monthNames, // Usa los nombres de los meses
           datasets: [{
-            label: 'Clientes por mes',
+            label: 'Clientes nuevos por mes',
             data: monthlyData, // Usa los datos procesados
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             borderColor: 'rgba(75, 192, 192, 1)',
