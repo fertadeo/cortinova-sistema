@@ -1,7 +1,8 @@
 import { Menucards } from '@/components/menucards';
 import SimpleTable from '@/components/simpleTable';
 import BarChart from '@/components/chart';
-import { PedidosTable } from '@/components/pedidosTable';
+import PresupuestosTable from '@/components/presupuestosTable';
+
 
 export default function Home() {
   // const data = {
@@ -65,7 +66,7 @@ export default function Home() {
       <div className="w-full p-6 px-4 py-6 mt-6 bg-white rounded-lg shadow">
         <h2 className="mb-4 text-lg font-medium text-center"> Seguimiento de Presupuestos </h2>
         <div className="">
-          <PedidosTable />
+          <PresupuestosTable />
         </div>
       </div>
     </div>
