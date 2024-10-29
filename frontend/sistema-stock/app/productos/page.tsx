@@ -132,7 +132,9 @@ const ProductosPage = () => {
             >
               Modificar Precios
             </Button>
-            <PricesModal isOpen={showPricesModal} onClose={handleClosePricesModal} />
+            <PricesModal isOpen={showPricesModal} onClose={handleClosePricesModal} onSave={function (data: { proveedor_id: number; porcentaje: number; }): void {
+              throw new Error('Function not implemented.');
+            } } />
 
           </div>
         </div>

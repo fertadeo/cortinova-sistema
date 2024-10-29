@@ -30,7 +30,7 @@ const PresupuestosTable = () => {
                 const data: Presupuesto[] = await response.json();
                 setPresupuestos(data);
             } catch (err) {
-                setError(err.message);
+                setError("");
             } finally {
                 setLoading(false);
             }

@@ -89,9 +89,27 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   }, [editedProduct?.precioLista, editedProduct?.descuento]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (editedProduct) {
-      onSave(editedProduct);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const response = await fetch(`${apiUrl}/productos/${editedProduct.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editedProduct),
+        });
+
+        if (!response.ok) {
+          throw new Error("Error al actualizar el producto");
+        }
+
+        const updatedProduct = await response.json();
+        onSave(updatedProduct);
+      } catch (error) {
+        console.error("Error al guardar los cambios:", error);
+      }
     }
   };
 
@@ -112,7 +130,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
       (p) => p.nombreProveedores === value
     );
     if (selectedProveedor) {
-      console.log("Proveedor seleccionado:", selectedProveedor);
       setEditedProduct((prevProduct) =>
         prevProduct ? { ...prevProduct, proveedor: selectedProveedor } : prevProduct
       );
