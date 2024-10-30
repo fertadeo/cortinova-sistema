@@ -13,13 +13,13 @@ import PricesModal from '@/components/pricesModal';
 
 
 const ProductosPage = () => {
+  const tableRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
   const [showSpinner, setShowSpinner] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const tableRef = useRef<any>(null);
   const [showProdModal, setShowProdModal] = useState(false)
   const [showPricesModal, setShowPricesModal] = useState(false)
 
@@ -32,7 +32,10 @@ const ProductosPage = () => {
   const handleOpenPricesModal = () => setShowPricesModal(true);
   const handleClosePricesModal = () => setShowPricesModal(false);
 
-
+  const handleProductAdded = () => {
+    // Llamamos a refreshProducts a través de la ref al guardar un producto
+    tableRef.current?.refreshProducts();
+  };
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -123,8 +126,8 @@ const ProductosPage = () => {
             <Button onPress={handleOpenModal}> Agregar Producto + </Button>
             <OneProductModal
               isOpen={showProdModal}
-              onClose={handleCloseModal}
-            />
+              onClose={handleCloseModal} 
+              onProductAdded={handleProductAdded}         />
             <Button
               className='m-2 bg-green-700'
               style={{ color: 'white' }}

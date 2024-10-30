@@ -9,6 +9,7 @@ import {
 } from "@nextui-org/react";
 import { FaEye, FaFilter } from "react-icons/fa";
 import ProductModal from "./productModal";
+import OneProductModal from "./oneProductModal";
 
 type Product = {
   id: number;
@@ -51,7 +52,6 @@ const TableProducts = forwardRef((props, ref) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isMultifilterOpen, setIsMultifilterOpen] = useState(false);
   const itemsPerPage = 10;
 
   const fetchProducts = async () => {
@@ -78,6 +78,13 @@ const TableProducts = forwardRef((props, ref) => {
     fetchProducts();
   }, []);
 
+
+  // Exponemos `refreshProducts` para que pueda ser invocado externamente
+  useImperativeHandle(ref, () => ({
+    refreshProducts: fetchProducts,
+  }));
+
+
   useEffect(() => {
     if (searchTerm) {
       const filtered = products.filter((product) =>
@@ -95,6 +102,12 @@ const TableProducts = forwardRef((props, ref) => {
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+
+
+
+
+  
 
   const getCantidadStyle = (cantidad: number) => {
     if (cantidad > 5) return { color: "green" };
@@ -138,6 +151,7 @@ const TableProducts = forwardRef((props, ref) => {
     setProducts(updatedList);
     setFilteredProducts(updatedList);
   };
+  
 
   return (
     <>
@@ -149,7 +163,6 @@ const TableProducts = forwardRef((props, ref) => {
         />
         <Button
           color="secondary"
-          onClick={() => setIsMultifilterOpen(true)}
           className="flex items-center"
         >
           <FaFilter className="mr-2" />
@@ -197,7 +210,6 @@ const TableProducts = forwardRef((props, ref) => {
         product={selectedProduct}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveProduct}
         onDelete={handleDeleteProduct}
         onToggle={handleToggleProduct}
       />

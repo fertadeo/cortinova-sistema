@@ -10,12 +10,9 @@ import {
   Checkbox,
   Select,
   SelectItem,
+  Spinner,
 } from "@nextui-org/react";
 import Notification from "./notification";
-
-
-
-
 
 interface Proveedor {
   id: string;
@@ -25,9 +22,10 @@ interface Proveedor {
 interface OneProductModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onProductAdded: () => void; 
 }
 
-const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) => {
+const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onProductAdded }) => {
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [productData, setProductData] = useState({
@@ -35,20 +33,27 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
     Producto: "",
     Cantidad_stock: "",
     Descripción: "",
+    PrecioCosto: "",
     Precio: "",
-    Divisa: "USD",
+    Divisa: "ARS",
     Descuento: "",
     proveedor_id: "",
   });
-
-
-
+  const [inputValidity, setInputValidity] = useState({
+    Producto: true,
+    Cantidad_stock: true,
+    Descripción: true,
+    PrecioCosto: true,
+    Precio: true,
+    proveedor_id: true,
+  });
   const [notification, setNotification] = useState({
     isVisible: false,
     message: '',
     description: '',
     type: 'success' as 'success' | 'error',
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,13 +81,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
       if (!response.ok) throw new Error("Error al obtener el último ID de producto");
       const data = await response.json();
       const lastId = parseInt(data.ultimoId, 10);
-      if (!isNaN(lastId)) {
-        const nextId = lastId + 1;
-        setProductData((prevState) => ({ ...prevState, id: nextId.toString() }));
-      } else {
-        console.error("El valor de 'ultimoID' no es un número válido:", data.ultimoID);
-        setProductData((prevState) => ({ ...prevState, id: "1" }));
-      }
+      setProductData((prevState) => ({ ...prevState, id: isNaN(lastId) ? "1" : (lastId + 1).toString() }));
     } catch (error) {
       console.error("Error fetching next product ID:", error);
       setProductData((prevState) => ({ ...prevState, id: "1" }));
@@ -99,80 +98,92 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
       ...prevState,
       [name]: value,
     }));
+    setInputValidity((prevValidity) => ({
+      ...prevValidity,
+      [name]: value.trim() !== "" || name === "Descuento",
+    }));
+  };
+
+  const validateInputs = () => {
+    const newValidity = {
+      Producto: productData.Producto.trim() !== "",
+      Cantidad_stock: productData.Cantidad_stock.trim() !== "",
+      Descripción: productData.Descripción.trim() !== "",
+      PrecioCosto: productData.PrecioCosto.trim() !== "",
+      Precio: productData.Precio.trim() !== "",
+      proveedor_id: productData.proveedor_id.trim() !== "",
+    };
+    setInputValidity(newValidity);
+    return Object.values(newValidity).every((valid) => valid);
   };
 
   const handleSubmit = async () => {
+    if (!validateInputs()) return;
+
+    setIsSaving(true);
     try {
-        const productToSend = [{
-            id: parseInt(productData.id, 10),
-            Producto: productData.Producto,
-            Cantidad_stock: productData.Cantidad_stock,
-            Descripción: productData.Descripción,
-            Precio: productData.Precio,
-            Divisa: productData.Divisa,
-            Descuento: discountEnabled ? `${productData.Descuento}%` : "0%",
-            proveedor_id: parseInt(productData.proveedor_id, 10),
-        }];
-        console.log(productToSend);
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        const response = await fetch(`${apiUrl}/productos/importar-productos`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(productToSend),
-        });
-        console.log(response);
-     
-        if (!response.ok) throw new Error("Error al guardar producto");
-      
-        // Muestra notificación de éxito
-        setNotification({
-            isVisible: true,
-            message: 'Producto agregado correctamente',
-            description: '',
-            type: 'success',
-        });
-        
-        // Cierra la notificación automáticamente después de 3 segundos
-        setTimeout(handleNotificationClose, 3000);
-        
-        // Es importante que el cierre del modal se realice después de la notificación
-        // Puedes decidir cuándo cerrar el modal, tal vez al cierre de la notificación
-        // onClose(); // Si deseas cerrar el modal aquí, asegúrate de que no interrumpa la notificación
+      const productToSend = [{
+        id: parseInt(productData.id, 10),
+        Producto: productData.Producto,
+        Cantidad_stock: productData.Cantidad_stock,
+        Descripción: productData.Descripción,
+        PrecioCosto: productData.PrecioCosto,
+        Precio: productData.Precio,
+        Divisa: productData.Divisa,
+        Descuento: discountEnabled ? `${productData.Descuento}%` : "0%",
+        proveedor_id: parseInt(productData.proveedor_id, 10),
+      }];
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/productos/importar-productos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productToSend),
+      });
 
+      if (!response.ok) throw new Error("Error al guardar producto");
+
+      setNotification({
+        isVisible: true,
+        message: 'Producto agregado correctamente',
+        description: '',
+        type: 'success',
+      });
+      setTimeout(handleNotificationClose, 3000);
+      onProductAdded();
     } catch (error) {
-        console.error("Error al enviar producto:", error);
-        // Muestra notificación de error
-        setNotification({
-            isVisible: true,
-            message: 'Ocurrió un error',
-            description: 'No se pudo agregar tu producto.',
-            type: 'error',
-        });
-
-        // Cierra la notificación automáticamente después de 3 segundos
-        setTimeout(handleNotificationClose, 3000);
+      console.error("Error al enviar producto:", error);
+      setNotification({
+        isVisible: true,
+        message: 'Ocurrió un error',
+        description: 'No se pudo agregar tu producto.',
+        type: 'error',
+      });
+      setTimeout(handleNotificationClose, 3000);
+    } finally {
+      setTimeout(() => {
+        setIsSaving(false);
+        onClose();
+      }, 2000);
     }
-};
-
-
-
+  };
 
   const handleProveedorChange = (id: string) => {
     setProductData((prevState) => ({
       ...prevState,
       proveedor_id: id,
     }));
+    setInputValidity((prevValidity) => ({
+      ...prevValidity,
+      proveedor_id: id.trim() !== "",
+    }));
   };
 
-
-    // Manejo de cierre de notificación
-    const handleNotificationClose = () => {
-      setNotification((prevState) => ({ ...prevState, isVisible: false }));
-    };
-  
+  const handleNotificationClose = () => {
+    setNotification((prevState) => ({ ...prevState, isVisible: false }));
+  };
 
   return (
-    <Modal size={"xl"} isOpen={isOpen} onClose={onClose}>
+    <Modal size={"2xl"} isOpen={isOpen} onClose={onClose}>
       <ModalContent>
         {(onClose) => (
           <>
@@ -181,32 +192,38 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
               <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
                 <Input
                   label="ID/SKU"
-                  placeholder="Generando ID..."
+                  placeholder="ID Producto Nuevo"
                   name="id"
                   value={productData.id}
                   readOnly
-                  labelPlacement="outside"
+                  labelPlacement="inside"
                 />
-
+       </div>
+       <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
                 <Input
                   label="Nombre del Producto"
                   placeholder="Nombre del producto"
                   name="Producto"
                   value={productData.Producto}
                   onChange={handleInputChange}
-                  labelPlacement="outside"
+                  isInvalid={!inputValidity.Producto}
+                  labelPlacement="inside"
                 />
-              </div>
-
-              <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-                <Input
+</div>
+<div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
+                 <Input
                   label="Descripción"
                   placeholder="Descripción del producto"
                   name="Descripción"
                   value={productData.Descripción}
                   onChange={handleInputChange}
-                  labelPlacement="outside"
+                  isInvalid={!inputValidity.Descripción}
+                  labelPlacement="inside"
                 />
+       </div>
+
+              <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
+               
 
                 <Input
                   type="number"
@@ -215,7 +232,23 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
                   name="Precio"
                   value={productData.Precio}
                   onChange={handleInputChange}
-                  labelPlacement="outside"
+                  isInvalid={!inputValidity.Precio}
+                  labelPlacement="inside"
+                  startContent={
+                    <div className="flex items-center pointer-events-none">
+                      <span className="text-default-400 text-small">$</span>
+                    </div>
+                  }
+                />
+                 <Input
+                  type="number"
+                  label="Precio de Costo/Proveedor"
+                  placeholder="0.00"
+                  name="PrecioCosto"
+                  value={productData.PrecioCosto}
+                  onChange={handleInputChange}
+                  isInvalid={!inputValidity.PrecioCosto}
+                  labelPlacement="inside"
                   startContent={
                     <div className="flex items-center pointer-events-none">
                       <span className="text-default-400 text-small">$</span>
@@ -232,7 +265,8 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
                   name="Cantidad_stock"
                   value={productData.Cantidad_stock}
                   onChange={handleInputChange}
-                  labelPlacement="outside"
+                  isInvalid={!inputValidity.Cantidad_stock}
+                  labelPlacement="inside"
                 />
 
                 <Select
@@ -241,7 +275,8 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
                   name="proveedor_id"
                   value={productData.proveedor_id}
                   onChange={(e) => handleProveedorChange(e.target.value)}
-                  labelPlacement="outside"
+                  isInvalid={!inputValidity.proveedor_id}
+                  labelPlacement="inside"
                 >
                   {proveedores.map((prov) => (
                     <SelectItem key={prov.id} textValue={`${prov.id} ${prov.nombreProveedores}`}>
@@ -263,7 +298,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
                   name="Descuento"
                   value={productData.Descuento}
                   onChange={handleInputChange}
-                  labelPlacement="outside"
+                  labelPlacement="inside"
                   disabled={!discountEnabled}
                   startContent={
                     <div className="flex items-center pointer-events-none">
@@ -275,24 +310,23 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose }) =>
             </div>
             <ModalFooter>
               <Button color="danger" variant="light" onPress={onClose}>
-                Close
+                Cerrar
               </Button>
-              <Button color="primary" onPress={handleSubmit}>
-                Guardar Producto
+              <Button color="primary" onPress={handleSubmit} isDisabled={isSaving}>
+                {isSaving ? <Spinner size="sm" color="default"/> : "Guardar Producto"}
               </Button>
             </ModalFooter>
           </>
         )}
       </ModalContent>
-      <Notification 
-        message={notification.message} 
-        description={notification.description} 
-        isVisible={notification.isVisible} 
-        onClose={handleNotificationClose} 
-        type={notification.type} 
+      <Notification
+        message={notification.message}
+        description={notification.description}
+        isVisible={notification.isVisible}
+        onClose={handleNotificationClose}
+        type={notification.type}
       />
     </Modal>
-    
   );
 };
 
