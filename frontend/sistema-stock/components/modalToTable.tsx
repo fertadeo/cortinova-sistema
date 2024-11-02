@@ -42,7 +42,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({
                 className="relative px-4 py-3 text-teal-700 bg-teal-200 border border-teal-500 rounded bg-opacity-30 border-opacity-30"
                 role="alert"
               >
-                <strong className="font-bold">Aún no hay presupuestos cargados!</strong>
+                <strong className="font-bold">Aún no hay datos del cliente cargados. </strong>
               </div>
             ) : (
               // Tabla cuando hay datos
