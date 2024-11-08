@@ -1,227 +1,245 @@
 import React, { useState, useEffect } from "react";
-import {Modal,ModalContent, ModalHeader, ModalBody, ModalFooter, Table,  TableHeader,  TableColumn,  TableBody,  TableRow,  TableCell, Select, SelectItem, Input, Button ,Spinner,} from "@nextui-org/react";
+import {
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Select, SelectItem, Input, Button, Spinner
+} from "@nextui-org/react";
+import { Productos } from "@/types/productos";
 import { Proveedores } from "@/types/proveedores";
-import { Productos } from "@/types/productos"
 
-
-const productos = [
-  { id: "1", nombre: "Producto 1", precio: 266, proveedorId: "1" },
-  { id: "2", nombre: "Producto 2", precio: 500, proveedorId: "1" },
-  { id: "3", nombre: "Producto 3", precio: 750, proveedorId: "2" },
-  { id: "4", nombre: "Producto 4", precio: 1200, proveedorId: "2" },
-  { id: "5", nombre: "Producto 5", precio: 180, proveedorId: "3" },
-];
-
-type ModalPriceUpdaterProps = {
-  isOpen: boolean;
-  onClose: () => void;
-};
-
-const ModalPriceUpdater: React.FC<ModalPriceUpdaterProps> = ({ isOpen, onClose }) => {
-  // Estados
+const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpen, onClose }) => {
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
+  const [productos, setProductos] = useState<Productos[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedProveedor, setSelectedProveedor] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+  const [filteredProducts, setFilteredProducts] = useState<Productos[]>([]);
   const [porcentaje, setPorcentaje] = useState("");
+  const [updatedProducts, setUpdatedProducts] = useState<Productos[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Productos[]>([]); // Productos seleccionados
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showAlert, setShowAlert] = useState(false);
 
-  // Función para obtener proveedores
   const fetchProveedores = async () => {
     try {
       setIsLoading(true);
-      setError(null);
-      
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/proveedores/`);
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar los proveedores');
-      }
-
       const data = await response.json();
       setProveedores(data);
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching proveedores:', err);
+      setError('No se pudo obtener la data de proveedores');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Cargar proveedores cuando se abre el modal
-  useEffect(() => {
-    if (isOpen) {
-      fetchProveedores();
+  const fetchProductosPorProveedor = async (proveedorId: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/proveedor/${proveedorId}`);
+      const data = await response.json();
+      setProductos(data.productos);
+      setFilteredProducts(data.productos); // Muestra todos los productos al seleccionar el proveedor
+    } catch (err) {
+      setError('No se pudo obtener los productos con ID de este proveedor');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (isOpen) fetchProveedores();
   }, [isOpen]);
 
-  // Resetear estados cuando se cierra el modal
   useEffect(() => {
     if (!isOpen) {
       setSelectedProveedor("");
       setFilteredProducts([]);
-      setSelectedKeys(new Set([]));
       setPorcentaje("");
-      setError(null);
+      setUpdatedProducts([]);
+      setSelectedProducts([]);
+      setShowAlert(false)
     }
   }, [isOpen]);
 
-  // Filtrar productos cuando se selecciona un proveedor
   useEffect(() => {
     if (selectedProveedor) {
-      const filtered = productos.filter(p => p.proveedorId === selectedProveedor);
-      setFilteredProducts(filtered);
-      setSelectedKeys(new Set(filtered.map(p => p.id)));
+      fetchProductosPorProveedor(selectedProveedor);
+      setSelectedProducts([]); // Limpiar selección de productos al cambiar de proveedor
+      setShowAlert(false); // Ocultar el alert al cambiar de proveedor
     } else {
       setFilteredProducts([]);
-      setSelectedKeys(new Set([]));
     }
   }, [selectedProveedor]);
 
-  // Función para redondear precio
-  const roundPrice = (price) => {
-    if (price < 100) return Math.ceil(price / 10) * 10;
-    return Math.ceil(price / 100) * 100;
-  };
+  const roundPrice = (price: number) => (price < 100 ? Math.ceil(price / 10) * 10 : Math.ceil(price / 100) * 100);
 
-  // Función para actualizar precios
   const updatePrices = () => {
-    if (!porcentaje || selectedKeys.size === 0) return;
-
+    if (!porcentaje) return;
     const percentage = parseFloat(porcentaje);
-    const selectedProducts = Array.from(selectedKeys).map(key => {
-      const product = filteredProducts.find(p => p.id === key);
-      const newPrice = product.precio * (1 + percentage / 100);
+
+    const updated = filteredProducts.map((product) => {
+      const precio = Number(product.precio);
+      const newPrice = precio * (1 + percentage / 100);
       return {
         ...product,
-        precioOriginal: product.precio,
-        precioNuevo: roundPrice(newPrice)
+        precioOriginal: precio,
+        precioNuevo: roundPrice(newPrice),
       };
     });
 
-    console.log('Productos actualizados:', selectedProducts);
-    onClose();
+    setUpdatedProducts(updated);
+    console.log("Productos recalculados:", updated); // Mostrar productos recalculados en la consola
+  };
+
+  useEffect(() => {
+    updatePrices();
+  }, [porcentaje, filteredProducts]);
+
+  const handlePorcentajeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^\d*\.?\d*$/.test(value)) {
+      setPorcentaje(value);
+      setErrorMessage(null);
+    } else {
+      setErrorMessage("Por favor, ingrese solo números.");
+    }
+  };
+
+  const handleSelectionChange = (selectedKeys: Set<string> | string[]) => {
+    const selectedArray = Array.isArray(selectedKeys) ? selectedKeys : Array.from(selectedKeys);
+
+    // Verificar si se seleccionaron todos los productos
+    if (selectedArray.join("") === "all") {
+      if (selectedProducts.length !== filteredProducts.length) {
+        setSelectedProducts(filteredProducts);
+        setShowAlert(true);
+      }
+    } else {
+      // Filtrar los productos seleccionados por sus IDs
+      const selected = filteredProducts.filter(product => selectedArray.includes(String(product.id)));
+
+      // Actualizar solo si el número de productos seleccionados cambia
+      if (selected.length !== selectedProducts.length) {
+        setSelectedProducts(selected);
+        setShowAlert(selected.length > 0);
+      }
+    }
+    console.log("Productos seleccionados en tiempo real:", selectedProducts);
+  };
+
+
+  const handleSubmit = () => {
+    console.log("Productos seleccionados para guardar:", selectedProducts);
   };
 
   const columns = [
-    { key: "nombre", label: "NOMBRE" },
+    { key: "nombreProducto", label: "NOMBRE" },
     { key: "precio", label: "PRECIO ACTUAL" },
-    { 
-      key: "precioNuevo", 
+    {
+      key: "precioNuevo",
       label: "PRECIO NUEVO",
-      cell: (product) => {
-        if (!porcentaje) return "-";
-        const newPrice = product.precio * (1 + parseFloat(porcentaje) / 100);
-        return `$${roundPrice(newPrice)}`;
-      }
+      cell: (product: Productos) => product.precioNuevo ? `$${product.precioNuevo}` : "-",
     },
   ];
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose}
-      size="3xl"
-      scrollBehavior="inside"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
       <ModalContent>
-        {(onClose) => (
-          <>
-            <ModalHeader className="flex flex-col gap-1">
-              Actualizar Precios por Proveedor
-            </ModalHeader>
-            <ModalBody>
-              <div className="flex flex-col gap-4">
-                {isLoading ? (
-                  <div className="flex justify-center p-4">
-                    <Spinner label="Cargando proveedores..." />
-                  </div>
-                ) : error ? (
-                  <div className="p-4 text-center text-danger">
-                    {error}
-                    <Button 
-                      color="primary" 
-                      variant="light" 
-                      size="sm" 
-                      className="ml-2"
-                      onPress={fetchProveedores}
-                    >
-                      Reintentar
-                    </Button>
-                  </div>
-                ) : (
-                  <Select 
-                    label="Seleccionar Proveedor" 
-                    placeholder="Seleccione un proveedor"
-                    onChange={(e) => setSelectedProveedor(e.target.value)}
-                  >
-                    {proveedores.map((proveedor) => (
-                      <SelectItem key={proveedor.id} value={proveedor.id}>
-                        {proveedor.nombreProveedores}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                )}
+        <ModalHeader className="flex flex-col gap-1">
+          Actualizar Precios por Proveedor
+        </ModalHeader>
+        <ModalBody>
+          <div className="flex flex-col gap-4">
+            {isLoading ? (
+              <Spinner label="Cargando..." />
+            ) : error ? (
+              <div className="text-danger">{error}</div>
+            ) : (
+              <>
+                <Select label="Seleccionar Proveedor" placeholder="Seleccione un proveedor" onChange={(e) => setSelectedProveedor(e.target.value)}>
+                  {proveedores.map((proveedor) => (
+                    <SelectItem key={proveedor.id} value={proveedor.id}>{proveedor.nombreProveedores}</SelectItem>
+                  ))}
+                </Select>
 
                 <Input
                   type="number"
-                  label="Porcentaje de aumento"
+                  label="Porcentaje de aumento/disminución"
                   placeholder="Ingrese el porcentaje"
                   value={porcentaje}
-                  onChange={(e) => setPorcentaje(e.target.value)}
-                  endContent="%"
-                  isDisabled={isLoading || !!error}
+                  onChange={handlePorcentajeChange}
+                  startContent="%"
                 />
+                {errorMessage && <p color="error">{errorMessage}</p>}
 
                 {filteredProducts.length > 0 ? (
-                  <Table
-                    aria-label="Tabla de productos"
-                    selectionMode="multiple"
-                    selectedKeys={selectedKeys}
-                    onSelectionChange={setSelectedKeys}
-                  >
-                    <TableHeader>
-                      {columns.map((column) => (
-                        <TableColumn key={column.key}>{column.label}</TableColumn>
-                      ))}
-                    </TableHeader>
-                    <TableBody items={filteredProducts}>
-                      {(item) => (
-                        <TableRow key={item.id}>
-                          {(columnKey) => (
-                            <TableCell>
-                              {columns.find(col => col.key === columnKey)?.cell?.(item) || 
-                               columnKey === 'precio' ? `$${item[columnKey]}` : item[columnKey]}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                  <>
+                    <Table
+                      aria-label="Tabla de productos"
+                      selectionMode="multiple"
+                      onSelectionChange={handleSelectionChange}
+                    >
+                      <TableHeader>
+                        {columns.map((column) => <TableColumn key={column.key}>{column.label}</TableColumn>)}
+                      </TableHeader>
+                      <TableBody items={updatedProducts.length ? updatedProducts : filteredProducts}>
+                        {(item: Productos) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.nombreProducto}</TableCell>
+                            <TableCell>{item.precio}</TableCell>
+                            <TableCell>{item.precioNuevo || '-'}</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+
+                    {showAlert && (
+                      <div
+                        className="relative px-4 py-3 text-teal-700 bg-teal-200 border border-teal-500 rounded bg-opacity-30 border-opacity-30"
+                        role="alert"
+                      >
+                        <strong className="font-bold">
+                          Vas a modificar {selectedProducts.length}{" "}
+                          {selectedProducts.length === 1 ? "producto" : "productos"}.
+                        </strong>
+                      </div>
+                    )}
+
+                  </>
                 ) : (
-                  selectedProveedor && (
-                    <div className="py-4 text-center text-gray-500">
-                      No hay productos disponibles para este proveedor
-                    </div>
-                  )
+                  <div className="text-center">No hay productos disponibles.</div>
                 )}
-              </div>
-            </ModalBody>
-            <ModalFooter>
-              <Button color="danger" variant="light" onPress={onClose}>
-                Cancelar
-              </Button>
-              <Button 
-                color="primary"
-                onPress={updatePrices}
-                disabled={!selectedProveedor || !porcentaje || selectedKeys.size === 0 || isLoading || !!error}
-              >
-                Actualizar Precios
-              </Button>
-            </ModalFooter>
-          </>
-        )}
+              </>
+            )}
+          </div>
+        </ModalBody>
+
+        <ModalFooter className="flex flex-col items-start gap-2">
+          {/* Alert dentro del Footer */}
+          {showAlert && (
+            <div
+              className="relative w-full px-4 py-3 text-teal-700 bg-teal-200 border border-teal-500 rounded bg-opacity-30 border-opacity-30"
+              role="alert"
+            >
+              <strong className="font-bold">
+                Vas a modificar {selectedProducts.length}{" "}
+                {selectedProducts.length === 1 ? "producto" : "productos"}.
+              </strong>
+            </div>
+          )}
+
+          {/* Botones de acción */}
+          <div className="flex gap-2 mt-2">
+
+            <Button color="danger" onPress={onClose}>
+              Cerrar
+            </Button>
+            <Button color="primary" onPress={handleSubmit}>
+              Guardar Cambios
+            </Button>
+          </div>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );
