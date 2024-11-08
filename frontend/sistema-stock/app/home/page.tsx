@@ -2,6 +2,7 @@ import { Menucards } from '@/components/menucards';
 import SimpleTable from '@/components/simpleTable';
 import BarChart from '@/components/chart';
 import PresupuestosTable from '@/components/presupuestosTable';
+import AnimatedButton from '@/components/animatedButton';
 
 
 export default function Home() {
@@ -40,7 +41,7 @@ export default function Home() {
       <div className="w-full px-4 py-2">
         <Menucards />
       </div>
-
+      
       {/* Añadimos un margen adicional debajo de Menucards */}
       <div className="mt-4" />
 

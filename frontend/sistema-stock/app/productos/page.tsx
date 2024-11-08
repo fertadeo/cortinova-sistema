@@ -127,7 +127,8 @@ const ProductosPage = () => {
             <OneProductModal
               isOpen={showProdModal}
               onClose={handleCloseModal} 
-              onProductAdded={handleProductAdded}         />
+              onProductAdded={handleProductAdded}  
+              />
             <Button
               className='m-2 bg-green-700'
               style={{ color: 'white' }}
@@ -135,9 +136,10 @@ const ProductosPage = () => {
             >
               Modificar Precios
             </Button>
-            <PricesModal isOpen={showPricesModal} onClose={handleClosePricesModal} onSave={function (data: { proveedor_id: number; porcentaje: number; }): void {
-              throw new Error('Function not implemented.');
-            } } />
+            <PricesModal 
+              isOpen={showPricesModal}
+              onClose={handleClosePricesModal}
+              />
 
           </div>
         </div>

@@ -1,23 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Checkbox,
-  Select,
-  SelectItem,
-  Spinner,
-} from "@nextui-org/react";
+import { Modal,ModalContent,ModalHeader,ModalFooter,Button,Input,Checkbox,Select,SelectItem,Spinner,} from "@nextui-org/react";
 import Notification from "./notification";
+import { Proveedores } from "@/types/proveedores";
 
-interface Proveedor {
-  id: string;
-  nombreProveedores: string;
-}
+
 
 interface OneProductModalProps {
   isOpen: boolean;
@@ -27,7 +13,7 @@ interface OneProductModalProps {
 
 const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onProductAdded }) => {
   const [discountEnabled, setDiscountEnabled] = useState(false);
-  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+  const [proveedores, setProveedores] = useState<Proveedores[]>([]);
   const [productData, setProductData] = useState({
     id: "",
     Producto: "",

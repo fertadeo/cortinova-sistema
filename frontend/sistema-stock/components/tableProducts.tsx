@@ -161,13 +161,7 @@ const TableProducts = forwardRef((props, ref) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Button
-          color="secondary"
-          className="flex items-center"
-        >
-          <FaFilter className="mr-2" />
-          Multifiltro
-        </Button>
+     
       </div>
 
       <Table aria-label="Tabla de productos">
