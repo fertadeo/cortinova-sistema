@@ -44,22 +44,21 @@ const BarChart = ({ options }: BarChartProps) => {
           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
         ];
 
-        // Inicializa arreglos de datos con ceros para los 12 meses
+        // Inicializa los datos de clientes y pedidos
         const monthlyClientData = Array(12).fill(0);
-        // Datos de ejemplo para pedidos confirmados
-        const monthlyOrderData = Array(12).fill(0).map(() => 
+        const monthlyOrderData = Array(12).fill(0).map(() =>
           Math.floor(Math.random() * 50) + 20
-        ); // Genera números aleatorios entre 20 y 70
+        );
 
-        // Llenar los datos de clientes
-        data.forEach(monthData => {
+        // Llenar los datos de clientes basados en el mes
+        data.forEach((monthData) => {
           if (monthData.mes >= 1 && monthData.mes <= 12) {
             monthlyClientData[monthData.mes - 1] = monthData.cantidad;
           }
         });
 
-        // Procesar datos para el gráfico
-        const processedData: ChartData<'bar', number[], string> = {
+        // Configura los datos para el gráfico
+        setChartData({
           labels: monthNames,
           datasets: [
             {
@@ -75,30 +74,9 @@ const BarChart = ({ options }: BarChartProps) => {
               backgroundColor: 'rgba(255, 159, 64, 0.2)',
               borderColor: 'rgba(255, 159, 64, 1)',
               borderWidth: 1,
-            }
-          ]
-        };
-
-        // Ajustar la posición para centrar el mes actual
-        const currentMonth = new Date().getMonth();
-        const adjustedLabels = processedData.labels.slice(currentMonth).concat(processedData.labels.slice(0, currentMonth));
-        const adjustedClientData = processedData.datasets[0].data.slice(currentMonth).concat(processedData.datasets[0].data.slice(0, currentMonth));
-        const adjustedOrderData = processedData.datasets[1].data.slice(currentMonth).concat(processedData.datasets[1].data.slice(0, currentMonth));
-
-        setChartData({
-          labels: adjustedLabels,
-          datasets: [
-            {
-              ...processedData.datasets[0],
-              data: adjustedClientData
             },
-            {
-              ...processedData.datasets[1],
-              data: adjustedOrderData
-            }
-          ]
+          ],
         });
-
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -116,10 +94,10 @@ const BarChart = ({ options }: BarChartProps) => {
           ...options,
           scales: {
             y: {
-              beginAtZero: true
-            }
-          }
-        }
+              beginAtZero: true,
+            },
+          },
+        },
       });
 
       return () => {

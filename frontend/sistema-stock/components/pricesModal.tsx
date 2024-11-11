@@ -38,14 +38,29 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
       setIsLoading(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/proveedor/${proveedorId}`);
       const data = await response.json();
-      setProductos(data.productos);
-      setFilteredProducts(data.productos); // Muestra todos los productos al seleccionar el proveedor
+  
+      if (data.productos.length === 0) {
+        // Si no hay productos, mostrar el mensaje correspondiente
+        setFilteredProducts([]);
+        setErrorMessage("No hay productos disponibles.");
+  
+        // Limpiar el estado después de 3 segundos
+        setTimeout(() => {
+          setErrorMessage(null); // Limpiar mensaje de error
+          setFilteredProducts([]); // Limpiar lista de productos
+        }, 3000); // 3 segundos de espera
+      } else {
+        setFilteredProducts(data.productos);
+        setErrorMessage(null); // Limpiar mensaje de error si hay productos
+      }
     } catch (err) {
       setError('No se pudo obtener los productos con ID de este proveedor');
+      setFilteredProducts([]);
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   useEffect(() => {
     if (isOpen) fetchProveedores();
@@ -53,12 +68,14 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
 
   useEffect(() => {
     if (!isOpen) {
+
       setSelectedProveedor("");
       setFilteredProducts([]);
       setPorcentaje("");
       setUpdatedProducts([]);
       setSelectedProducts([]);
-      setShowAlert(false)
+      setErrorMessage(null);
+      setShowAlert(false);
     }
   }, [isOpen]);
 
@@ -109,30 +126,79 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
   const handleSelectionChange = (selectedKeys: Set<string> | string[]) => {
     const selectedArray = Array.isArray(selectedKeys) ? selectedKeys : Array.from(selectedKeys);
 
-    // Verificar si se seleccionaron todos los productos
     if (selectedArray.join("") === "all") {
-      if (selectedProducts.length !== filteredProducts.length) {
-        setSelectedProducts(filteredProducts);
-        setShowAlert(true);
-      }
+      setSelectedProducts(() => filteredProducts);
+      setShowAlert(true);
     } else {
-      // Filtrar los productos seleccionados por sus IDs
-      const selected = filteredProducts.filter(product => selectedArray.includes(String(product.id)));
-
-      // Actualizar solo si el número de productos seleccionados cambia
-      if (selected.length !== selectedProducts.length) {
-        setSelectedProducts(selected);
-        setShowAlert(selected.length > 0);
-      }
+      setSelectedProducts((prevSelectedProducts) => {
+        const selected = filteredProducts.filter(product =>
+          selectedArray.includes(String(product.id))
+        );
+        return selected.length !== prevSelectedProducts.length ? selected : prevSelectedProducts;
+      });
+      setShowAlert(selectedArray.length > 0);
     }
-    console.log("Productos seleccionados en tiempo real:", selectedProducts);
   };
 
-
-  const handleSubmit = () => {
-    console.log("Productos seleccionados para guardar:", selectedProducts);
+  const handleSubmit = async () => {
+    if (selectedProducts.length === 0) {
+      setErrorMessage("No hay productos seleccionados para actualizar.");
+      return;
+    }
+  
+    console.log("Productos seleccionados antes de enviar:", selectedProducts);
+  
+    // Asegurémonos de que estamos usando los productos con el precioNuevo
+    const productosParaGuardar = selectedProducts.map((product) => {
+      // Buscar el producto correspondiente en updatedProducts
+      const updatedProduct = updatedProducts.find((p) => p.id === product.id);
+      
+      // Asegurarse de que el precioNuevo esté disponible
+      const precioNuevo = updatedProduct?.precioNuevo || product.precio; // Usar el precioNuevo calculado, si no, usar el precio original
+      
+      return {
+        id: product.id,
+        Producto: product.nombreProducto,
+        Precio: precioNuevo, // Asegurarse de que sea un número con 2 decimales
+      };
+    });
+  
+    console.log("Enviando productos para guardar:", productosParaGuardar);
+  
+    try {
+      setIsLoading(true); // Mostrar spinner mientras se carga
+      setErrorMessage(null);
+  
+      // Realizar la solicitud PUT/POST
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/actualizar-precios/1`, {
+        method: "PUT",  // Cambia a "POST" si es necesario
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productosParaGuardar),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Error al actualizar los precios. Intenta nuevamente.");
+      }
+  
+      // Confirmar éxito
+      const data = await response.json();
+      console.log("Respuesta del servidor:", data);
+  
+      // Resetear estado tras éxito
+      setSelectedProducts([]);
+      setShowAlert(false);
+      onClose(); // Cerrar el modal
+    } catch (error) {
+      setErrorMessage("Ocurrió un error al actualizar los precios.");
+      console.error("Error en la solicitud:", error);
+    } finally {
+      setIsLoading(false); // Ocultar spinner al finalizar
+    }
   };
-
+  
+  
   const columns = [
     { key: "nombreProducto", label: "NOMBRE" },
     { key: "precio", label: "PRECIO ACTUAL" },
@@ -157,15 +223,24 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
               <div className="text-danger">{error}</div>
             ) : (
               <>
-                <Select label="Seleccionar Proveedor" placeholder="Seleccione un proveedor" onChange={(e) => setSelectedProveedor(e.target.value)}>
+                <Select 
+                  label="Seleccionar Proveedor" 
+                  placeholder="Seleccione un proveedor" 
+                  onChange={(e) => setSelectedProveedor(e.target.value)}
+                  >
                   {proveedores.map((proveedor) => (
-                    <SelectItem key={proveedor.id} value={proveedor.id}>{proveedor.nombreProveedores}</SelectItem>
+                    <SelectItem 
+                    key={proveedor.id} 
+                    value={proveedor.id}
+                    >
+                      {proveedor.nombreProveedores}
+                      </SelectItem>
                   ))}
                 </Select>
 
                 <Input
                   type="number"
-                  label="Porcentaje de aumento/disminución"
+                  label="Porcentaje de aumento"
                   placeholder="Ingrese el porcentaje"
                   value={porcentaje}
                   onChange={handlePorcentajeChange}
@@ -194,17 +269,6 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
                       </TableBody>
                     </Table>
 
-                    {showAlert && (
-                      <div
-                        className="relative px-4 py-3 text-teal-700 bg-teal-200 border border-teal-500 rounded bg-opacity-30 border-opacity-30"
-                        role="alert"
-                      >
-                        <strong className="font-bold">
-                          Vas a modificar {selectedProducts.length}{" "}
-                          {selectedProducts.length === 1 ? "producto" : "productos"}.
-                        </strong>
-                      </div>
-                    )}
 
                   </>
                 ) : (
@@ -235,8 +299,8 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
             <Button color="danger" onPress={onClose}>
               Cerrar
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
-              Guardar Cambios
+            <Button color="primary" onPress={handleSubmit} disabled={isLoading}>
+              {isLoading ? <Spinner size="sm" label="Guardando..." /> : "Guardar Cambios"}
             </Button>
           </div>
         </ModalFooter>
