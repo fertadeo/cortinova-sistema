@@ -1,10 +1,10 @@
 "use client";
-import '../styles/globals.css';
+import "../styles/globals.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Spinner } from '@nextui-org/react';
-import Link from 'next/link';
+import { Spinner } from "@nextui-org/react";
+import Link from "next/link";
 
 export const Login = () => {
   const [email, setEmail] = useState("");
@@ -18,7 +18,7 @@ export const Login = () => {
     return regex.test(email);
   };
 
-  const handleSubmit = async (e: { preventDefault: () => void; }) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     setError(null);
 
@@ -49,20 +49,20 @@ export const Login = () => {
 
         if (!response.ok) {
           setError(data.message || "Credenciales incorrectas. Intenta de nuevo.");
+          setLoading(false); // Desactiva el spinner si hay error
         } else {
           localStorage.setItem("token", data.token);
           document.cookie = `token=${data.token}; path=/;`;
 
+          // Mantén el spinner y redirige
           router.push("/home");
         }
       } catch (err) {
         setError("Ocurrió un error. Intenta de nuevo más tarde.");
-      } finally {
-        setLoading(false);
+        setLoading(false); // Desactiva el spinner si hay error
       }
     }, 2000); // Simula la demora de 2 segundos
   };
-
 
   return (
     <section className="flex flex-col items-center h-screen font-serif antialiased md:flex-row">
@@ -77,8 +77,6 @@ export const Login = () => {
       </div>
 
       <div className="relative flex flex-col items-center justify-center w-full h-screen px-6 bg-white md:max-w-md lg:max-w-full md:w-1/2 xl:w-1/3 lg:px-16 xl:px-12">
-
-
         <div className="absolute transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 left-1/2 top-[16%]">
           <Image
             src="/images/logo-removebg-preview.png"
@@ -109,7 +107,7 @@ export const Login = () => {
                 type="email"
                 id="email"
                 placeholder="Ingresa tu correo electrónico"
-                className="w-full px-4 py-3 mt-2  border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
+                className="w-full px-4 py-3 mt-2 border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -125,7 +123,7 @@ export const Login = () => {
                 id="password"
                 placeholder="Ingresa tu contraseña"
                 minLength={6}
-                className="w-full px-4 py-3 mt-2  border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
+                className="w-full px-4 py-3 mt-2 border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -163,10 +161,9 @@ export const Login = () => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Aplicamos color gris a los paths del logo */}
               <path
                 d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"
-                fill="#D1D5DB" // Color gris para el primer path
+                fill="#D1D5DB"
               />
               <path d="M0 11l17 13 7-6.1L48 14V0H0z" fill="#9CA3AF" />
               <path d="M0 37l30-23 7.9 1L48 0v48H0z" fill="#6B7280" />
@@ -174,8 +171,6 @@ export const Login = () => {
             </svg>
             Iniciar sesión con Google
           </button>
-
-
 
           <p className="mt-8 text-center">
             ¿Necesitas una cuenta?{" "}
