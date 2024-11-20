@@ -1,15 +1,9 @@
-//tableProducts.tsx
-
 "use client";
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import {
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Input, Pagination, Button
-} from "@nextui-org/react";
-import { FaEye, FaFilter } from "react-icons/fa";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination } from "@nextui-org/react";
+import { FaEye } from "react-icons/fa";
 import ProductModal from "./productModal";
-import OneProductModal from "./oneProductModal";
 
 type Product = {
   id: number;
@@ -24,28 +18,12 @@ type Product = {
   habilitado: boolean;
 };
 
-type BatchChanges = {
-  precioCostoPercentage: number;
-  precioListaPercentage: number;
+type TableProductsProps = {
+  userLevel: number; // Nivel del usuario (1: empleado, 2: dueño, 3: programador)
 };
 
-const columns = [
-  { name: "ID/SKU", uid: "id" },
-  { name: "Producto", uid: "nombreProducto" },
-  { name: "Descripción", uid: "descripcion" },
-  { name: "Cantidad Disponible", uid: "cantidadDisponible" },
-  { name: "Precio Costo", uid: "precioCosto" },
-  { name: "Descuento", uid: "descuento" },
-  { name: "Precio", uid: "precio" },
-  { name: "Acciones", uid: "acciones" },
-];
-
-const precioPublicoStyle = {
-  fontWeight: "bold",
-  color: "#0070f3", 
-};
-
-const TableProducts = forwardRef((props, ref) => {
+const TableProducts = forwardRef((props: TableProductsProps, ref) => {
+  const { userLevel } = props;
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -53,6 +31,18 @@ const TableProducts = forwardRef((props, ref) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const itemsPerPage = 10;
+
+  // Configuración de columnas según nivel de usuario
+  const columns = [
+    { name: "ID/SKU", uid: "id" },
+    { name: "Producto", uid: "nombreProducto" },
+    { name: "Descripción", uid: "descripcion" },
+    { name: "Cantidad Disponible", uid: "cantidad_stock" },
+    ...(userLevel > 1 ? [{ name: "Precio Costo", uid: "precioCosto" }] : []), // Agregar columna condicionalmente
+    { name: "Descuento", uid: "descuento" },
+    { name: "Precio", uid: "precio" },
+    { name: "Acciones", uid: "acciones" },
+  ];
 
   const fetchProducts = async () => {
     try {
@@ -78,12 +68,9 @@ const TableProducts = forwardRef((props, ref) => {
     fetchProducts();
   }, []);
 
-
-  // Exponemos `refreshProducts` para que pueda ser invocado externamente
   useImperativeHandle(ref, () => ({
     refreshProducts: fetchProducts,
   }));
-
 
   useEffect(() => {
     if (searchTerm) {
@@ -103,55 +90,16 @@ const TableProducts = forwardRef((props, ref) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
-
-
-
-
-  
-
   const getCantidadStyle = (cantidad: number) => {
     if (cantidad > 5) return { color: "green" };
     if (cantidad >= 1 && cantidad <= 5) return { color: "orange" };
     return { color: "red" };
   };
 
-  const handleSaveProduct = async (updatedProduct: Product) => {
-    try {
-      await fetch(`/api/products/${updatedProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProduct)
-      });
-      
-      fetchProducts();  // Refresca los datos al guardar
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error saving product:", error);
-    }
-  };
-
   const handleViewProduct = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
-
-  const handleDeleteProduct = (productId: number) => {
-    const updatedList = products.filter((product) => product.id !== productId);
-    setProducts(updatedList);
-    setFilteredProducts(updatedList);
-    setIsModalOpen(false);
-  };
-
-  const handleToggleProduct = (productId: number) => {
-    const updatedList = products.map((product) =>
-      product.id === productId
-        ? { ...product, habilitado: !product.habilitado }
-        : product
-    );
-    setProducts(updatedList);
-    setFilteredProducts(updatedList);
-  };
-  
 
   return (
     <>
@@ -161,7 +109,6 @@ const TableProducts = forwardRef((props, ref) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-     
       </div>
 
       <Table aria-label="Tabla de productos">
@@ -173,20 +120,28 @@ const TableProducts = forwardRef((props, ref) => {
         <TableBody>
           {paginatedProducts.map((product) => (
             <TableRow key={product.id}>
-              <TableCell>{product.id}</TableCell>
-              <TableCell>{product.nombreProducto}</TableCell>
-              <TableCell>{product.descripcion}</TableCell>
-              <TableCell style={getCantidadStyle(product.cantidad_stock)}>
-                {product.cantidad_stock}
-              </TableCell>
-              <TableCell>{product.precioCosto}</TableCell>
-              <TableCell>{product.descuento}%</TableCell>
-              <TableCell style={precioPublicoStyle}>
-                {product.precio}
-              </TableCell>
-              <TableCell>
-                <FaEye className="cursor-pointer" onClick={() => handleViewProduct(product)} />
-              </TableCell>
+              {columns.map((column) => (
+                <TableCell key={column.uid}>
+                  {column.uid === "id" && product.id}
+                  {column.uid === "nombreProducto" && product.nombreProducto}
+                  {column.uid === "descripcion" && product.descripcion}
+                  {column.uid === "cantidad_stock" && (
+                    <span style={getCantidadStyle(product.cantidad_stock)}>
+                      {product.cantidad_stock}
+                    </span>
+                  )}
+                  {column.uid === "precioCosto" && product.precioCosto}
+                  {column.uid === "descuento" && `${product.descuento}%`}
+                  {column.uid === "precio" && (
+                    <span style={{ fontWeight: "bold", color: "#0070f3" }}>
+                      {product.precio}
+                    </span>
+                  )}
+                  {column.uid === "acciones" && (
+                    <FaEye className="cursor-pointer" onClick={() => handleViewProduct(product)} />
+                  )}
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>
@@ -204,8 +159,6 @@ const TableProducts = forwardRef((props, ref) => {
         product={selectedProduct}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onDelete={handleDeleteProduct}
-        onToggle={handleToggleProduct}
       />
     </>
   );

@@ -15,7 +15,7 @@ import {
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
 
-type Product = {
+export type Product = {
   id: number;
   nombreProducto: string;
   descripcion: string;

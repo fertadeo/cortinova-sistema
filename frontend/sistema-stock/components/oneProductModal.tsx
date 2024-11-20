@@ -209,24 +209,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
        </div>
 
               <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-               
-
-                <Input
-                  type="number"
-                  label="Precio"
-                  placeholder="0.00"
-                  name="Precio"
-                  value={productData.Precio}
-                  onChange={handleInputChange}
-                  isInvalid={!inputValidity.Precio}
-                  labelPlacement="inside"
-                  startContent={
-                    <div className="flex items-center pointer-events-none">
-                      <span className="text-default-400 text-small">$</span>
-                    </div>
-                  }
-                />
-                 <Input
+              <Input
                   type="number"
                   label="Precio de Costo/Proveedor"
                   placeholder="0.00"
@@ -241,6 +224,23 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                     </div>
                   }
                 />
+
+                <Input
+                  type="number"
+                  label="Precio de Venta"
+                  placeholder="0.00"
+                  name="Precio"
+                  value={productData.Precio}
+                  onChange={handleInputChange}
+                  isInvalid={!inputValidity.Precio}
+                  labelPlacement="inside"
+                  startContent={
+                    <div className="flex items-center pointer-events-none">
+                      <span className="text-default-400 text-small">$</span>
+                    </div>
+                  }
+                />
+               
               </div>
 
               <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
@@ -280,7 +280,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                 <Input
                   type="number"
                   label="Porcentaje de Descuento"
-                  placeholder="0%"
+                  placeholder="0"
                   name="Descuento"
                   value={productData.Descuento}
                   onChange={handleInputChange}
