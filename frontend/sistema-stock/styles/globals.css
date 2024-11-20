@@ -6,4 +6,22 @@ body {
     font-family: 'Roboto', sans-serif;
     background-color: #F5F5F5;
   }
+  @keyframes circle-in-center {
+    from {
+      clip-path: circle(0%);
+    }
+    to {
+      clip-path: circle(125%);
+    }
+  }
+  
+  .animated-success {
+    animation: 4.0s cubic-bezier(.25, 1, .30, 1) circle-in-center both;
+    background-color: #22c55e; /* Success color in Tailwind */
+  }
+  
+  .animated-fail {
+    animation: 2.5s cubic-bezier(.25, 1, .30, 1) circle-in-center both;
+    background-color: #ef4444; /* Danger color in Tailwind */
+  }
   
