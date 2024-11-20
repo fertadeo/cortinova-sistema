@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import {
   Modal,
   ModalContent,
@@ -11,7 +11,6 @@ import {
 } from "@nextui-org/react";
 import Notification from "./notification"; // Importa el componente de notificación
 
-// Define los tipos de las props
 interface NuevoClienteModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,32 +22,50 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
   onClose,
   onClienteAgregado,
 }) => {
+  const [idCliente, setIdCliente] = useState<number | null>(null); // Estado para el ID del cliente
   const [dni, setDni] = useState("");
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [direccion, setDireccion] = useState("");
   const [email, setEmail] = useState("");
-  const [notificationMessage, setNotificationMessage] = useState(""); // Mensaje dinámico de la notificación
-  const [notificationDescription, setNotificationDescription] = useState(""); // Descripción dinámica de la notificación
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationDescription, setNotificationDescription] = useState("");
   const [notificationVisible, setNotificationVisible] = useState(false);
-  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success'); // Tipo de notificación
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState({
-    dni: false,
     nombre: false,
     telefono: false,
-    direccion: false,
-    email: false,
   });
 
-  // Función para manejar cambios en los inputs
+  // Fetch para obtener el próximo ID
+  const fetchNextClienteId = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes/getNextClienteId`);
+      if (!response.ok) {
+        throw new Error("Error al obtener el próximo ID");
+      }
+      const data = await response.json();
+      setIdCliente(data.nextId); // Actualiza el estado con el ID obtenido
+    } catch (error) {
+      // console.error("Error al obtener el próximo ID de cliente:", error);
+      setIdCliente(null); // Reinicia el estado en caso de error
+    }
+  };
+
+  // Efecto para cargar el ID cuando el modal se abre
+  useEffect(() => {
+    if (isOpen) {
+      fetchNextClienteId();
+    }
+  }, [isOpen]);
+
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement>,
     field: string
   ) => {
     const value = e.target.value;
 
-    // Actualizar el estado del campo y resetear el error si se escribe algo
     switch (field) {
       case "nombre":
         setNombre(value);
@@ -66,61 +83,45 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
         break;
       case "direccion":
         setDireccion(value);
-        setFormErrors((prevErrors) => ({
-          ...prevErrors,
-          direccion: value.trim() === "",
-        }));
         break;
       case "email":
         setEmail(value);
-        setFormErrors((prevErrors) => ({
-          ...prevErrors,
-          email: value.trim() === "",
-        }));
         break;
       case "dni":
         setDni(value);
-        setFormErrors((prevErrors) => ({
-          ...prevErrors,
-          dni: value.trim() === "",
-        }));
         break;
       default:
         break;
     }
   };
 
-  // Función para validar el formulario antes de enviar
   const validateForm = () => {
     const errors = {
       nombre: nombre.trim() === "",
       telefono: telefono.trim() === "",
-      direccion: direccion.trim() === "",
-      email: email.trim() === "",
-      dni: dni.trim() === "",
     };
 
     setFormErrors(errors);
 
-    // Retorna true si no hay errores
     return !Object.values(errors).some((error) => error);
   };
 
   const handleGuardar = async () => {
     if (!validateForm()) {
-      return; // Detener el guardado si hay errores en el formulario
+      return;
     }
 
     const nuevoCliente = {
+      id: idCliente, // Incluye el ID en el cliente
       nombre,
       telefono,
-      email,
-      direccion,
-      dni,
+      email: email || null,
+      direccion: direccion || null,
+      dni: dni || null,
     };
 
     try {
-      setIsSaving(true); // Mostrar spinner al inicio del guardado
+      setIsSaving(true);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes`, {
         method: "POST",
@@ -133,50 +134,44 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
       if (!response.ok) {
         const errorData = await response.json();
 
-        // Manejar el caso de duplicación de cliente por DNI
         if (errorData.message === "El cliente con este DNI ya existe") {
           setNotificationMessage("Error: Cliente duplicado");
           setNotificationDescription("No se puede registrar un cliente con un DNI ya registrado.");
-          setNotificationType("error"); // Establece la notificación como error
+          setNotificationType("error");
         } else {
           setNotificationMessage("Error al guardar el cliente");
           setNotificationDescription("Ocurrió un problema al intentar guardar el cliente.");
-          setNotificationType("error"); // Error genérico
+          setNotificationType("error");
         }
 
         setNotificationVisible(true);
         setIsSaving(false);
-        return; // Detener la ejecución aquí si hay un error
+        return;
       }
 
-      // Llama al callback para recargar los clientes
       onClienteAgregado();
 
-      // Muestra la notificación de éxito
       setNotificationMessage("¡Cliente guardado exitosamente!");
       setNotificationDescription("El cliente ha sido agregado correctamente.");
-      setNotificationType("success"); // Notificación de éxito
+      setNotificationType("success");
       setNotificationVisible(true);
 
-      // Cierra el modal después de 3 segundos
       setTimeout(() => {
-        // Actualiza los campos a strings vacíos
         setDni("");
         setNombre("");
         setTelefono("");
         setEmail("");
         setDireccion("");
-
-        setIsSaving(false); // Ocultar spinner después de 3 segundos
+        setIsSaving(false);
         onClose();
       }, 3000);
     } catch (error) {
       console.error("Error al guardar el nuevo cliente:", error);
       setNotificationMessage("Error inesperado");
       setNotificationDescription("Ocurrió un error inesperado al intentar guardar el cliente.");
-      setNotificationType("error"); // Error inesperado
+      setNotificationType("error");
       setNotificationVisible(true);
-      setIsSaving(false); // En caso de error, ocultar spinner
+      setIsSaving(false);
     }
   };
 
@@ -192,6 +187,13 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
             <ModalBody>
               <Input
                 fullWidth
+                label="ID del Cliente"
+                value={idCliente ? idCliente.toString() : "Cargando..."} // Muestra el ID o un mensaje de carga
+                readOnly
+                disabled
+              />
+              <Input
+                fullWidth
                 label="Nombre completo"
                 placeholder="Ingrese el nombre"
                 value={nombre}
@@ -201,12 +203,10 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
               />
               <Input
                 fullWidth
-                label="DNI (el campo es obligatorio)"
-                placeholder="Ingrese el DNI del cliente"
+                label="DNI / CUIL (opcional)"
+                placeholder="Ingrese el DNI o  CUIL del cliente"
                 value={dni}
-                required
                 onChange={(e) => handleInputChange(e, "dni")}
-                color={formErrors.dni ? "danger" : "default"}
               />
               <Input
                 fullWidth
@@ -219,21 +219,17 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
               />
               <Input
                 fullWidth
-                label="Email"
+                label="Email (opcional)"
                 placeholder="Ingrese el Email"
                 value={email}
-                required
                 onChange={(e) => handleInputChange(e, "email")}
-                color={formErrors.email ? "danger" : "default"}
               />
               <Input
                 fullWidth
-                label="Dirección"
+                label="Dirección (opcional)"
                 placeholder="Ingrese la dirección"
-                required
                 value={direccion}
                 onChange={(e) => handleInputChange(e, "direccion")}
-                color={formErrors.direccion ? "danger" : "default"}
               />
             </ModalBody>
             <ModalFooter>
@@ -243,7 +239,7 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
               <Button
                 color="success"
                 onPress={handleGuardar}
-                disabled={isSaving}
+                disabled={isSaving || idCliente === null}
                 style={{ color: "white" }}
               >
                 {isSaving ? <Spinner color="default" /> : "Guardar"}
@@ -253,7 +249,6 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
         </ModalContent>
       </Modal>
 
-      {/* Aquí renderizamos el componente Notification fuera del modal */}
       <Notification
         message={notificationMessage}
         description={notificationDescription}
