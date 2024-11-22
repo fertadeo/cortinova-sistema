@@ -10,7 +10,7 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  console.log("El token en middleware es:", token)
+  // console.log("El token en middleware es:", token)
 
   // Continua al siguiente middleware o al request original
   return NextResponse.next();

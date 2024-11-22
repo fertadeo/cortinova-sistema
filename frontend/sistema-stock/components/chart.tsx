@@ -17,19 +17,12 @@ const BarChart = ({ options }: BarChartProps) => {
     labels: [],
     datasets: [
       {
-        label: 'Clientes por mes',
+        label: 'Clientes Nuevos',
         data: [],
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 1,
       },
-      {
-        label: 'Pedidos confirmados',
-        data: [],
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-        borderColor: 'rgba(255, 159, 64, 1)',
-        borderWidth: 1,
-      }
     ],
   });
 
@@ -44,11 +37,8 @@ const BarChart = ({ options }: BarChartProps) => {
           'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
         ];
 
-        // Inicializa los datos de clientes y pedidos
+        // Inicializa los datos de clientes
         const monthlyClientData = Array(12).fill(0);
-        const monthlyOrderData = Array(12).fill(0).map(() =>
-          Math.floor(Math.random() * 50) + 20
-        );
 
         // Llenar los datos de clientes basados en el mes
         data.forEach((monthData) => {
@@ -62,17 +52,10 @@ const BarChart = ({ options }: BarChartProps) => {
           labels: monthNames,
           datasets: [
             {
-              label: 'Clientes nuevos por mes',
+              label: 'Clientes Nuevos',
               data: monthlyClientData,
               backgroundColor: 'rgba(75, 192, 192, 0.2)',
               borderColor: 'rgba(75, 192, 192, 1)',
-              borderWidth: 1,
-            },
-            {
-              label: 'Pedidos confirmados',
-              data: monthlyOrderData,
-              backgroundColor: 'rgba(255, 159, 64, 0.2)',
-              borderColor: 'rgba(255, 159, 64, 1)',
               borderWidth: 1,
             },
           ],

@@ -27,12 +27,10 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
   });
   const [inputValidity, setInputValidity] = useState({
     Producto: true,
-    Cantidad_stock: true,
-    Descripción: true,
-    PrecioCosto: true,
     Precio: true,
     proveedor_id: true,
   });
+  
   const [notification, setNotification] = useState({
     isVisible: false,
     message: '',
@@ -93,9 +91,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
   const validateInputs = () => {
     const newValidity = {
       Producto: productData.Producto.trim() !== "",
-      Cantidad_stock: productData.Cantidad_stock.trim() !== "",
-      Descripción: productData.Descripción.trim() !== "",
-      PrecioCosto: productData.PrecioCosto.trim() !== "",
       Precio: productData.Precio.trim() !== "",
       proveedor_id: productData.proveedor_id.trim() !== "",
     };
@@ -203,17 +198,29 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                   name="Descripción"
                   value={productData.Descripción}
                   onChange={handleInputChange}
-                  isInvalid={!inputValidity.Descripción}
                   labelPlacement="inside"
                 />
        </div>
 
               <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-               
+              <Input
+                  type="number"
+                  label="Precio de Costo/Proveedor"
+                  placeholder="0.00"
+                  name="PrecioCosto"
+                  value={productData.PrecioCosto}
+                  onChange={handleInputChange}
+                  labelPlacement="inside"
+                  startContent={
+                    <div className="flex items-center pointer-events-none">
+                      <span className="text-default-400 text-small">$</span>
+                    </div>
+                  }
+                />
 
                 <Input
                   type="number"
-                  label="Precio"
+                  label="Precio de Venta"
                   placeholder="0.00"
                   name="Precio"
                   value={productData.Precio}
@@ -226,21 +233,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                     </div>
                   }
                 />
-                 <Input
-                  type="number"
-                  label="Precio de Costo/Proveedor"
-                  placeholder="0.00"
-                  name="PrecioCosto"
-                  value={productData.PrecioCosto}
-                  onChange={handleInputChange}
-                  isInvalid={!inputValidity.PrecioCosto}
-                  labelPlacement="inside"
-                  startContent={
-                    <div className="flex items-center pointer-events-none">
-                      <span className="text-default-400 text-small">$</span>
-                    </div>
-                  }
-                />
+               
               </div>
 
               <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
@@ -251,7 +244,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                   name="Cantidad_stock"
                   value={productData.Cantidad_stock}
                   onChange={handleInputChange}
-                  isInvalid={!inputValidity.Cantidad_stock}
                   labelPlacement="inside"
                 />
 
@@ -280,7 +272,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                 <Input
                   type="number"
                   label="Porcentaje de Descuento"
-                  placeholder="0%"
+                  placeholder="0"
                   name="Descuento"
                   value={productData.Descuento}
                   onChange={handleInputChange}

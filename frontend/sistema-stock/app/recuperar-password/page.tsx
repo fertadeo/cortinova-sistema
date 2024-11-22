@@ -25,7 +25,7 @@ const RecoverPassword = () => {
 
             try {
                 // Aquí iría la petición a tu API para recuperar la contraseña
-                console.log('Enviando solicitud de recuperación para:', email);
+                // console.log('Enviando solicitud de recuperación para:', email);
 
                 // Simulamos éxito en la petición
                 setSuccess(true);

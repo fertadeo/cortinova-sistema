@@ -106,7 +106,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
     });
 
     setUpdatedProducts(updated);
-    console.log("Productos recalculados:", updated); // Mostrar productos recalculados en la consola
+    // console.log("Productos recalculados:", updated); // Mostrar productos recalculados en la consola
   };
 
   useEffect(() => {
@@ -146,7 +146,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
       return;
     }
   
-    console.log("Productos seleccionados antes de enviar:", selectedProducts);
+    // console.log("Productos seleccionados antes de enviar:", selectedProducts);
   
     // Asegurémonos de que estamos usando los productos con el precioNuevo
     const productosParaGuardar = selectedProducts.map((product) => {
@@ -163,7 +163,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
       };
     });
   
-    console.log("Enviando productos para guardar:", productosParaGuardar);
+    // console.log("Enviando productos para guardar:", productosParaGuardar);
   
     try {
       setIsLoading(true); // Mostrar spinner mientras se carga

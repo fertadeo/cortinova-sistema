@@ -15,7 +15,7 @@ import {
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
 
-type Product = {
+export type Product = {
   id: number;
   nombreProducto: string;
   descripcion: string;
@@ -80,7 +80,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   useEffect(() => {
     if (editedProduct) {
       const precioPublicoCalculado =
-        editedProduct.precioLista - 
+        editedProduct.precioLista -
         (editedProduct.precioLista * editedProduct.descuento) / 100;
       setEditedProduct({
         ...editedProduct,
@@ -176,8 +176,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
               {/* Proveedor como Select */}
               <div className="mb-4">
-                <label className="block mb-1 font-medium">Proveedor</label>
+                <label htmlFor="proveedor-select" className="block mb-1 font-medium">
+                  Proveedor
+                </label>
                 <Select
+                  id="proveedor-select"
                   value={editedProduct.proveedor.nombreProveedores}
                   onChange={(event) => handleProveedorChange(event.target.value)}
                   aria-label="Seleccionar proveedor"
@@ -189,6 +192,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   ))}
                 </Select>
               </div>
+
 
               <EditableField
                 label="Cantidad Disponible"

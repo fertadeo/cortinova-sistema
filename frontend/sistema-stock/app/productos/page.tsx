@@ -93,7 +93,7 @@ const ProductosPage = () => {
       <TopBar>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div>
+            <div className='hidden'>
               <input
                 ref={fileInputRef}
                 accept=".csv"
@@ -103,7 +103,7 @@ const ProductosPage = () => {
               />
 
               <Button
-                className={`flex items-center justify-center gap-2 px-4 py-2 text-white rounded-md ${getButtonColor()}`}
+                className={` flex items-center justify-center gap-2 px-4 py-2 text-white rounded-md ${getButtonColor()}`}
                 disabled={loading}
                 onClick={handleButtonClick}
               >
