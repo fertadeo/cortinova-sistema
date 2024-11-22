@@ -30,18 +30,18 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const itemsPerPage = 10;
+  const itemsPerPage = 13;
 
   // Configuración de columnas según nivel de usuario
   const columns = [
     { name: "ID/SKU", uid: "id" },
     { name: "Producto", uid: "nombreProducto" },
     { name: "Descripción", uid: "descripcion" },
-    { name: "Cantidad Disponible", uid: "cantidad_stock" },
+    // { name: "Cantidad Disponible", uid: "cantidad_stock" },
     ...(userLevel > 1 ? [{ name: "Precio Costo", uid: "precioCosto" }] : []), // Agregar columna condicionalmente
     { name: "Descuento", uid: "descuento" },
     { name: "Precio", uid: "precio" },
-    { name: "Acciones", uid: "acciones" },
+    // { name: "Acciones", uid: "acciones" },
   ];
 
   const fetchProducts = async () => {
