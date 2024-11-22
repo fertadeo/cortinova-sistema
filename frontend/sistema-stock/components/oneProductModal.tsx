@@ -27,12 +27,10 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
   });
   const [inputValidity, setInputValidity] = useState({
     Producto: true,
-    Cantidad_stock: true,
-    Descripción: true,
-    PrecioCosto: true,
     Precio: true,
     proveedor_id: true,
   });
+  
   const [notification, setNotification] = useState({
     isVisible: false,
     message: '',
@@ -93,9 +91,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
   const validateInputs = () => {
     const newValidity = {
       Producto: productData.Producto.trim() !== "",
-      Cantidad_stock: productData.Cantidad_stock.trim() !== "",
-      Descripción: productData.Descripción.trim() !== "",
-      PrecioCosto: productData.PrecioCosto.trim() !== "",
       Precio: productData.Precio.trim() !== "",
       proveedor_id: productData.proveedor_id.trim() !== "",
     };
@@ -203,7 +198,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                   name="Descripción"
                   value={productData.Descripción}
                   onChange={handleInputChange}
-                  isInvalid={!inputValidity.Descripción}
                   labelPlacement="inside"
                 />
        </div>
@@ -216,7 +210,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                   name="PrecioCosto"
                   value={productData.PrecioCosto}
                   onChange={handleInputChange}
-                  isInvalid={!inputValidity.PrecioCosto}
                   labelPlacement="inside"
                   startContent={
                     <div className="flex items-center pointer-events-none">
@@ -251,7 +244,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                   name="Cantidad_stock"
                   value={productData.Cantidad_stock}
                   onChange={handleInputChange}
-                  isInvalid={!inputValidity.Cantidad_stock}
                   labelPlacement="inside"
                 />
 
