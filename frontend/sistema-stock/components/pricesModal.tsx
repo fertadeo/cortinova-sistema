@@ -94,20 +94,20 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
   const updatePrices = () => {
     if (!porcentaje) return;
     const percentage = parseFloat(porcentaje);
-
+  
     const updated = filteredProducts.map((product) => {
       const precio = Number(product.precio);
       const newPrice = precio * (1 + percentage / 100);
       return {
         ...product,
-        precioOriginal: precio,
-        precioNuevo: roundPrice(newPrice),
+        precioOriginal: precio.toString(), // Convertir a string si es necesario
+        precioNuevo: roundPrice(newPrice).toString(), // Convertir a string
       };
     });
-
-    setUpdatedProducts(updated);
-    // console.log("Productos recalculados:", updated); // Mostrar productos recalculados en la consola
-  };
+  
+    setUpdatedProducts(updated as Productos[]); // Asegurar el tipo
+    console.log("Productos recalculados:", updated);
+  }
 
   useEffect(() => {
     updatePrices();
