@@ -68,13 +68,17 @@ export const Login = () => {
     <section className="flex flex-col items-center h-screen font-serif antialiased md:flex-row">
       <div className="relative hidden w-full h-screen lg:block md:w-1/2 xl:w-2/3">
         <Image
-          src="/images/Sun_12.jpg"
+          src="/images/portrait-cortinova.jpg"
           alt="Background Image"
           layout="fill"
           objectFit="cover"
+          style={{
+            objectPosition: "30% 80%",
+          }}
           priority
         />
       </div>
+
 
       <div className="relative flex flex-col items-center justify-center w-full h-screen px-6 bg-white md:max-w-md lg:max-w-full md:w-1/2 xl:w-1/3 lg:px-16 xl:px-12">
         <div className="absolute transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 left-1/2 top-[16%]">
@@ -130,7 +134,7 @@ export const Login = () => {
               />
             </div>
 
-            <div className="mt-2 text-right">
+            <div className="hidden mt-2 text-right">
               <Link
                 href="/recuperar-password"
                 className="text-sm font-semibold text-gray-700 hover:text-yellow-600"
@@ -172,7 +176,7 @@ export const Login = () => {
             Iniciar sesión con Google
           </button>
 
-          <p className="mt-8 text-center">
+          <p className="hidden mt-8 text-center">
             ¿Necesitas una cuenta?{" "}
             <Link
               href="#"
