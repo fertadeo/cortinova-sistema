@@ -4,19 +4,20 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from "rea
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination } from "@nextui-org/react";
 import { FaEye } from "react-icons/fa";
 import ProductModal from "./productModal";
+import { Product } from '../types/productos'
 
-type Product = {
-  id: number;
-  nombreProducto: string;
-  descripcion: string;
-  proveedor: string;
-  cantidad_stock: number;
-  precioCosto: number;
-  precio: number;
-  descuento: number;
-  precioLista: number;
-  habilitado: boolean;
-};
+// type Product = {
+//   id: number;
+//   nombreProducto: string;
+//   descripcion: string;
+//   proveedor: { id: number; nombreProveedores: string };
+//   cantidad_stock: number;
+//   precioCosto: number;
+//   precio: number;
+//   descuento: number;
+//   precioLista: number;
+//   habilitado: boolean;
+// };
 
 type TableProductsProps = {
   userLevel: number; // Nivel del usuario (1: empleado, 2: dueño, 3: programador)
@@ -54,6 +55,10 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
       const updatedData = data.map((product: Product) => ({
         ...product,
+        proveedor: {
+          id: product.proveedor.id,
+          nombre: product.proveedor.nombreProveedores
+        },
         habilitado: product.cantidad_stock > 0,
       }));
 
@@ -99,6 +104,32 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
   const handleViewProduct = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
+  };
+
+
+  const handleSave = (updatedProduct: Product) => {
+    // Lógica para guardar un producto actualizado
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product
+      )
+    );
+  };
+  
+  const handleDelete = (productId: number) => {
+    // Lógica para eliminar un producto
+    setProducts((prevProducts) =>
+      prevProducts.filter((product) => product.id !== productId)
+    );
+  };
+  
+  const handleToggle = (productId: number, enabled: boolean) => {
+    // Lógica para habilitar/deshabilitar un producto
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === productId ? { ...product, habilitado: enabled } : product
+      )
+    );
   };
 
   return (
@@ -157,6 +188,9 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
       <ProductModal
         product={selectedProduct}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        onToggle={handleToggle}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />

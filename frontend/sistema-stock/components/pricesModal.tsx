@@ -2,21 +2,21 @@ import React, { useState, useEffect } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Select, SelectItem, Input, Button, Spinner
+  Select, SelectItem, Input, Button, Spinner, Selection
 } from "@nextui-org/react";
-import { Productos } from "@/types/productos";
+import { Product } from "@/types/productos";
 import { Proveedores } from "@/types/proveedores";
 
 const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpen, onClose }) => {
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
-  const [productos, setProductos] = useState<Productos[]>([]);
+  const [productos, setProductos] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedProveedor, setSelectedProveedor] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<Productos[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [porcentaje, setPorcentaje] = useState("");
-  const [updatedProducts, setUpdatedProducts] = useState<Productos[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Productos[]>([]); // Productos seleccionados
+  const [updatedProducts, setUpdatedProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]); // Productos seleccionados
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState(false);
 
@@ -105,7 +105,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
       };
     });
   
-    setUpdatedProducts(updated as Productos[]); // Asegurar el tipo
+    setUpdatedProducts(updated as unknown as Product[]); // Asegurar el tipo
     console.log("Productos recalculados:", updated);
   }
 
@@ -123,20 +123,18 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
     }
   };
 
-  const handleSelectionChange = (selectedKeys: Set<string> | string[]) => {
-    const selectedArray = Array.isArray(selectedKeys) ? selectedKeys : Array.from(selectedKeys);
-
-    if (selectedArray.join("") === "all") {
+  const handleSelectionChange = (selectedKeys: Selection) => {
+    const selectedArray = Array.from(selectedKeys); // Convertir el Selection en un array
+  
+    if (selectedArray.includes("all")) {
       setSelectedProducts(() => filteredProducts);
       setShowAlert(true);
     } else {
-      setSelectedProducts((prevSelectedProducts) => {
-        const selected = filteredProducts.filter(product =>
-          selectedArray.includes(String(product.id))
-        );
-        return selected.length !== prevSelectedProducts.length ? selected : prevSelectedProducts;
-      });
-      setShowAlert(selectedArray.length > 0);
+      const selected = filteredProducts.filter((product) =>
+        selectedArray.includes(String(product.id))
+      );
+      setSelectedProducts(selected);
+      setShowAlert(selected.length > 0);
     }
   };
 
@@ -205,7 +203,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
     {
       key: "precioNuevo",
       label: "PRECIO NUEVO",
-      cell: (product: Productos) => product.precioNuevo ? `$${product.precioNuevo}` : "-",
+      cell: (product: Product) => product.precioNuevo ? `$${product.precioNuevo}` : "-",
     },
   ];
 
@@ -259,7 +257,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
                         {columns.map((column) => <TableColumn key={column.key}>{column.label}</TableColumn>)}
                       </TableHeader>
                       <TableBody items={updatedProducts.length ? updatedProducts : filteredProducts}>
-                        {(item: Productos) => (
+                        {(item: Product) => (
                           <TableRow key={item.id}>
                             <TableCell>{item.nombreProducto}</TableCell>
                             <TableCell>{item.precio}</TableCell>
