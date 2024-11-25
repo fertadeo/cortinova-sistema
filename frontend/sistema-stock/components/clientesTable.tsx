@@ -209,7 +209,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
   const filteredUsers = users.filter((user) => {
     const name = user.nombre.toLowerCase() || "";
     const telefono = user.telefono.toLowerCase() || "";
-    const email = user.email.toLowerCase() || "";
+    const email = user.email? user.email.toLowerCase() : "";
     const search = searchTerm.toLowerCase();
 
     return name.includes(search) || telefono.includes(search) || email.includes(search);
