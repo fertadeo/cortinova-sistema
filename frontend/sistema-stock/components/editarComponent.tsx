@@ -51,7 +51,7 @@ const ModalEditar: React.FC<ModalEditarProps> = ({ cliente, isOpen, onClose, onS
         <ModalBody>
         <Input
             fullWidth
-            label="DNI"
+            label="DNI o CUIL/CUIT"
             value={dni}
             onChange={(e) => setDni(e.target.value)} // Actualizar el estado del DNI
           />

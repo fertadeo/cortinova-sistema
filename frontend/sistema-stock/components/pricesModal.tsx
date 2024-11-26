@@ -137,11 +137,15 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
         precioOriginal: product.precio, // Usar el precio original del producto
         precio: product.precio, // Mantener el precio actual
         precioNuevo: roundedPrice.toString() // Solo el nuevo precio se calcula
+
       } as unknown as Product;
+
     });
 
     setUpdatedProducts(updated);
   };
+
+
 
   useEffect(() => {
     updatePrices();
@@ -156,7 +160,6 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
       setErrorMessage("Por favor, ingrese solo números.");
     }
   };
-
 
   const handleSelectionChange = (keys: Selection) => {
     if (keys === 'all') {
