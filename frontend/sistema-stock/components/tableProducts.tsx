@@ -37,8 +37,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
     { name: "ID/SKU", uid: "id" },
     { name: "Producto", uid: "nombreProducto" },
     { name: "Descripción", uid: "descripcion" },
-    // { name: "Cantidad Disponible", uid: "cantidad_stock" },
-    ...(userLevel > 1 ? [{ name: "Precio Costo", uid: "precioCosto" }] : []), // Agregar columna condicionalmente
+    // ...(userLevel > 1 ? [{ name: "Precio Costo", uid: "precioCosto" }] : []), // Agregar columna condicionalmente
     { name: "Descuento", uid: "descuento" },
     { name: "Precio", uid: "precio" },
     // { name: "Acciones", uid: "acciones" },
@@ -78,10 +77,12 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
         product.nombreProducto.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredProducts(filtered);
+      setCurrentPage(1); // Nuevo: reset a página 1
     } else {
       setFilteredProducts(products);
     }
   }, [searchTerm, products]);
+
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -112,47 +113,58 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
       </div>
 
       <Table aria-label="Tabla de productos">
-        <TableHeader>
+  <TableHeader>
+    {columns.map((column) => (
+      <TableColumn key={column.uid}>{column.name}</TableColumn>
+    ))}
+  </TableHeader>
+  <TableBody>
+    {paginatedProducts.length > 0 ? (
+      paginatedProducts.map((product) => (
+        <TableRow key={product.id}>
           {columns.map((column) => (
-            <TableColumn key={column.uid}>{column.name}</TableColumn>
+            <TableCell key={column.uid}>
+              {column.uid === "id" && product.id}
+              {column.uid === "nombreProducto" && product.nombreProducto}
+              {column.uid === "descripcion" && product.descripcion}
+              {column.uid === "cantidad_stock" && (
+                <span style={getCantidadStyle(product.cantidad_stock)}>
+                  {product.cantidad_stock}
+                </span>
+              )}
+              {column.uid === "precioCosto" && product.precioCosto}
+              {column.uid === "descuento" && `${product.descuento}%`}
+              {column.uid === "precio" && (
+                <span style={{ fontWeight: "bold", color: "#0070f3" }}>
+                  {product.precio}
+                </span>
+              )}
+              {column.uid === "acciones" && (
+                <FaEye className="cursor-pointer" onClick={() => handleViewProduct(product)} />
+              )}
+            </TableCell>
           ))}
-        </TableHeader>
-        <TableBody>
-          {paginatedProducts.map((product) => (
-            <TableRow key={product.id}>
-              {columns.map((column) => (
-                <TableCell key={column.uid}>
-                  {column.uid === "id" && product.id}
-                  {column.uid === "nombreProducto" && product.nombreProducto}
-                  {column.uid === "descripcion" && product.descripcion}
-                  {column.uid === "cantidad_stock" && (
-                    <span style={getCantidadStyle(product.cantidad_stock)}>
-                      {product.cantidad_stock}
-                    </span>
-                  )}
-                  {column.uid === "precioCosto" && product.precioCosto}
-                  {column.uid === "descuento" && `${product.descuento}%`}
-                  {column.uid === "precio" && (
-                    <span style={{ fontWeight: "bold", color: "#0070f3" }}>
-                      {product.precio}
-                    </span>
-                  )}
-                  {column.uid === "acciones" && (
-                    <FaEye className="cursor-pointer" onClick={() => handleViewProduct(product)} />
-                  )}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+        </TableRow>
+      ))
+    ) : (
+      <TableRow>
+        {columns.map((column, index) => (
+          <TableCell key={index} style={{ textAlign: "center", fontStyle: "italic" }}>
+            {index === Math.floor(columns.length / 2) ? "No encontramos más resultados..." : ""}
+          </TableCell>
+        ))}
+      </TableRow>
+    )}
+  </TableBody>
+</Table>
+
 
       <Pagination
         initialPage={1}
-        onChange={handlePageChange}
         page={currentPage}
-        className="flex justify-center mt-5"
+        onChange={handlePageChange}
         total={Math.ceil(filteredProducts.length / itemsPerPage)}
+        className="flex justify-center mt-5"
       />
 
       <ProductModal
