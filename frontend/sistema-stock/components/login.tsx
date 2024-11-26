@@ -69,8 +69,8 @@ export const Login = () => {
       <div className="relative hidden w-full h-screen lg:block md:w-1/2 xl:w-2/3">
         <Image
           src="/images/portrait-cortinova.jpg"
-          alt="Background Image"
-          layout="fill"
+          alt="Background Empresa"
+          fill
           objectFit="cover"
           style={{
             objectPosition: "30% 80%",

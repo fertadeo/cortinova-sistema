@@ -160,7 +160,7 @@ const ProductosPage = () => {
             />
           </div>
         ) : (
-          <TableProducts ref={tableRef} /> // Aquí es donde la tabla se renderiza o actualiza
+          <TableProducts ref={tableRef} userLevel={2} /> // Aquí es donde la tabla se renderiza o actualiza
         )}
       </div>
     </div>

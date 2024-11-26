@@ -4,19 +4,19 @@ import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Select, SelectItem, Input, Button, Spinner, Selection
 } from "@nextui-org/react";
-import { Productos } from "@/types/productos";
+import { Product } from "@/types/productos";
 import { Proveedores } from "@/types/proveedores";
 
 const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpen, onClose }) => {
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
-  const [productos, setProductos] = useState<Productos[]>([]);
+  const [productos, setProductos] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedProveedor, setSelectedProveedor] = useState<Selection>(new Set([]));
-  const [filteredProducts, setFilteredProducts] = useState<Productos[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [porcentaje, setPorcentaje] = useState("");
-  const [updatedProducts, setUpdatedProducts] = useState<Productos[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Productos[]>([]);
+  const [updatedProducts, setUpdatedProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]); 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState(false);
 
@@ -124,7 +124,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
   const updatePrices = () => {
     if (!porcentaje) return;
     const percentage = parseFloat(porcentaje);
-
+  
     const updated = filteredProducts.map((product) => {
       const precioOriginal = Number(product.precio);
       const newPrice = precioOriginal * (1 + percentage / 100);
@@ -132,11 +132,14 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
 
       return {
         ...product,
+
         // Mantener el precio original sin cambios
         precioOriginal: product.precio, // Usar el precio original del producto
         precio: product.precio, // Mantener el precio actual
         precioNuevo: roundedPrice.toString() // Solo el nuevo precio se calcula
-      } as Productos;
+
+      } as unknown as Product;
+
     });
 
     setUpdatedProducts(updated);
@@ -172,6 +175,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
 
       setSelectedProducts(selected);
       setShowAlert(selectedArray.length > 0);
+
     }
   };
   const handleSubmit = async () => {
@@ -239,7 +243,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
     {
       key: "precioNuevo",
       label: "PRECIO NUEVO",
-      cell: (product: Productos) => product.precioNuevo ? `$${product.precioNuevo}` : "-",
+      cell: (product: Product) => product.precioNuevo ? `$${product.precioNuevo}` : "-",
     },
   ];
 
@@ -306,7 +310,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
                         ))}
                       </TableHeader>
                       <TableBody items={updatedProducts.length ? updatedProducts : filteredProducts}>
-                        {(item: Productos) => (
+                        {(item: Product) => (
                           <TableRow key={item.id}>
                             <TableCell>{item.nombreProducto}</TableCell>
                             <TableCell>{item.precio}</TableCell>
