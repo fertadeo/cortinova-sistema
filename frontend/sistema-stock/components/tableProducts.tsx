@@ -1,22 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination } from "@nextui-org/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Card } from "@nextui-org/react";
 import { FaEye } from "react-icons/fa";
 import ProductModal from "./productModal";
-
-type Product = {
-  id: number;
-  nombreProducto: string;
-  descripcion: string;
-  proveedor: string;
-  cantidad_stock: number;
-  precioCosto: number;
-  precio: number;
-  descuento: number;
-  precioLista: number;
-  habilitado: boolean;
-};
+import { SearchIcon } from "@nextui-org/shared-icons";
+import { Product } from './productModal';
 
 type TableProductsProps = {
   userLevel: number; // Nivel del usuario (1: empleado, 2: dueño, 3: programador)
@@ -104,60 +93,64 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
   return (
     <>
-      <div className="flex justify-between mb-5">
-        <Input
-          placeholder="Buscar producto"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+      <Card className="p-4">
+        <div className="flex justify-between mb-5">
+          <Input
+            placeholder="Buscar producto"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            startContent={
+              <SearchIcon className="flex-shrink-0 pointer-events-none text-default-400" />
+            }
+          />
+        </div>
 
-      <Table aria-label="Tabla de productos">
-  <TableHeader>
-    {columns.map((column) => (
-      <TableColumn key={column.uid}>{column.name}</TableColumn>
-    ))}
-  </TableHeader>
-  <TableBody>
-    {paginatedProducts.length > 0 ? (
-      paginatedProducts.map((product) => (
-        <TableRow key={product.id}>
-          {columns.map((column) => (
-            <TableCell key={column.uid}>
-              {column.uid === "id" && product.id}
-              {column.uid === "nombreProducto" && product.nombreProducto}
-              {column.uid === "descripcion" && product.descripcion}
-              {column.uid === "cantidad_stock" && (
-                <span style={getCantidadStyle(product.cantidad_stock)}>
-                  {product.cantidad_stock}
-                </span>
-              )}
-              {column.uid === "precioCosto" && product.precioCosto}
-              {column.uid === "descuento" && `${product.descuento}%`}
-              {column.uid === "precio" && (
-                <span style={{ fontWeight: "bold", color: "#0070f3" }}>
-                  {product.precio}
-                </span>
-              )}
-              {column.uid === "acciones" && (
-                <FaEye className="cursor-pointer" onClick={() => handleViewProduct(product)} />
-              )}
-            </TableCell>
-          ))}
-        </TableRow>
-      ))
-    ) : (
-      <TableRow>
-        {columns.map((column, index) => (
-          <TableCell key={index} style={{ textAlign: "center", fontStyle: "italic" }}>
-            {index === Math.floor(columns.length / 2) ? "No encontramos más resultados..." : ""}
-          </TableCell>
-        ))}
-      </TableRow>
-    )}
-  </TableBody>
-</Table>
-
+        <Table aria-label="Tabla de productos">
+          <TableHeader>
+            {columns.map((column) => (
+              <TableColumn key={column.uid}>{column.name}</TableColumn>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {paginatedProducts.length > 0 ? (
+              paginatedProducts.map((product) => (
+                <TableRow key={product.id}>
+                  {columns.map((column) => (
+                    <TableCell key={column.uid}>
+                      {column.uid === "id" && product.id}
+                      {column.uid === "nombreProducto" && product.nombreProducto}
+                      {column.uid === "descripcion" && product.descripcion}
+                      {column.uid === "cantidad_stock" && (
+                        <span style={getCantidadStyle(product.cantidad_stock)}>
+                          {product.cantidad_stock}
+                        </span>
+                      )}
+                      {column.uid === "precioCosto" && product.precioCosto}
+                      {column.uid === "descuento" && `${product.descuento}%`}
+                      {column.uid === "precio" && (
+                        <span style={{ fontWeight: "bold", color: "#0070f3" }}>
+                          {product.precio}
+                        </span>
+                      )}
+                      {column.uid === "acciones" && (
+                        <FaEye className="cursor-pointer" onClick={() => handleViewProduct(product)} />
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                {columns.map((column, index) => (
+                  <TableCell key={index} style={{ textAlign: "center", fontStyle: "italic" }}>
+                    {index === Math.floor(columns.length / 2) ? "No encontramos más resultados..." : ""}
+                  </TableCell>
+                ))}
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       <Pagination
         initialPage={1}
@@ -170,8 +163,13 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
       <ProductModal
         product={selectedProduct}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+        onClose={() => setIsModalOpen(false)} onSave={function (product: Product): void {
+          throw new Error("Function not implemented.");
+        } } onDelete={function (productId: number): void {
+          throw new Error("Function not implemented.");
+        } } onToggle={function (productId: number): void {
+          throw new Error("Function not implemented.");
+        } }      />
     </>
   );
 });

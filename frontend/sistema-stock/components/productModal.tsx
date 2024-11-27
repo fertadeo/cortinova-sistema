@@ -1,7 +1,7 @@
 // src/components/ProductModal.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
 import {
   Modal,
   ModalContent,
@@ -16,6 +16,8 @@ import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
 
 export type Product = {
+  precio: ReactNode;
+  cantidad_stock: number;
   id: number;
   nombreProducto: string;
   descripcion: string;
