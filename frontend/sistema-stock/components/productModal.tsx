@@ -17,7 +17,7 @@ import EditableField from "./EditableField";
 
 
 export type Product = {
-  precio: ReactNode;
+  precio: number;
   cantidad_stock: number;
   id: number;
   nombreProducto: string;

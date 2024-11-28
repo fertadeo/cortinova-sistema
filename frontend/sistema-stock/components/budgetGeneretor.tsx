@@ -1,0 +1,571 @@
+import { useState, useEffect } from "react";
+import {
+  Input,
+  Table,
+  Checkbox,
+  Button,
+  Spacer,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Card,
+} from "@nextui-org/react";
+
+interface TableItem {
+  id: number;
+  name: string;
+  description: string;
+  quantity: number;
+  price: number;
+  productId: number;
+}
+
+interface Client {
+  id: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+}
+
+interface Product {
+  id: number;
+  nombreProducto: string;
+  descripcion: string;
+  precio: string | number;
+  proveedor?: {
+    id: number;
+    nombreProveedores: string;
+  };
+}
+
+const BudgetGenerator = () => {
+  // Estados para el cliente
+  const [client, setClient] = useState("");
+  const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [showClientsList, setShowClientsList] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Estados para productos y pagos
+  const [product, setProduct] = useState("");
+  const [cashPayment, setCashPayment] = useState(false);
+
+  // Agregar estos estados
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [showProductsList, setShowProductsList] = useState(false);
+
+  const [tableData, setTableData] = useState<TableItem[]>([]);
+
+  // Agregar estado para el descuento
+  const [applyDiscount, setApplyDiscount] = useState(false);
+
+  // Agregar estado para la fila expandida
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+
+  // Estados para el alert
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Add these states near other state declarations
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+
+  const searchClients = async (searchTerm: string) => {
+    setIsLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/clientes?search=${searchTerm}`);
+      
+      if (!response.ok) throw new Error('Error al buscar clientes');
+      const data = await response.json();
+      
+      // Filtrar localmente también por otros campos
+      const filteredData = data.filter((client: Client) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          client.nombre?.toLowerCase().includes(searchLower) ||
+          client.direccion?.toLowerCase().includes(searchLower) ||
+          client.telefono?.toLowerCase().includes(searchLower) ||
+          client.email?.toLowerCase().includes(searchLower)
+        );
+      });
+      
+      setClients(filteredData);
+      setFilteredClients(filteredData);
+    } catch (error) {
+      console.error('Error detallado:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const searchProducts = async (searchTerm: string) => {
+    setIsLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/productos?search=${searchTerm}`);
+      
+      if (!response.ok) throw new Error('Error al buscar productos');
+      const data = await response.json();
+      
+      // Filtrar usando los campos correctos
+      const filteredData = data.filter((product: Product) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          product.nombreProducto?.toLowerCase().includes(searchLower) ||
+          product.descripcion?.toLowerCase().includes(searchLower)
+        );
+      });
+      
+      setFilteredProducts(filteredData);
+      setShowProductsList(true);
+    } catch (error) {
+      console.error('Error al buscar productos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateSubtotal = (quantity: number, price: number) => quantity * price;
+
+  const total = tableData.reduce(
+    (sum, item) => sum + calculateSubtotal(item.quantity, item.price),
+    0
+  );
+
+  const handleRemoveProduct = (id: number) => {
+    setTableData(prevData => prevData.filter(item => item.id !== id));
+  };
+
+  // Actualizar las columnas
+  const columns = [
+    { name: "PRODUCTO", uid: "name" },
+    { name: "DESCRIPCIÓN", uid: "description" },
+    { name: "PRECIO UNIDAD", uid: "price" },
+    { name: "CANTIDAD", uid: "quantity" },
+    { name: "SUBTOTAL", uid: "subtotal" },
+    { name: "ACCIONES", uid: "actions" }
+  ];
+
+  const renderCell = (item: TableItem, columnKey: React.Key) => {
+    switch (columnKey) {
+      case "name":
+        return <TableCell>{item.name}</TableCell>;
+      case "description":
+        return <TableCell>{item.description}</TableCell>;
+      case "price":
+        return <TableCell>${item.price.toFixed(2)}</TableCell>;
+      case "quantity":
+        return (
+          <TableCell>
+            <input
+              type="number"
+              value={item.quantity}
+              onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+              className="p-1 w-20 rounded border"
+              min={0}
+            />
+          </TableCell>
+        );
+      case "subtotal":
+        return <TableCell>${(item.price * item.quantity).toFixed(2)}</TableCell>;
+      case "actions":
+        return (
+          <TableCell className="flex justify-end pr-0.5">
+            <Button 
+              color="danger"
+              variant="solid"
+              size="sm"
+              isIconOnly
+              onClick={() => handleRemoveProduct(item.id)}
+            >
+              ✕
+            </Button>
+          </TableCell>
+        );
+      default:
+        return <TableCell>-</TableCell>;
+    }
+  };
+
+  const handleClientSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setClient(value);
+    setShowClientsList(true);
+
+    if (!value.trim()) {
+      setFilteredClients([]);
+      setShowClientsList(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      searchClients(value);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  const handleClientSelect = (selectedClient: Client) => {
+    setSelectedClient(selectedClient);
+    setClient(selectedClient.nombre);
+    setShowClientsList(false);
+  };
+
+  const handleProductSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setProduct(value);
+    setShowProductsList(true);
+
+    if (!value.trim()) {
+      setFilteredProducts([]);
+      setShowProductsList(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      searchProducts(value);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  const handleProductSelect = (selectedProduct: Product) => {
+    // Crear el nuevo item para la tabla
+    const newTableItem: TableItem = {
+      id: Date.now(),
+      productId: selectedProduct.id,
+      name: selectedProduct.nombreProducto,
+      description: selectedProduct.descripcion,
+      quantity: 1,
+      price: Number(selectedProduct.precio)
+    };
+
+    // Agregar el item a la tabla
+    setTableData(prevData => [...prevData, newTableItem]);
+    
+    // Limpiar el input y cerrar la lista
+    setProduct("");  // Limpiar el input
+    setShowProductsList(false);  // Cerrar la lista de resultados
+    setFilteredProducts([]); // Limpiar los resultados filtrados
+  };
+
+  // Actualizar el cálculo del total
+  const calculateTotal = () => {
+    const subtotal = tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = applyDiscount ? subtotal * 0.10 : 0;
+    const finalTotal = subtotal - discount;
+
+    return {
+      subtotal,
+      discount,
+      finalTotal
+    };
+  };
+
+  // Actualizar el checkbox y el total
+  const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setApplyDiscount(e.target.checked);
+  };
+
+  // Agregar función para manejar cambios en la cantidad
+  const handleQuantityChange = (id: number, newQuantity: string) => {
+    const quantity = parseInt(newQuantity) || 0;
+    if (quantity >= 0) {
+      setTableData(prevData =>
+        prevData.map(item =>
+          item.id === id ? { ...item, quantity } : item
+        )
+      );
+    }
+  };
+
+  // Función para manejar la emisión del presupuesto
+  const handleEmitirPresupuesto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validaciones
+    if (!selectedClient) {
+      setErrorMessage("Falta elegir un cliente");
+      setShowErrorAlert(true);
+      return;
+    }
+    
+    if (tableData.length === 0) {
+      setErrorMessage("No hay productos en la tabla");
+      setShowErrorAlert(true);
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Simulate API call with 2 second delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Si pasa las validaciones, crear objeto con todos los datos
+      const presupuestoData = {
+        fecha: new Date().toISOString(),
+        cliente: {
+          id: selectedClient.id,
+          nombre: selectedClient.nombre,
+          direccion: selectedClient.direccion,
+          telefono: selectedClient.telefono,
+          email: selectedClient.email
+        },
+        productos: tableData.map(item => ({
+          id: item.productId,
+          nombre: item.name,
+          descripcion: item.description,
+          cantidad: item.quantity,
+          precioUnitario: item.price,
+          subtotal: item.price * item.quantity
+        })),
+        totales: {
+          subtotal: tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+          descuento: applyDiscount ? tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.10 : 0,
+          total: applyDiscount 
+            ? tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.90
+            : tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        },
+        descuentoAplicado: applyDiscount
+      };
+
+      console.log('Presupuesto generado:', presupuestoData);
+      
+      // Aquí iría la lógica para enviar el presupuesto al backend
+      setSubmitStatus('success');
+      setIsSubmitted(true);
+    } catch (error) {
+      setSubmitStatus('error');
+      setIsSubmitted(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Función para quitar el cliente seleccionado
+  const handleRemoveSelectedClient = () => {
+    setSelectedClient(null);
+    setClient(''); // Limpiar el input de búsqueda también
+  };
+
+  return (
+    <Card className="p-8">
+      <h1 style={{ fontSize: "200" }}>Generar Presupuesto</h1>
+      <Spacer y={6} />
+      
+      <div className="mb-4">
+        <Input
+          label="Buscar Cliente"
+          placeholder="Nombre del cliente"
+          value={client}
+          onChange={handleClientSearch}
+          className="w-full"
+        />
+        
+        {/* Lista de resultados de búsqueda */}
+        {showClientsList && filteredClients.length > 0 && (
+          <div className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg">
+            {filteredClients.map((client) => (
+              <div
+                key={client.id}
+                role="button"
+                tabIndex={0}
+                className="px-4 py-2 border-b cursor-pointer hover:bg-gray-100 last:border-b-0"
+                onClick={() => handleClientSelect(client)}
+                onKeyDown={(e) => e.key === 'Enter' && handleClientSelect(client)}
+              >
+                <div className="font-semibold">{client.nombre || 'Sin nombre'}</div>
+                <div className="grid grid-cols-1 gap-1 text-sm text-gray-600">
+                  {client.direccion && <div>📍 {client.direccion}</div>}
+                  {client.telefono && <div>📱 {client.telefono}</div>}
+                  {client.email && <div>✉️ {client.email}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Cliente seleccionado */}
+        {selectedClient && (
+          <div className="p-3 mt-2 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex justify-between items-center">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-700">Cliente Seleccionado:</h3>
+                <div className="mt-1 space-y-1 text-sm">
+                  <p><span className="font-medium">Nombre:</span> {selectedClient.nombre}</p>
+                  {selectedClient.direccion && (
+                    <p><span className="font-medium">Dirección:</span> {selectedClient.direccion}</p>
+                  )}
+                  {selectedClient.telefono && (
+                    <p><span className="font-medium">Teléfono:</span> {selectedClient.telefono}</p>
+                  )}
+                  {selectedClient.email && (
+                    <p><span className="font-medium">Email:</span> {selectedClient.email}</p>
+                  )}
+                </div>
+              </div>
+              <Button
+                color="danger"
+                variant="solid"
+                size="sm"
+                isIconOnly
+                onClick={handleRemoveSelectedClient}
+                className="self-start -ml-2.5"
+              >
+                ✕
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      <Spacer y={1} />
+      <div className="relative">
+        <Input
+          label="Buscar producto"
+          placeholder="Escribe para buscar..."
+          value={product}
+          onChange={handleProductSearch}
+          className="w-full"
+          endContent={isLoading && <span className="animate-spin">⌛</span>}
+        />
+        
+        {showProductsList && filteredProducts.length > 0 && (
+          <div className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg">
+            {filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                role="button"
+                tabIndex={0}
+                className="px-4 py-2 border-b cursor-pointer hover:bg-gray-100 last:border-b-0"
+                onClick={() => handleProductSelect(product)}
+                onKeyDown={(e) => e.key === 'Enter' && handleProductSelect(product)}
+              >
+                <div className="font-semibold">{product.nombreProducto || 'Sin nombre'}</div>
+                <div className="grid grid-cols-1 gap-1 text-sm text-gray-600">
+                  {product.descripcion && (
+                    <div>📝 {product.descripcion}</div>
+                  )}
+                  <div>💰 ${typeof product.precio === 'number' ? 
+                    product.precio.toFixed(2) : 
+                    Number(product.precio).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showProductsList && product && filteredProducts.length === 0 && !isLoading && (
+          <div className="absolute z-50 p-4 mt-1 w-full text-center text-gray-500 bg-white rounded-md border border-gray-200 shadow-lg">
+            No se encontraron productos
+          </div>
+        )}
+      </div>
+      <Spacer y={2} />
+      <Table aria-label="Budget Table">
+        <TableHeader columns={columns}>
+          {(column) => (
+            <TableColumn key={column.uid}>{column.name}</TableColumn>
+          )}
+        </TableHeader>
+        <TableBody items={tableData}>
+          {(item) => (
+            <TableRow key={item.id}>
+              {(columnKey) => renderCell(item, columnKey)}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <Spacer y={1} />
+      <div className="flex justify-start mt-4">
+        <div className="p-4 w-80 bg-gray-50 rounded-lg shadow-sm">
+          <div className="flex gap-2 items-center mb-3">
+            <Checkbox
+              checked={applyDiscount}
+              onChange={handleDiscountChange}
+            >
+              Pago en efectivo (10% descuento)
+            </Checkbox>
+          </div>
+          
+          <div className="pt-2 space-y-2 border-t">
+            <div className="flex justify-between text-base">
+              <span>Total:</span>
+              <span className="font-semibold">${calculateTotal().subtotal.toFixed(2)}</span>
+            </div>
+            
+            {applyDiscount && (
+              <>
+                <div className="flex justify-between text-base text-green-600">
+                  <span>Descuento (10%):</span>
+                  <span>-${calculateTotal().discount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between pt-2 text-lg font-bold text-green-700 border-t">
+                  <span>Total con descuento:</span>
+                  <span>${calculateTotal().finalTotal.toFixed(2)}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <Spacer y={6} />
+      <form onSubmit={handleEmitirPresupuesto}>
+        {/* Alert de error - solo se muestra cuando showErrorAlert es true */}
+        {showErrorAlert && (
+          <div className="flex relative justify-between items-center px-4 py-3 mb-4 text-red-700 bg-red-200 bg-opacity-30 rounded border border-red-500 border-opacity-30" role="alert">
+            <strong className="font-bold">{errorMessage}</strong>
+            <button
+              type="button" // Importante para evitar submit accidental
+              className="ml-4 text-red-700 hover:text-red-900"
+              onClick={() => setShowErrorAlert(false)}
+            >
+              <span className="text-xl">✕</span>
+            </button>
+          </div>
+        )}
+
+        {/* Alert informativo - siempre visible */}
+        {isSubmitted && (
+          <div 
+            className={`relative flex-1 px-4 py-3 rounded border ${
+              submitStatus === 'success' 
+                ? 'text-teal-700 bg-teal-200 bg-opacity-30 border-teal-500 border-opacity-30'
+                : 'text-red-700 bg-red-200 bg-opacity-30 border-red-500 border-opacity-30'
+            }`} 
+            role="alert"
+          >
+            <strong className="font-bold">
+              {submitStatus === 'success' 
+                ? 'Recordá que al emitir el presupuesto el mismo queda guardado en el historial del cliente para su posterior uso!'
+                : 'No se pudo emitir el presupuesto'}
+            </strong>
+          </div>
+        )}
+
+        {/* Resto del formulario ... */}
+        
+        {/* Botón de submit */}
+        <div className="flex gap-2 justify-start mt-4">
+          <Button
+            color="success"
+            type="submit"
+            isLoading={isLoading}
+          >
+            {isLoading ? "Emitiendo..." : "Emitir Presupuesto"}
+          </Button>
+        </div>
+      </form>
+
+      <Spacer y={6} />
+    </Card>
+  );
+};
+
+export default BudgetGenerator;

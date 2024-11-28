@@ -198,13 +198,8 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
         onDelete={handleDelete}
         onToggle={handleToggle}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)} onSave={function (product: Product): void {
-          throw new Error("Function not implemented.");
-        } } onDelete={function (productId: number): void {
-          throw new Error("Function not implemented.");
-        } } onToggle={function (productId: number): void {
-          throw new Error("Function not implemented.");
-        } }      />
+        onClose={() => setIsModalOpen(false)}
+      />
     </>
   );
 });
