@@ -7,6 +7,8 @@ import ProductModal from "./productModal";
 import { SearchIcon } from "@nextui-org/shared-icons";
 import { Product } from './productModal';
 
+
+
 type TableProductsProps = {
   userLevel: number; // Nivel del usuario (1: empleado, 2: dueño, 3: programador)
 };
@@ -42,6 +44,10 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
       const updatedData = data.map((product: Product) => ({
         ...product,
+        proveedor: {
+          id: product.proveedor.id,
+          nombre: product.proveedor.nombreProveedores
+        },
         habilitado: product.cantidad_stock > 0,
       }));
 
@@ -89,6 +95,32 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
   const handleViewProduct = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
+  };
+
+
+  const handleSave = (updatedProduct: Product) => {
+    // Lógica para guardar un producto actualizado
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product
+      )
+    );
+  };
+  
+  const handleDelete = (productId: number) => {
+    // Lógica para eliminar un producto
+    setProducts((prevProducts) =>
+      prevProducts.filter((product) => product.id !== productId)
+    );
+  };
+  
+  const handleToggle = (productId: number, enabled: boolean) => {
+    // Lógica para habilitar/deshabilitar un producto
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === productId ? { ...product, habilitado: enabled } : product
+      )
+    );
   };
 
   return (
@@ -162,6 +194,9 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
       <ProductModal
         product={selectedProduct}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        onToggle={handleToggle}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)} onSave={function (product: Product): void {
           throw new Error("Function not implemented.");

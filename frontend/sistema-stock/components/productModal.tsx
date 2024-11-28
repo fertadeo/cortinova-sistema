@@ -15,6 +15,7 @@ import {
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
 
+
 export type Product = {
   precio: ReactNode;
   cantidad_stock: number;
@@ -44,7 +45,7 @@ type ProductModalProps = {
   onClose: () => void;
   onSave: (product: Product) => void;
   onDelete: (productId: number) => void;
-  onToggle: (productId: number) => void;
+  onToggle: (productId: number, enabled: boolean) => void;
 };
 
 const ProductModal: React.FC<ProductModalProps> = ({
@@ -53,16 +54,26 @@ const ProductModal: React.FC<ProductModalProps> = ({
   onClose,
   onSave,
   onDelete,
-  onToggle,
+  // onToggle,
 }) => {
-  const [editedProduct, setEditedProduct] = useState<Product | null>(product);
-  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+  if (!product) return null;
+  // const [editedProduct, setEditedProduct] = useState<Product | null>(product);
+  // const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+// Estados iniciales definidos correctamente
+/* eslint-disable */
+const [editedProduct, setEditedProduct] = useState<Product | null>(null);
+const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+/* eslint-enable */
 
-  useEffect(() => {
-    setEditedProduct(product);
-  }, [product]);
+// Sincronizar el producto editado con el estado cuando cambien las props
+/* eslint-disable */
+useEffect(() => {
+  setEditedProduct(product || null); // Asegúrate de manejar el caso en el que product sea null o undefined
+}, [product]);
 
-  // Cargar proveedores desde la API
+
+// Efecto para cargar proveedores al montar el componente
+useEffect(() => {
   const fetchProveedores = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -75,22 +86,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
-  useEffect(() => {
-    fetchProveedores();
-  }, []);
+  fetchProveedores(); // Llamada a la función
+}, []); // Solo se ejecuta al montar el componente
 
-  useEffect(() => {
-    if (editedProduct) {
-      const precioPublicoCalculado =
-        editedProduct.precioLista -
-        (editedProduct.precioLista * editedProduct.descuento) / 100;
-      setEditedProduct({
-        ...editedProduct,
-        precioPublico: Number(precioPublicoCalculado.toFixed(2)),
-      });
-    }
-  }, [editedProduct?.precioLista, editedProduct?.descuento]);
-
+/* eslint-enable */
   const handleSaveChanges = async () => {
     if (editedProduct) {
       try {
@@ -121,11 +120,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
-  const handleToggle = () => {
-    if (editedProduct) {
-      onToggle(editedProduct.id);
-    }
+  const handleToggle = (productId: number, enabled: boolean) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((product: { id: number; }) =>
+        product.id === productId ? { ...product, habilitado: enabled } : product
+      )
+    );
   };
+  
 
   const handleProveedorChange = (value: string) => {
     const selectedProveedor = proveedores.find(
@@ -195,10 +197,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 </Select>
               </div>
 
-
               <EditableField
                 label="Cantidad Disponible"
-                value={editedProduct.cantidadDisponible}
+                value={editedProduct.cantidadDisponible ?? 0}
                 onChange={(value) =>
                   setEditedProduct({
                     ...editedProduct,
@@ -208,23 +209,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 type="number"
               />
               <EditableField
-                label="Precio de Costo"
-                value={editedProduct.precioCosto}
+                label="Precio"
+                value={editedProduct.precio}
                 onChange={(value) =>
                   setEditedProduct({
                     ...editedProduct,
-                    precioCosto: Number(value),
-                  })
-                }
-                type="number"
-              />
-              <EditableField
-                label="Precio de Lista"
-                value={editedProduct.precioLista}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    precioLista: Number(value),
+                    precio: Number(value),
                   })
                 }
                 type="number"
@@ -240,12 +230,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 }
                 type="number"
               />
-              <EditableField
-                label="Precio al Público"
-                value={editedProduct.precioPublico}
-                onChange={() => { }}
-                isEditable={false}
-              />
             </div>
           )}
         </ModalBody>
@@ -256,18 +240,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
           <Button variant="solid" color="primary" onClick={handleSaveChanges}>
             Guardar Cambios
           </Button>
-          <Button
+          {/* <Button
             variant="flat"
             color={editedProduct?.habilitado ? "warning" : "success"}
             onClick={handleToggle}
-          >
-            {editedProduct?.habilitado ? "Deshabilitar" : "Habilitar"}
+          > */}
+            {/* {editedProduct?.habilitado ? "Deshabilitar" : "Habilitar"}
             {editedProduct?.habilitado ? (
               <FaToggleOff style={{ marginLeft: "5px" }} />
             ) : (
               <FaToggleOn style={{ marginLeft: "5px" }} />
             )}
-          </Button>
+          </Button> */}
           {editedProduct?.cantidadDisponible === 0 && (
             <Button
               variant="flat"
@@ -285,3 +269,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 };
 
 export default ProductModal;
+function setProducts(arg0: (prevProducts: any) => any) {
+  throw new Error("Function not implemented.");
+}
+
