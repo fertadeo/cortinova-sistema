@@ -1,7 +1,7 @@
 // src/components/ProductModal.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
 import {
   Modal,
   ModalContent,
@@ -14,7 +14,25 @@ import {
 } from "@nextui-org/react";
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
-import { Product } from "../types/productos";
+
+
+export type Product = {
+  precio: ReactNode;
+  cantidad_stock: number;
+  id: number;
+  nombreProducto: string;
+  descripcion: string;
+  proveedor: {
+    id: number;
+    nombreProveedores: string;
+  };
+  cantidadDisponible: number;
+  precioCosto: number;
+  precioLista: number;
+  descuento: number;
+  precioPublico: number;
+  habilitado: boolean;
+};
 
 type Proveedor = {
   id: number;
