@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Input,
   Table,
@@ -73,6 +73,25 @@ const BudgetGenerator = () => {
   // Add these states near other state declarations
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+
+  const clientsListRef = useRef<HTMLDivElement>(null);
+  const productsListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (clientsListRef.current && !clientsListRef.current.contains(event.target as Node)) {
+        setShowClientsList(false);
+      }
+      if (productsListRef.current && !productsListRef.current.contains(event.target as Node)) {
+        setShowProductsList(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const searchClients = async (searchTerm: string) => {
     setIsLoading(true);
@@ -368,9 +387,11 @@ const BudgetGenerator = () => {
           className="w-full"
         />
         
-        {/* Lista de resultados de búsqueda */}
         {showClientsList && filteredClients.length > 0 && (
-          <div className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg">
+          <div 
+            ref={clientsListRef}
+            className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg"
+          >
             {filteredClients.map((client) => (
               <div
                 key={client.id}
@@ -436,7 +457,10 @@ const BudgetGenerator = () => {
         />
         
         {showProductsList && filteredProducts.length > 0 && (
-          <div className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg">
+          <div 
+            ref={productsListRef}
+            className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg"
+          >
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
@@ -531,7 +555,7 @@ const BudgetGenerator = () => {
           </div>
         )}
 
-        {/* Alert informativo - siempre visible */}
+     
         {isSubmitted && (
           <div 
             className={`relative flex-1 px-4 py-3 rounded border ${
@@ -549,9 +573,9 @@ const BudgetGenerator = () => {
           </div>
         )}
 
-        {/* Resto del formulario ... */}
+  
         
-        {/* Botón de submit */}
+
         <div className="flex gap-2 justify-start mt-4">
           <Button
             color="success"
