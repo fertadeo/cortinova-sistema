@@ -1,7 +1,6 @@
 "use client"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { Divider } from "@nextui-org/react"
 
 export const SideBar = () => {
@@ -20,13 +19,13 @@ export const SideBar = () => {
 
 
   return (
-    <section className="fixed font-sans antialiased ">
+    <section className="fixed font-sans antialiased">
       <section
         className="flex flex-row w-screen h-full"
         id="view"
       >
         <button
-          className="absolute top-0 left-0 p-2 text-gray-500 bg-white border-2 border-gray-200 rounded-md shadow-lg focus:bg-teal-500 focus:outline-none focus:text-white sm:hidden"
+          className="absolute top-0 left-0 p-2 text-gray-500 bg-white rounded-md border-2 border-gray-200 shadow-lg focus:bg-teal-500 focus:outline-none focus:text-white sm:hidden"
         >
           <svg
             className="w-5 h-5 fill-current"
@@ -42,10 +41,10 @@ export const SideBar = () => {
           </svg>
         </button>
         <div
-          className="h-screen px-3 overflow-x-hidden transition-transform duration-300 ease-in-out bg-white shadow-xl md:block w-30 md:w-60 lg:w-60"
+          className="overflow-x-hidden px-3 h-screen bg-white shadow-xl transition-transform duration-300 ease-in-out md:block w-30 md:w-60 lg:w-60"
           id="sidebar"
         >
-          <div className="mt-10 space-y-6 md:space-y-10">
+          <div className="mt-[50px] space-y-6 md:space-y-10">
             <h1 className="text-sm font-bold text-center md:block md:text-xl">
               Cortinova<span className="text-amber-400">.</span>
             </h1>
@@ -53,7 +52,7 @@ export const SideBar = () => {
               {/* <Image
                 src="https://images.unsplash.com/photo-1628157588553-5eeea00af15c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=880&q=80"
                 alt="Avatar user"
-                className="w-10 mx-auto rounded-full md:w-16"
+                className="mx-auto w-10 rounded-full md:w-16"
                 width={150} // Añade las dimensiones
                 height={150} // Añade las dimensiones
               /> */}
@@ -63,13 +62,13 @@ export const SideBar = () => {
                 >
                   Eduard Pantazi
                 </h2>
-                <p className=" hidden text-xs text-center text-gray-500">Administrador/Empleado</p>
+                <p className="hidden text-xs text-center text-gray-500">Administrador/Empleado</p>
               </div>
             </div>
-            <div id="menu" className="flex flex-col space-y-2 self-end">
+            <div id="menu" className="flex flex-col self-end space-y-2">
               <Link
                 href="/home"
-                className="justify-center px-2 py-2 text-gray-700 align-middle transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:text-base"
+                className="justify-center px-2 py-2 text-gray-700 align-middle rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:text-base"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -85,7 +84,7 @@ export const SideBar = () => {
               </Link>
               <Link
                 href="/clientes"
-                className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
+                className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -101,7 +100,7 @@ export const SideBar = () => {
               </Link>
               <Link
                 href="/productos"
-                className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
+                className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -115,17 +114,9 @@ export const SideBar = () => {
                 </svg>
                 <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }} >Productos</span>
               </Link>
-
-
-                <Divider/>
-
-            
-
-
-
               <Link
-                href="/home"
-                className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-slate-500 hover:text-white hover:scale-105"
+                href="/presupuestos"
+                className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -140,9 +131,18 @@ export const SideBar = () => {
                 <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }}> Presupuestos  </span>
               </Link>
 
+
+              <Divider />
+
+
+
+
+
+
+
               <Link
                 href="/home"
-                className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-slate-500 hover:text-white hover:scale-105"
+                className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-slate-500 hover:text-white hover:scale-105"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -161,7 +161,7 @@ export const SideBar = () => {
 
               <Link
                 href="/home"
-                className="px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-slate-500 hover:text-white hover:scale-105"
+                className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-slate-500 hover:text-white hover:scale-105"
               >
                 <svg
                   className="inline-block w-6 h-6 fill-current"
@@ -177,11 +177,11 @@ export const SideBar = () => {
               </Link>
 
 
-              <Divider/>
+              <Divider />
 
               <Link
                 href="https://api.whatsapp.com/send?phone=5493517552258"
-                className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 transition duration-150 ease-in-out rounded-md hover:bg-teal-500 hover:text-white hover:scale-105"
+                className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -208,7 +208,7 @@ export const SideBar = () => {
               <div className="mt-auto">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 transition duration-150 ease-in-out rounded-md hover:bg-red-500 hover:text-white hover:scale-105"
+                  className="flex gap-2 items-center px-4 py-2 text-sm font-medium text-red-700 rounded-md transition duration-150 ease-in-out hover:bg-red-500 hover:text-white hover:scale-105"
                 >
                   <svg
                     width="24"
@@ -220,7 +220,7 @@ export const SideBar = () => {
                     <path d="M15 12H3M3 12L6 9M3 12L6 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
 
-                  <span className="text-lg pr-10">
+                  <span className="pr-10 text-lg">
                     Cerrar sesión</span>
                 </button>
               </div>
