@@ -22,6 +22,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const itemsPerPage = 13;
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
 
   // Configuración de columnas según nivel de usuario
   const columns = [
@@ -146,7 +147,11 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
           <TableBody>
             {paginatedProducts.length > 0 ? (
               paginatedProducts.map((product) => (
-                <TableRow key={product.id}>
+                <TableRow
+                  key={product.id}
+                  className={`cursor-pointer ${selectedRowId === product.id ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                  onClick={() => setSelectedRowId(product.id)}
+                >
                   {columns.map((column) => (
                     <TableCell key={column.uid}>
                       {column.uid === "id" && product.id}
