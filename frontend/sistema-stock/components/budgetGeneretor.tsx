@@ -28,6 +28,7 @@ interface Client {
   direccion: string;
   telefono: string;
   email: string;
+  dni?: string;
 }
 
 interface Product {
@@ -69,6 +70,7 @@ const BudgetGenerator = () => {
   // Estados para el alert
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   // Add these states near other state declarations
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -76,6 +78,17 @@ const BudgetGenerator = () => {
 
   const clientsListRef = useRef<HTMLDivElement>(null);
   const productsListRef = useRef<HTMLDivElement>(null);
+
+  // Add these states near the top with other states
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [newClient, setNewClient] = useState<Client>({
+    id: 0,
+    nombre: '',
+    direccion: '',
+    telefono: '',
+    email: '',
+    dni: ''
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -373,6 +386,57 @@ const BudgetGenerator = () => {
     setClient(''); // Limpiar el input de búsqueda también
   };
 
+  // Add these handlers before the return statement
+  const handleNewClientSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newClient.nombre && newClient.telefono) {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nombre: newClient.nombre,
+            telefono: newClient.telefono,
+            email: newClient.email || null,
+            direccion: newClient.direccion || null,
+            dni: newClient.dni || null
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al crear el cliente');
+        }
+
+        const clienteCreado = await response.json();
+        
+        setSelectedClient(clienteCreado);
+        setClient(clienteCreado.nombre);
+        setShowNewClientForm(false);
+        setShowClientsList(false);
+        setNewClient({ id: 0, nombre: '', direccion: '', telefono: '', email: '', dni: '' });
+        
+        setShowSuccessAlert(true);
+        setTimeout(() => setShowSuccessAlert(false), 3000);
+        
+      } catch (error) {
+        setErrorMessage("Error al crear el cliente. Por favor, intente nuevamente.");
+        setShowErrorAlert(true);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setErrorMessage("Nombre y teléfono son obligatorios");
+      setShowErrorAlert(true);
+    }
+  };
+
+  const handleNewClientChange = (field: keyof Client, value: string) => {
+    setNewClient(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <Card className="p-8">
       <h1 style={{ fontSize: "200" }}>Generar Presupuesto</h1>
@@ -409,6 +473,73 @@ const BudgetGenerator = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {showClientsList && client && filteredClients.length === 0 && !isLoading && (
+          <div className="flex absolute z-50 p-4 mt-1 w-full text-gray-500 bg-white rounded-md border border-gray-200 shadow-lg">
+            {!showNewClientForm ? (
+              <div className="flex gap-3 items-center">
+                <span>No se ha podido encontrar este resultado...</span>
+                <Button 
+                  color="primary"
+                  size="sm"
+                  onClick={() => setShowNewClientForm(true)}
+                >
+                  Agregar nuevo +
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleNewClientSubmit} className="space-y-3 w-full">
+                <h3 className="font-semibold text-gray-700">Agregar Nuevo Cliente</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Nombre *"
+                    value={newClient.nombre}
+                    onChange={(e) => handleNewClientChange('nombre', e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Teléfono *"
+                    value={newClient.telefono}
+                    onChange={(e) => handleNewClientChange('telefono', e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="DNI/CUIL"
+                    value={newClient.dni}
+                    onChange={(e) => handleNewClientChange('dni', e.target.value)}
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={newClient.email}
+                    onChange={(e) => handleNewClientChange('email', e.target.value)}
+                  />
+                  <Input
+                    label="Dirección"
+                    className="col-span-2"
+                    value={newClient.direccion}
+                    onChange={(e) => handleNewClientChange('direccion', e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button 
+                    color="danger" 
+                    variant="light"
+                    onClick={() => setShowNewClientForm(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    color="primary" 
+                    type="submit"
+                  >
+                    Guardar
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 
@@ -541,12 +672,12 @@ const BudgetGenerator = () => {
       </div>
       <Spacer y={6} />
       <form onSubmit={handleEmitirPresupuesto}>
-        {/* Alert de error - solo se muestra cuando showErrorAlert es true */}
+        {/* Alert de error */}
         {showErrorAlert && (
           <div className="flex relative justify-between items-center px-4 py-3 mb-4 text-red-700 bg-red-200 bg-opacity-30 rounded border border-red-500 border-opacity-30" role="alert">
             <strong className="font-bold">{errorMessage}</strong>
             <button
-              type="button" // Importante para evitar submit accidental
+              type="button"
               className="ml-4 text-red-700 hover:text-red-900"
               onClick={() => setShowErrorAlert(false)}
             >
@@ -555,7 +686,13 @@ const BudgetGenerator = () => {
           </div>
         )}
 
-     
+        {/* Alert de éxito */}
+        {showSuccessAlert && (
+          <div className="flex relative justify-between items-center px-4 py-3 mb-4 text-green-700 bg-green-200 bg-opacity-30 rounded border border-green-500 border-opacity-30" role="alert">
+            <strong className="font-bold">Cliente agregado correctamente</strong>
+          </div>
+        )}
+
         {isSubmitted && (
           <div 
             className={`relative flex-1 px-4 py-3 rounded border ${
@@ -572,9 +709,6 @@ const BudgetGenerator = () => {
             </strong>
           </div>
         )}
-
-  
-        
 
         <div className="flex gap-2 justify-start mt-4">
           <Button
