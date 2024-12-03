@@ -86,6 +86,9 @@ export default function GenerarPedidoModal({
   const [sistemaRecomendado, setSistemaRecomendado] = useState<string>("");
   const [pedidoJSON, setPedidoJSON] = useState<string>("");
 
+  // Estado para el modal de confirmación
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   // Función para resetear todos los inputs
   const resetInputs = () => {
     setSelectedSistema("");
@@ -103,6 +106,19 @@ export default function GenerarPedidoModal({
       resetInputs();
     }
   }, [isOpen]);
+
+  const handleClose = () => {
+    if (selectedSistema || cantidad !== "1" || ancho !== "0" || alto !== "0" || selectedArticulo) {
+      setShowConfirmModal(true);
+    } else {
+      onOpenChange(false);
+    }
+  };
+
+  const handleConfirmClose = () => {
+    setShowConfirmModal(false);
+    onOpenChange(false);
+  };
 
   useEffect(() => {
     const fetchSistemas = async () => {
@@ -141,133 +157,152 @@ export default function GenerarPedidoModal({
   }, [ancho, alto, selectedSistema]);
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onOpenChange={(open) => {
-        if (!open) {
-          resetInputs();
-        }
-        onOpenChange(open);
-      }}
-      size="2xl"
-    >
-      <ModalContent>
-        {(onClose) => {
-          const handleGenerarPedido = () => {
-            if (!selectedClient) return;
-            const pedido = {
-              sistema: selectedSistema,
-              detalles: {
-                cantidad: Number(cantidad),
-                ancho: Number(ancho),
-                alto: Number(alto),
-                sistemaRecomendado,
-                articuloSeleccionado: selectedArticulo
-              },
-              fecha: new Date().toISOString(),
-              total
+    <>
+      <Modal 
+        isOpen={isOpen} 
+        onOpenChange={handleClose}
+        size="2xl"
+      >
+        <ModalContent>
+          {(onClose) => {
+            const handleGenerarPedido = () => {
+              if (!selectedClient) return;
+              const pedido = {
+                sistema: selectedSistema,
+                detalles: {
+                  cantidad: Number(cantidad),
+                  ancho: Number(ancho),
+                  alto: Number(alto),
+                  sistemaRecomendado,
+                  articuloSeleccionado: selectedArticulo
+                },
+                fecha: new Date().toISOString(),
+                total
+              };
+              setPedidoJSON(JSON.stringify(pedido, null, 2));
+              console.log('Pedido generado:', pedido);
+              onClose();
             };
-            setPedidoJSON(JSON.stringify(pedido, null, 2));
-            console.log('Pedido generado:', pedido);
-            onClose();
-          };
 
-          return (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
-                Generar Pedido
-              </ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Select
-                    label="Seleccionar Sistema"
-                    placeholder="Elegir un sistema"
-                    selectedKeys={selectedSistema ? [selectedSistema] : []}
-                    onSelectionChange={(keys) => setSelectedSistema(Array.from(keys)[0] as string)}
-                    className="mb-6"
-                  >
-                    <SelectItem key="ROLLER">ROLLER</SelectItem>
-                    <SelectItem key="VENECIANAS">VENECIANAS</SelectItem>
-                  </Select>
-
-                  <div className="mb-2 text-sm text-gray-500">
-                    Sistema seleccionado: {selectedSistema}
-                    {selectedSistema === "ROLLER" && sistemaRecomendado && (
-                      <div className="mt-1 font-medium text-blue-600">
-                        Sistema recomendado: {sistemaRecomendado}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <Input
-                        type="number"
-                        label="Cantidad"
-                        value={cantidad}
-                        onValueChange={setCantidad}
-                        variant="bordered"
-                        size="sm"
-                      />
-                      <Input
-                        type="number"
-                        label="Ancho (cm)"
-                        value={ancho}
-                        onValueChange={setAncho}
-                        variant="bordered"
-                        size="sm"
-                      />
-                      <Input
-                        type="number"
-                        label="Alto (cm)"
-                        value={alto}
-                        onValueChange={setAlto}
-                        variant="bordered"
-                        size="sm"
-                      />
-                    </div>
-                    <div className="flex gap-4 items-center">
-                      <Input
-                        type="number"
-                        label="Cantidad"
-                        value={cantidad}
-                        onValueChange={setCantidad}
-                        variant="bordered"
-                        size="sm"
-                        className="w-20"
-                      />
-                      <Select 
-                        label="Articulo"
-                        selectedKeys={selectedArticulo ? [selectedArticulo] : []}
-                        onSelectionChange={(keys) => setSelectedArticulo(Array.from(keys)[0] as string)}
-                        variant="bordered"
-                      >
-                        {(abacoRoller as unknown as { sistemas: SistemaRoller[] }).sistemas.map((sistema) => (
-                          <SelectItem key={sistema.sistema} value={sistema.sistema}>
-                            {sistema.sistema}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button 
-                  color="primary" 
-                  onPress={handleGenerarPedido}
-                  isDisabled={!selectedSistema || !cantidad || !ancho || !alto || !selectedArticulo}
-                >
+            return (
+              <>
+                <ModalHeader className="flex flex-col gap-1">
                   Generar Pedido
-                </Button>
-              </ModalFooter>
-            </>
-          );
-        }}
-      </ModalContent>
-    </Modal>
+                </ModalHeader>
+                <ModalBody>
+                  <div className="space-y-4">
+                    <Select
+                      label="Seleccionar Sistema"
+                      placeholder="Elegir un sistema"
+                      selectedKeys={selectedSistema ? [selectedSistema] : []}
+                      onSelectionChange={(keys) => setSelectedSistema(Array.from(keys)[0] as string)}
+                      className="mb-6"
+                    >
+                      <SelectItem key="ROLLER">ROLLER</SelectItem>
+                      <SelectItem key="VENECIANAS">VENECIANAS</SelectItem>
+                    </Select>
+
+                    <div className="mb-2 text-sm text-gray-500">
+                      Sistema seleccionado: {selectedSistema}
+                      {selectedSistema === "ROLLER" && sistemaRecomendado && (
+                        <div className="mt-1 font-medium text-blue-600">
+                          Sistema recomendado: {sistemaRecomendado}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <Input
+                          type="number"
+                          label="Cantidad"
+                          value={cantidad}
+                          onValueChange={setCantidad}
+                          variant="bordered"
+                          size="sm"
+                        />
+                        <Input
+                          type="number"
+                          label="Ancho (cm)"
+                          value={ancho}
+                          onValueChange={setAncho}
+                          variant="bordered"
+                          size="sm"
+                        />
+                        <Input
+                          type="number"
+                          label="Alto (cm)"
+                          value={alto}
+                          onValueChange={setAlto}
+                          variant="bordered"
+                          size="sm"
+                        />
+                      </div>
+                      <div className="flex gap-4 items-center">
+                        <Input
+                          type="number"
+                          label="Cantidad"
+                          value={cantidad}
+                          onValueChange={setCantidad}
+                          variant="bordered"
+                          size="sm"
+                          className="w-20"
+                        />
+                        <Select 
+                          label="Articulo"
+                          selectedKeys={selectedArticulo ? [selectedArticulo] : []}
+                          onSelectionChange={(keys) => setSelectedArticulo(Array.from(keys)[0] as string)}
+                          variant="bordered"
+                        >
+                          {(abacoRoller as unknown as { sistemas: SistemaRoller[] }).sistemas.map((sistema) => (
+                            <SelectItem key={sistema.sistema} value={sistema.sistema}>
+                              {sistema.sistema}
+                            </SelectItem>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </ModalBody>
+                <ModalFooter>
+                  <Button color="danger" variant="light" onPress={handleClose}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    color="primary" 
+                    onPress={handleGenerarPedido}
+                    isDisabled={!selectedSistema || !cantidad || !ancho || !alto || !selectedArticulo}
+                  >
+                    Generar Pedido
+                  </Button>
+                </ModalFooter>
+              </>
+            );
+          }}
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de confirmación */}
+      <Modal
+        isOpen={showConfirmModal}
+        onOpenChange={setShowConfirmModal}
+        size="sm"
+      >
+        <ModalContent>
+          <ModalHeader>Confirmación</ModalHeader>
+          <ModalBody>
+            Usted está creando un pedido, ¿está seguro de salir?
+          </ModalBody>
+          <ModalFooter>
+            <Button color="primary" onPress={() => setShowConfirmModal(false)}>
+              No
+            </Button>
+            <Button color="danger" onPress={handleConfirmClose}>
+              Sí
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 }
