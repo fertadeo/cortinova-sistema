@@ -36,16 +36,12 @@ interface GenerarPedidoModalProps {
   total: number;
 }
 
-// Definir la interfaz para el JSON
-interface RangoMedida {
-  ancho: [number, number];
-  alto: [number, number];
-}
-
+// Actualizar la interfaz para el JSON
 interface SistemaRoller {
+  ancho: number;
+  alto: number;
   sistema: string;
-  color: string;
-  rangos: RangoMedida[];
+  garantia?: string;
 }
 
 interface AbacoRoller {
@@ -55,20 +51,18 @@ interface AbacoRoller {
 // Función para determinar el sistema
 const determinarSistemaRoller = (ancho: number, alto: number): string => {
   const sistemas = (abacoRoller as AbacoRoller).sistemas;
-  
-  for (const sistema of sistemas) {
-    for (const rango of sistema.rangos) {
-      const [anchoMin, anchoMax] = rango.ancho;
-      const [altoMin, altoMax] = rango.alto;
-      
-      if (
-        ancho >= anchoMin && 
-        ancho <= anchoMax && 
-        alto >= altoMin && 
-        alto <= altoMax
-      ) {
-        return sistema.sistema;
-      }
+
+  // Ordenar los sistemas por ancho y alto
+  const sortedSistemas = sistemas.sort((a, b) => {
+    if (a.ancho === b.ancho) {
+      return a.alto - b.alto;
+    }
+    return a.ancho - b.ancho;
+  });
+
+  for (const sistema of sortedSistemas) {
+    if (sistema.ancho >= ancho && sistema.alto >= alto) {
+      return sistema.sistema;
     }
   }
   
@@ -92,6 +86,24 @@ export default function GenerarPedidoModal({
   const [sistemaRecomendado, setSistemaRecomendado] = useState<string>("");
   const [pedidoJSON, setPedidoJSON] = useState<string>("");
 
+  // Función para resetear todos los inputs
+  const resetInputs = () => {
+    setSelectedSistema("");
+    setCantidad("1");
+    setAncho("0");
+    setAlto("0");
+    setSelectedArticulo("");
+    setSistemaRecomendado("");
+    setPedidoJSON("");
+  };
+
+  // Limpiar campos al abrir/cerrar el modal
+  useEffect(() => {
+    if (isOpen) {
+      resetInputs();
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const fetchSistemas = async () => {
       setIsLoading(true);
@@ -114,7 +126,7 @@ export default function GenerarPedidoModal({
 
   // Actualizar el useEffect
   useEffect(() => {
-    if (selectedSistema === "ROLLER" && ancho && alto) {
+    if (selectedSistema === "ROLLER" && ancho !== "" && alto !== "" && ancho !== "0" && alto !== "0") {
       // Convertir ancho y alto de cm a m
       const anchoEnMetros = Number(ancho) / 100;
       const altoEnMetros = Number(alto) / 100;
@@ -122,13 +134,21 @@ export default function GenerarPedidoModal({
       const sistema = determinarSistemaRoller(anchoEnMetros, altoEnMetros);
       setSistemaRecomendado(sistema);
       setSelectedArticulo(sistema);
+    } else {
+      setSistemaRecomendado("");
+      setSelectedArticulo("");
     }
   }, [ancho, alto, selectedSistema]);
 
   return (
     <Modal 
       isOpen={isOpen} 
-      onOpenChange={onOpenChange}
+      onOpenChange={(open) => {
+        if (!open) {
+          resetInputs();
+        }
+        onOpenChange(open);
+      }}
       size="2xl"
     >
       <ModalContent>
@@ -209,7 +229,7 @@ export default function GenerarPedidoModal({
                     <div className="flex gap-4 items-center">
                       <Input
                         type="number"
-                        label="Cantidad de Artículos"
+                        label="Cantidad"
                         value={cantidad}
                         onValueChange={setCantidad}
                         variant="bordered"
@@ -222,7 +242,7 @@ export default function GenerarPedidoModal({
                         onSelectionChange={(keys) => setSelectedArticulo(Array.from(keys)[0] as string)}
                         variant="bordered"
                       >
-                        {(abacoRoller as AbacoRoller).sistemas.map((sistema) => (
+                        {(abacoRoller as unknown as { sistemas: SistemaRoller[] }).sistemas.map((sistema) => (
                           <SelectItem key={sistema.sistema} value={sistema.sistema}>
                             {sistema.sistema}
                           </SelectItem>
