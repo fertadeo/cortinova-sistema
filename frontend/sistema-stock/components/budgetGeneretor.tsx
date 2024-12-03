@@ -12,6 +12,7 @@ import {
   TableCell,
   Card,
 } from "@nextui-org/react";
+import GenerarPedidoModal from "./GenerarPedidoModal";
 
 interface TableItem {
   id: number;
@@ -89,6 +90,9 @@ const BudgetGenerator = () => {
     email: '',
     dni: ''
   });
+
+  // Agregar este estado con los otros estados
+  const [showPedidoModal, setShowPedidoModal] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -578,14 +582,25 @@ const BudgetGenerator = () => {
       </div>
       <Spacer y={1} />
       <div className="relative">
-        <Input
-          label="Buscar producto"
-          placeholder="Escribe para buscar..."
-          value={product}
-          onChange={handleProductSearch}
-          className="w-full"
-          endContent={isLoading && <span className="animate-spin">⌛</span>}
-        />
+        <div className="flex gap-2 items-center">
+          <Input
+            label="Buscar producto"
+            placeholder="Escribe para buscar..."
+            value={product}
+            onChange={handleProductSearch}
+            className="w-full"
+            endContent={isLoading && <span className="animate-spin">⌛</span>}
+          />
+          <Button
+            isIconOnly
+            color="primary"
+            aria-label="Generar pedido"
+            className="min-w-unit-10 h-unit-10"
+            onClick={() => setShowPedidoModal(true)}
+          >
+            📄
+          </Button>
+        </div>
         
         {showProductsList && filteredProducts.length > 0 && (
           <div 
@@ -722,6 +737,13 @@ const BudgetGenerator = () => {
       </form>
 
       <Spacer y={6} />
+      <GenerarPedidoModal
+        isOpen={showPedidoModal}
+        onOpenChange={setShowPedidoModal}
+        selectedClient={selectedClient}
+        productos={tableData}
+        total={calculateTotal().finalTotal}
+      />
     </Card>
   );
 };
