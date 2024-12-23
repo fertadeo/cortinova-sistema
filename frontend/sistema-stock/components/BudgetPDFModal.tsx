@@ -30,11 +30,11 @@ const BudgetPDFModal: React.FC<BudgetPDFModalProps> = ({ isOpen, onClose, presup
     <Modal 
       isOpen={isOpen} 
       onClose={onClose}
-      size="5xl"
+      size="3xl"
       scrollBehavior="inside"
       classNames={{
-        body: "p-12",
-        base: "m-12",
+        body: "p-6",
+        base: "m-6 max-w-3xl",
       }}
     >
       <ModalContent>
