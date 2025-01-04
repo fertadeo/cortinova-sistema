@@ -13,14 +13,25 @@ import {
   Card,
 } from "@nextui-org/react";
 import GenerarPedidoModal from "./GenerarPedidoModal";
+import BudgetResume from "./budgetResume";
 
 interface TableItem {
   id: number;
+  productId: number;
   name: string;
   description: string;
   quantity: number;
   price: number;
-  productId: number;
+  detalles?: {
+    sistema: string;
+    detalle: string;
+    caidaPorDelante: string;
+    colorSistema: string;
+    ladoComando: string;
+    tipoTela: string;
+    soporteIntermedio: boolean;
+    soporteDoble: boolean;
+  };
 }
 
 interface Client {
@@ -41,6 +52,22 @@ interface Product {
     id: number;
     nombreProveedores: string;
   };
+}
+
+interface PresupuestoResumen {
+  numeroPresupuesto: string;
+  fecha: string;
+  cliente: Client;
+  productos: {
+    nombre: string;
+    descripcion: string;
+    precioUnitario: number;
+    cantidad: number;
+    subtotal: number;
+  }[];
+  subtotal: number;
+  descuento?: number;
+  total: number;
 }
 
 const BudgetGenerator = () => {
@@ -93,6 +120,12 @@ const BudgetGenerator = () => {
 
   // Agregar este estado con los otros estados
   const [showPedidoModal, setShowPedidoModal] = useState(false);
+
+  // Agregar este estado al inicio del componente
+  const [numeroPresupuesto, setNumeroPresupuesto] = useState<number>(0);
+
+  const [showResume, setShowResume] = useState(false);
+  const [presupuestoGenerado, setPresupuestoGenerado] = useState<PresupuestoResumen | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -203,8 +236,12 @@ const BudgetGenerator = () => {
               value={item.quantity}
               onChange={(e) => handleQuantityChange(item.id, e.target.value)}
               className="p-1 w-20 rounded border"
-              min={0}
+              min="0"
+              step="0.1"
             />
+               <span className="text-xs italic text-gray-500">
+              (usa coma para decimales)
+            </span>
           </TableCell>
         );
       case "subtotal":
@@ -310,7 +347,8 @@ const BudgetGenerator = () => {
 
   // Agregar función para manejar cambios en la cantidad
   const handleQuantityChange = (id: number, newQuantity: string) => {
-    const quantity = parseInt(newQuantity) || 0;
+    const quantity = parseFloat(newQuantity) || 0;
+    
     if (quantity >= 0) {
       setTableData(prevData =>
         prevData.map(item =>
@@ -324,56 +362,83 @@ const BudgetGenerator = () => {
   const handleEmitirPresupuesto = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validaciones
     if (!selectedClient) {
       setErrorMessage("Falta elegir un cliente");
       setShowErrorAlert(true);
       return;
     }
     
-    if (tableData.length === 0) {
-      setErrorMessage("No hay productos en la tabla");
-      setShowErrorAlert(true);
-      return;
-    }
-
-    setIsLoading(true);
-    
     try {
-      // Simulate API call with 2 second delay
+      setIsLoading(true);
+      
+      // Simular un tiempo de carga de 2 segundos
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Si pasa las validaciones, crear objeto con todos los datos
+      // Generar número de presupuesto con formato PRES-YYYY-XXX
+      const year = new Date().getFullYear();
+      const newNumeroPresupuesto = numeroPresupuesto + 1;
+      const presupuestoId = `PRES-${year}-${newNumeroPresupuesto.toString().padStart(3, '0')}`;
+      
       const presupuestoData = {
-        fecha: new Date().toISOString(),
-        cliente: {
-          id: selectedClient.id,
-          nombre: selectedClient.nombre,
-          direccion: selectedClient.direccion,
-          telefono: selectedClient.telefono,
-          email: selectedClient.email
-        },
+        estado: "Emitido",
+        numeroPresupuesto: presupuestoId,
+        clienteId: selectedClient.id,
         productos: tableData.map(item => ({
           id: item.productId,
           nombre: item.name,
           descripcion: item.description,
           cantidad: item.quantity,
           precioUnitario: item.price,
-          subtotal: item.price * item.quantity
+          subtotal: item.price * item.quantity,
+          detalles: item.detalles || {
+            sistema: "Roller",
+            detalle: "",
+            caidaPorDelante: "No",
+            colorSistema: "",
+            ladoComando: "",
+            tipoTela: "",
+            soporteIntermedio: false,
+            soporteDoble: false
+          }
         })),
-        totales: {
-          subtotal: tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-          descuento: applyDiscount ? tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.10 : 0,
-          total: applyDiscount 
-            ? tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.90
-            : tableData.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-        },
-        descuentoAplicado: applyDiscount
+        total: calculateTotal().finalTotal
       };
 
-      console.log('Presupuesto generado:', presupuestoData);
+      // Log the JSON data being sent
+      console.log('Presupuesto Data:', JSON.stringify(presupuestoData, null, 2));
+
+      // Enviar el JSON completo al backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(presupuestoData)
+      });
+
+      if (!response.ok) throw new Error('Error al guardar el presupuesto');
       
-      // Aquí iría la lógica para enviar el presupuesto al backend
+      const presupuestoGuardado = await response.json();
+      
+      // Usar el mismo presupuestoId para el resumen
+      const presupuestoResumen = {
+        numeroPresupuesto: presupuestoId,
+        fecha: new Date().toLocaleDateString(),
+        cliente: selectedClient,
+        productos: tableData.map(item => ({
+          nombre: item.name,
+          descripcion: item.description,
+          precioUnitario: item.price,
+          cantidad: item.quantity,
+          subtotal: item.price * item.quantity
+        })),
+        subtotal: calculateTotal().subtotal,
+        descuento: applyDiscount ? calculateTotal().discount : undefined,
+        total: calculateTotal().finalTotal
+      };
+
+      setPresupuestoGenerado(presupuestoResumen);
+      setShowResume(true);
       setSubmitStatus('success');
       setIsSubmitted(true);
     } catch (error) {
@@ -439,6 +504,20 @@ const BudgetGenerator = () => {
 
   const handleNewClientChange = (field: keyof Client, value: string) => {
     setNewClient(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Agregar la función al componente BudgetGenerator
+  const handleAddPedido = (pedido: any) => {
+    const newTableItem: TableItem = {
+      id: Date.now(),
+      productId: Date.now(),
+      name: `Cortina ${pedido.sistema}`,
+      description: `${pedido.detalles.ancho}cm x ${pedido.detalles.alto}cm - ${pedido.detalles.tela || ''}`,
+      quantity: pedido.detalles.cantidad,
+      price: pedido.precioTotal / pedido.detalles.cantidad
+    };
+
+    setTableData(prevData => [...prevData, newTableItem]);
   };
 
   return (
@@ -730,6 +809,28 @@ const BudgetGenerator = () => {
             color="success"
             type="submit"
             isLoading={isLoading}
+            spinner={
+              <svg
+                className="w-5 h-5 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            }
           >
             {isLoading ? "Emitiendo..." : "Emitir Presupuesto"}
           </Button>
@@ -743,7 +844,12 @@ const BudgetGenerator = () => {
         selectedClient={selectedClient}
         productos={tableData}
         total={calculateTotal().finalTotal}
+        onPedidoCreated={handleAddPedido}
       />
+
+      {showResume && presupuestoGenerado && (
+        <BudgetResume presupuestoData={presupuestoGenerado} />
+      )}
     </Card>
   );
 };
