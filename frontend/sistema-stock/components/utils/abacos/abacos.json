@@ -1,5 +1,6 @@
 {
-  "Roller": { 
+  "Roller": {
+    "id": 1,
     "medidas permitidas": {
       "min": { "ancho": 0.2, "alto": null },
       "max": { "ancho": null, "alto": null },
@@ -275,6 +276,7 @@
   ] 
 }, 
 "Barcelona": {
+   "id": 5,
   "medidas permitidas": {
     "min": { "ancho": 0.2, "alto": 0.3 },
     "max": { "ancho": 5.79, "alto": 7.0 },
@@ -627,5 +629,62 @@
     { "ancho": 5.0, "alto": 7.0, "sistema": "NINGUNO" }, 
     { "ancho": 5.4, "alto": 7.0, "sistema": "NINGUNO" }, 
     { "ancho": 5.8, "alto": 7.0, "sistema": "NINGUNO" }
-  ] }
+  ] },
+  "Fit": {
+    "id": 3,
+    "medidas permitidas": {
+      "min": { "ancho": null, "alto": null },
+      "max": { "ancho": null, "alto": null },
+      "sup max": null,
+      "sup min": null
+    },
+    "nombre": "Fit",
+    "sistemas": [
+      { "ancho": 0.6, "alto": 3.5, "sistema": "Estándar" },
+      { "ancho": 1.0, "alto": 3.5, "sistema": "Estándar" }
+    ]},
+    "Venecianas": {
+      "id": 4,
+      "nombre": "Venecianas",
+      "sistemas": [
+        { "ancho": 0.6, "alto": 3.5, "sistema": "Estándar" },
+        { "ancho": 1.0, "alto": 3.5, "sistema": "Estándar" }
+      ]},
+ 
+    "Dubai": {
+      "id": 6,
+      "nombre": "Dubai",
+      "sistemas": [
+        { "ancho": 0.6, "alto": 3.5, "sistema": "Estándar" },
+        { "ancho": 1.0, "alto": 3.5, "sistema": "Estándar" }
+      ]
+    },
+    "Dunes": {
+      "id": 7,
+      "nombre": "Dunes",
+      "sistemas": [
+        { "ancho": 0.6, "alto": 3.5, "sistema": "Estándar" },
+        { "ancho": 1.0, "alto": 3.5, "sistema": "Estándar" }
+      ]},
+      "Romanas": {
+        "id": 8,
+        "nombre": "Romanas",
+        "sistemas": [
+          { "ancho": 0.6, "alto": 3.5, "sistema": "Estándar" },
+          { "ancho": 1.0, "alto": 3.5, "sistema": "Estándar" }
+        ]},
+        "Otros": {
+          "id": 9,
+          "nombre": "Otros",
+          "sistemas": [
+            { "ancho": 0.6, "alto": 3.5, "sistema": "Estándar" },
+            { "ancho": 1.0, "alto": 3.5, "sistema": "Estándar" }
+          ]},
+          "Propios": {
+            "id": 10,
+            "nombre": "Propios",
+            "sistemas": [
+              { "ancho": 0.6, "alto": 3.5, "sistema": "Estándar" },
+              { "ancho": 1.0, "alto": 3.5, "sistema": "Estándar" }
+            ]}
 }
