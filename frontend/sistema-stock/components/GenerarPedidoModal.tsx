@@ -1,33 +1,29 @@
 import React, { useEffect, useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Select,
-  SelectItem,
-  Input,
-  Checkbox,
+import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox,
 } from "@nextui-org/react";
 import abacoData from './utils/abacos/abacos.json';
-import { RollerForm } from "./forms/RollerForm";
+import { RollerForm } from "./utils/abacos/forms/RollerForm";
+import DubaiForm from "./utils/abacos/forms/DubaiForm";
+import PanelesForm from "./utils/abacos/forms/PanelesForm";
+import FitForm from "./utils/abacos/forms/FitForm";
+import VenecianasForm from "./utils/abacos/forms/VenecianasForm";
+import BarcelonaForm from "./utils/abacos/forms/BarcelonaForm";
 
 interface MedidasPermitidas {
-  min: {
-    ancho: number;
-    alto: number | null;
+  medidasPermitidas: {
+    min: { ancho: number; alto: null };
+    max: {
+      ancho: number | null;
+      alto: number | null;
+    };
+    "sup min": number;
+    "sup max": number | null;
   };
-  max: {
-    ancho: number | null;
-    alto: number | null;
-  };
-  "sup min": number;
-  "sup max": number | null;
 }
 
 interface Sistema {
+  id: string | number;
+  nombreSistemas: string | number | readonly string[] | undefined;
   ancho: number;
   alto: number;
   sistema: string;
@@ -82,7 +78,7 @@ const determinarSistema = (tipo: string, ancho: number, alto: number): string =>
   const tipoSistema = tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase() as keyof typeof abacoData;
   const sistemaData = abacoData[tipoSistema];
 
-  if (!sistemaData?.["medidas permitidas"]) {
+  if (!sistemaData || !("medidas permitidas" in sistemaData)) {
     return "Tipo de sistema no encontrado";
   }
 
@@ -172,6 +168,20 @@ const MOCK_TELAS = [
   }
 ];
 
+// Función helper para normalizar el nombre del sistema
+const normalizarNombreSistema = (nombre: string): string => {
+  // Primero convertimos todo a minúsculas y luego capitalizamos la primera letra
+  const nombreNormalizado = nombre.toLowerCase();
+  return nombreNormalizado.charAt(0).toUpperCase() + nombreNormalizado.slice(1);
+};
+
+// Función helper para obtener el nombre del sistema por ID
+const getSistemaNombreById = (id: number | string): string | null => {
+  // Buscar en el JSON de abacos el sistema que corresponde al ID
+  const sistema = Object.entries(abacoData).find(([_, value]) => value.id === Number(id));
+  return sistema ? sistema[0] : null;
+};
+
 export default function GenerarPedidoModal({
   isOpen,
   onOpenChange,
@@ -258,10 +268,10 @@ export default function GenerarPedidoModal({
     // Verificar si hay sistema disponible para las medidas
     const anchoMetros = Number(ancho) / 100;
     const altoMetros = Number(alto) / 100;
-    const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.sistemas;
+    const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.abacos;
 
     return sistemasDisponibles?.some(
-      sistema => sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
+      (sistema: { ancho: number; alto: number }) => sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
     ) ?? false;
   };
 
@@ -285,9 +295,17 @@ export default function GenerarPedidoModal({
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sistemas`);
         if (!response.ok) throw new Error('Error al cargar sistemas');
         const data = await response.json();
-        setSistemas(data);
+        
+        // Verificar que data.data existe y es un array
+        if (Array.isArray(data.data)) {
+          setSistemas(data.data);
+        } else {
+          console.error("Los datos recibidos no son un array:", data);
+          setSistemas([]);
+        }
       } catch (error) {
         console.error('Error:', error);
+        setSistemas([]);
       } finally {
         setIsLoading(false);
       }
@@ -394,9 +412,10 @@ export default function GenerarPedidoModal({
       // Verificar si hay sistema disponible
       const anchoMetros = Number(ancho) / 100;
       const altoMetros = Number(alto) / 100;
-      const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData].sistemas;
-      const haySistemaDisponible = sistemasDisponibles.some(
-        sistema => sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
+      const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.sistemas;
+      const haySistemaDisponible = sistemasDisponibles?.some(
+        (sistema: { ancho: number; alto: number; sistema: string }) => 
+          sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
       );
 
       if (!haySistemaDisponible) {
@@ -410,15 +429,11 @@ export default function GenerarPedidoModal({
   return (
     <Modal
       isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          resetInputs();
-        }
-        onOpenChange(open);
-      }}
+      onOpenChange={onOpenChange}
       size="3xl"
+      scrollBehavior="inside"
     >
-      <ModalContent>
+      <ModalContent className="max-h-[90vh] rounded-lg">
         {(onClose) => {
           const handleGenerarPedido = () => {
             if (!selectedClient) return;
@@ -471,26 +486,48 @@ export default function GenerarPedidoModal({
 
           return (
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <ModalHeader className="sticky top-0 z-20 bg-white rounded-t-lg border-b">
                 Generar Pedido
               </ModalHeader>
-              <ModalBody>
+              
+              <ModalBody className="overflow-y-auto">
                 <div className="space-y-6">
                   {/* PARTE 1: Inputs generales */}
                   <div className="space-y-4">
                     <Select
                       label="Seleccionar Sistema"
                       placeholder="Elegir un sistema"
-                      selectedKeys={selectedSistema ? [selectedSistema] : []}
+                      selectedKeys={sistemas.some(sistema => sistema.nombreSistemas === selectedSistema) ? [selectedSistema] : []}
                       onSelectionChange={(keys) => {
-                        const sistema = Array.from(keys)[0] as string;
-                        console.log("Sistema seleccionado:", sistema);
-                        setSelectedSistema(sistema);
+                        const sistemaId = Array.from(keys)[0] as string;
+                        const sistemaNombre = getSistemaNombreById(sistemaId);
+                        
+                        console.log("ID seleccionado:", sistemaId);
+                        console.log("Nombre del sistema:", sistemaNombre);
+                        
+                        if (sistemaNombre) {
+                          setSelectedSistema(sistemaNombre);
+                          console.log("Sistema encontrado en abacos");
+
+                          // Agregar console.log para el sistema "Barcelona"
+                          if (sistemaNombre === "Barcelona") {
+                            console.log("Detalles del sistema Barcelona:", {
+                              ancho,
+                              alto,
+                              cantidad,
+                              selectedArticulo,
+                            });
+                          }
+                        }
                       }}
                     >
-                      {Object.keys(abacoData).map((sistema) => (
-                        <SelectItem key={sistema} value={sistema}>
-                          {sistema}
+                      {sistemas?.map((sistema) => (
+                        <SelectItem 
+                          key={sistema.id} 
+                          value={sistema.nombreSistemas}
+                          textValue={String(sistema.nombreSistemas)}
+                        >
+                          {sistema.nombreSistemas} 
                         </SelectItem>
                       ))}
                     </Select>
@@ -542,7 +579,7 @@ export default function GenerarPedidoModal({
                       onSelectionChange={(keys) => setSelectedArticulo(Array.from(keys)[0] as string)}
                     >
                       {selectedSistema ?
-                        getUniqueSistemas(abacoData[selectedSistema as keyof typeof abacoData] as SistemaData).map((sistema) => (
+                        getUniqueSistemas(abacoData[selectedSistema as keyof typeof abacoData] as unknown as SistemaData).map((sistema) => (
                           <SelectItem key={sistema} value={sistema}>
                             {sistema}
                           </SelectItem>
@@ -553,29 +590,91 @@ export default function GenerarPedidoModal({
                   </div>
 
                   {/* PARTE 2: Formulario específico del sistema */}
-                  {selectedSistema === "Roller" && (
+                  {selectedSistema && (
                     <div className="pt-4 mt-4 border-t">
-                      <RollerForm
-                        ancho={ancho}
-                        alto={alto}
-                        cantidad={cantidad}
-                        selectedArticulo={selectedArticulo}
-                        detalle={detalle}
-                        caidaPorDelante={caidaPorDelante}
-                        colorSistema={colorSistema}
-                        ladoComando={ladoComando}
-                        tipoTela={tipoTela}
-                        soporteIntermedio={soporteIntermedio}
-                        soporteDoble={soporteDoble}
-                        onDetalleChange={(value) => setDetalle(value)}
-                        onCaidaChange={(value) => setCaidaPorDelante(value)}
-                        onColorChange={(value) => setColorSistema(value)}
-                        onLadoComandoChange={(value) => setLadoComando(value)}
-                        onTipoTelaChange={(value) => setTipoTela(value)}
-                        onSoporteIntermedioChange={(value) => setSoporteIntermedio(value)}
-                        onSoporteDobleChange={(value) => setSoporteDoble(value)}
-                        onPedidoDetailsChange={(detalles) => setSistemaPedidoDetalles(detalles)}
-                      />
+                      {/* Renderizado condicional según el sistema seleccionado */}
+                      {(() => {
+                        switch (selectedSistema) {
+                          case "Roller":
+                            return (
+                              <RollerForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                                detalle={detalle}
+                                caidaPorDelante={caidaPorDelante}
+                                colorSistema={colorSistema}
+                                ladoComando={ladoComando}
+                                tipoTela={tipoTela}
+                                soporteIntermedio={soporteIntermedio}
+                                soporteDoble={soporteDoble}
+                                onDetalleChange={setDetalle}
+                                onCaidaChange={setCaidaPorDelante}
+                                onColorChange={setColorSistema}
+                                onLadoComandoChange={setLadoComando}
+                                onTipoTelaChange={setTipoTela}
+                                onSoporteIntermedioChange={setSoporteIntermedio}
+                                onSoporteDobleChange={setSoporteDoble}
+                                onPedidoDetailsChange={setSistemaPedidoDetalles}
+                              />
+                            );
+                          case "Dubai":
+                            return (
+                              <DubaiForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                                detalle={detalle}
+                                onDetalleChange={setDetalle}
+                                onPedidoDetailsChange={setSistemaPedidoDetalles}
+                              />
+                            );
+                          case "Fit":
+                            return (
+                              <FitForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                              />
+                            );
+                          case "Paneles":
+                            return (
+                              <PanelesForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                              />
+                            );
+                          case "Venecianas":
+                            return (
+                              <VenecianasForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                              />
+                            );
+                            case "Barcelona":
+                              return (
+                                <BarcelonaForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                />
+                              );
+                          default:
+                            return (
+                              <div className="p-4 text-center text-gray-500">
+                                Formulario para {selectedSistema} en desarrollo...
+                              </div>
+                            );
+                        }
+                      })()}
                     </div>
                   )}
 
@@ -686,10 +785,10 @@ export default function GenerarPedidoModal({
                             >
                               Incluir colocación
                             </Checkbox>
-                            <span className="text-sm text-gray-600">($5,000)</span>
+                            <span className="text-sm text-gray-600">($10,000)</span>
                           </div>
                           {incluirColocacion && (
-                            <span className="font-medium">$5,000</span>
+                            <span className="font-medium">$10,000</span>
                           )}
                         </div>
 
@@ -698,7 +797,7 @@ export default function GenerarPedidoModal({
                           <span className="font-bold">
                             ${((Number(ancho) / 100 * 12000) +
                               (selectedTela ? Number(ancho) / 100 * precioTela : 0) +
-                              (incluirColocacion ? 5000 : 0)).toLocaleString()}
+                              (incluirColocacion ? 10000 : 0)).toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -708,8 +807,8 @@ export default function GenerarPedidoModal({
 
               
                 </div>
-              </ModalBody >
-              <ModalFooter>
+              </ModalBody>
+              <ModalFooter className="sticky bottom-0 z-20 bg-white rounded-b-lg border-t">
                 <Button color="danger" variant="light" onPress={onClose}>
                   Cancelar
                 </Button>
@@ -741,6 +840,6 @@ export default function GenerarPedidoModal({
           );
         }}
       </ModalContent>
-    </Modal >
+    </Modal>
   );
 }
