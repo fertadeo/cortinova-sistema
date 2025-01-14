@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox,
 } from "@nextui-org/react";
-import abacoData from './utils/abacos/abacos.json';
 import { RollerForm } from "./utils/abacos/forms/RollerForm";
 import DubaiForm from "./utils/abacos/forms/DubaiForm";
 import PanelesForm from "./utils/abacos/forms/PanelesForm";
@@ -10,15 +9,10 @@ import VenecianasForm from "./utils/abacos/forms/VenecianasForm";
 import BarcelonaForm from "./utils/abacos/forms/BarcelonaForm";
 
 interface MedidasPermitidas {
-  medidasPermitidas: {
-    min: { ancho: number; alto: null };
-    max: {
-      ancho: number | null;
-      alto: number | null;
-    };
-    "sup min": number;
-    "sup max": number | null;
-  };
+  min: { ancho: number; alto: number | null };
+  max: { ancho: number | null; alto: number | null };
+  "sup min": number | null;
+  "sup max": number | null;
 }
 
 interface Sistema {
@@ -31,16 +25,16 @@ interface Sistema {
 }
 
 interface SistemaData {
+  id: number;
   "medidas permitidas": MedidasPermitidas;
   sistemas: Sistema[];
 }
 
-interface AbacoData {
-  Roller: SistemaData;
-  Barcelona: SistemaData;
-  Manhattan: SistemaData;
+type AbacoDataType = {
   [key: string]: SistemaData;
-}
+};
+
+const abacoData: AbacoDataType = require('./utils/abacos/abacos.json');
 
 interface Client {
   nombre: string;
@@ -268,7 +262,7 @@ export default function GenerarPedidoModal({
     // Verificar si hay sistema disponible para las medidas
     const anchoMetros = Number(ancho) / 100;
     const altoMetros = Number(alto) / 100;
-    const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.abacos;
+    const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.sistemas;
 
     return sistemasDisponibles?.some(
       (sistema: { ancho: number; alto: number }) => sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
@@ -497,35 +491,25 @@ export default function GenerarPedidoModal({
                     <Select
                       label="Seleccionar Sistema"
                       placeholder="Elegir un sistema"
-                      selectedKeys={sistemas.some(sistema => sistema.nombreSistemas === selectedSistema) ? [selectedSistema] : []}
+                      selectedKeys={selectedSistema ? [selectedSistema] : []}
                       onSelectionChange={(keys) => {
                         const sistemaId = Array.from(keys)[0] as string;
-                        const sistemaNombre = getSistemaNombreById(sistemaId);
+                        // Encontrar el sistema seleccionado usando el ID
+                        const sistemaSeleccionado = sistemas.find(
+                          sistema => String(sistema.id) === sistemaId
+                        );
                         
-                        console.log("ID seleccionado:", sistemaId);
-                        console.log("Nombre del sistema:", sistemaNombre);
-                        
-                        if (sistemaNombre) {
-                          setSelectedSistema(sistemaNombre);
-                          console.log("Sistema encontrado en abacos");
-
-                          // Agregar console.log para el sistema "Barcelona"
-                          if (sistemaNombre === "Barcelona") {
-                            console.log("Detalles del sistema Barcelona:", {
-                              ancho,
-                              alto,
-                              cantidad,
-                              selectedArticulo,
-                            });
-                          }
+                        if (sistemaSeleccionado) {
+                          const nombreSistema = String(sistemaSeleccionado.nombreSistemas);
+                          setSelectedSistema(nombreSistema);
+                          console.log("Sistema seleccionado:", nombreSistema);
                         }
                       }}
                     >
                       {sistemas?.map((sistema) => (
                         <SelectItem 
-                          key={sistema.id} 
-                          value={sistema.nombreSistemas}
-                          textValue={String(sistema.nombreSistemas)}
+                          key={String(sistema.id)} 
+                          value={String(sistema.id)}
                         >
                           {sistema.nombreSistemas} 
                         </SelectItem>
@@ -594,8 +578,11 @@ export default function GenerarPedidoModal({
                     <div className="pt-4 mt-4 border-t">
                       {/* Renderizado condicional según el sistema seleccionado */}
                       {(() => {
-                        switch (selectedSistema) {
-                          case "Roller":
+                        // Normalizar el nombre del sistema para la comparación
+                        const sistemaNormalizado = selectedSistema.trim().toLowerCase();
+                        
+                        switch (sistemaNormalizado) {
+                          case "roller":
                             return (
                               <RollerForm
                                 ancho={ancho}
@@ -619,7 +606,7 @@ export default function GenerarPedidoModal({
                                 onPedidoDetailsChange={setSistemaPedidoDetalles}
                               />
                             );
-                          case "Dubai":
+                          case "dubai":
                             return (
                               <DubaiForm
                                 ancho={ancho}
@@ -631,7 +618,7 @@ export default function GenerarPedidoModal({
                                 onPedidoDetailsChange={setSistemaPedidoDetalles}
                               />
                             );
-                          case "Fit":
+                          case "fit":
                             return (
                               <FitForm
                                 ancho={ancho}
@@ -640,7 +627,7 @@ export default function GenerarPedidoModal({
                                 selectedArticulo={selectedArticulo}
                               />
                             );
-                          case "Paneles":
+                          case "paneles":
                             return (
                               <PanelesForm
                                 ancho={ancho}
@@ -649,7 +636,7 @@ export default function GenerarPedidoModal({
                                 selectedArticulo={selectedArticulo}
                               />
                             );
-                          case "Venecianas":
+                          case "venecianas":
                             return (
                               <VenecianasForm
                                 ancho={ancho}
@@ -658,16 +645,17 @@ export default function GenerarPedidoModal({
                                 selectedArticulo={selectedArticulo}
                               />
                             );
-                            case "Barcelona":
-                              return (
-                                <BarcelonaForm
-                                  ancho={ancho}
-                                  alto={alto}
-                                  cantidad={cantidad}
-                                  selectedArticulo={selectedArticulo}
-                                />
-                              );
+                          case "barcelona":
+                            return (
+                              <BarcelonaForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                              />
+                            );
                           default:
+                            console.log('Sistema seleccionado:', selectedSistema);
                             return (
                               <div className="p-4 text-center text-gray-500">
                                 Formulario para {selectedSistema} en desarrollo...
