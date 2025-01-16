@@ -50,6 +50,7 @@ export const TelasSearch = ({
       if (data.productos && Array.isArray(data.productos)) {
         const telasFormateadas = data.productos.map(producto => ({
           id: producto.id,
+          descripcion: producto.descripcion,
           nombre: producto.nombreProducto,
           tipo: producto.descripcion || '',
           color: '',
@@ -122,7 +123,8 @@ export const TelasSearch = ({
                   {tela.id !== 0 && ( // Solo mostrar detalles si no es "Sin tela"
                     <div className="text-sm text-gray-600">
                       {tela.color && <span className="mr-2">Color: {tela.color}</span>}
-                      {tela.precio && Number(tela.precio) > 0 && <span>Precio: ${Number(tela.precio).toFixed(2)}</span>}
+                      {tela.precio && Number(tela.precio) > 0 && <span className="mr-2">Precio: ${Number(tela.precio).toFixed(2)}</span>}
+                      {tela.tipo && <span>Descripción: {tela.tipo}</span>}
                     </div>
                   )}
                 </button>
