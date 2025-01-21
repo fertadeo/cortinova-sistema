@@ -36,6 +36,7 @@ export default function BarcelonaForm({
             onSelectionChange={(keys) => {
               const color = Array.from(keys)[0] as string;
               onColorChange(color);
+              console.log("Color del sistema seleccionado:", color);
             }}
           >
             <SelectItem key="blanco" value="blanco">Blanco</SelectItem>
@@ -51,6 +52,7 @@ export default function BarcelonaForm({
             onSelectionChange={(keys) => {
               const lado = Array.from(keys)[0] as string;
               onLadoComandoChange(lado);
+              console.log("Lado del comando seleccionado:", lado);
             }}
           >
             <SelectItem key="izquierda" value="izquierda">Izquierda</SelectItem>

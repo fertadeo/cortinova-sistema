@@ -48,7 +48,11 @@ interface Item {
   };
 }
 
-const PresupuestosTable = () => {
+interface PresupuestosTableProps {
+  onDataLoaded?: () => void;
+}
+
+export default function PresupuestosTable({ onDataLoaded }: PresupuestosTableProps) {
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,13 +81,12 @@ const PresupuestosTable = () => {
   } | null>(null);
 
   useEffect(() => {
-    const fetchPresupuestos = async () => {
+    const fetchData = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos?include=clientes,producto`);
         if (!response.ok) throw new Error('Error al cargar los presupuestos');
         const data = await response.json();
         
-        // Verificar la estructura de la respuesta
         if (data.success && Array.isArray(data.data)) {
           setPresupuestos(data.data);
         } else if (Array.isArray(data)) {
@@ -92,16 +95,16 @@ const PresupuestosTable = () => {
           throw new Error('Formato de datos inválido');
         }
         
-      } catch (err) {
-        setError("Error al cargar los presupuestos");
-        console.error('Error detallado:', err);
+        onDataLoaded?.();
+      } catch (error) {
+        console.error('Error loading presupuestos:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPresupuestos();
-  }, []);
+    fetchData();
+  }, [onDataLoaded]);
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -364,6 +367,4 @@ const PresupuestosTable = () => {
       )}
     </div>
   );
-};
-
-export default PresupuestosTable;
+}

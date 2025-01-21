@@ -5,6 +5,7 @@ export interface TableItem {
   description: string;
   quantity: number;
   price: number;
+  total: number;
   detalles?: {
     sistema: string;
     detalle: string;

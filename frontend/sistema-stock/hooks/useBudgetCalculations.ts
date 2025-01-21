@@ -1,14 +1,23 @@
 import { TableItem } from '../types/budget';
 
 export const useBudgetCalculations = () => {
-  const calculateSubtotal = (quantity: number, price: number) => quantity * price;
-
-  const calculateTotals = (tableData: TableItem[], applyDiscount: boolean) => {
-    const subtotal = tableData.reduce((sum, item) => 
-      sum + calculateSubtotal(item.quantity, item.price), 0
-    );
+  const calculateTotals = (
+    items: TableItem[], 
+    applyDiscount: boolean,
+    discountPercentage?: number,
+    discountAmount?: number
+  ) => {
+    const subtotal = items.reduce((acc, item) => acc + item.total, 0);
     
-    const discount = applyDiscount ? subtotal * 0.10 : 0;
+    let discount = 0;
+    if (applyDiscount) {
+      if (discountPercentage) {
+        discount = (subtotal * discountPercentage) / 100;
+      } else if (discountAmount) {
+        discount = discountAmount;
+      }
+    }
+    
     const finalTotal = subtotal - discount;
 
     return {
@@ -18,8 +27,5 @@ export const useBudgetCalculations = () => {
     };
   };
 
-  return {
-    calculateSubtotal,
-    calculateTotals
-  };
+  return { calculateTotals };
 }; 
