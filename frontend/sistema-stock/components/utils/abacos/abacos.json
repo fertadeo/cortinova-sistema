@@ -1,5 +1,5 @@
 {
-  "Roller": {
+  "ROLLER": {
     "id": 1,
     "medidas permitidas": {
       "min": { "ancho": 0.2, "alto": null },

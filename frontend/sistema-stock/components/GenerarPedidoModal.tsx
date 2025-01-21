@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox,
-} from "@nextui-org/react";
+import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox} from "@nextui-org/react";
 import { RollerForm } from "./utils/abacos/forms/RollerForm";
 import DubaiForm from "./utils/abacos/forms/DubaiForm";
 import PanelesForm from "./utils/abacos/forms/PanelesForm";
 import FitForm from "./utils/abacos/forms/FitForm";
 import VenecianasForm from "./utils/abacos/forms/VenecianasForm";
 import BarcelonaForm from "./utils/abacos/forms/BarcelonaForm";
+import { TelasSearch } from "./utils/TelasSearch";
+import { type Tela } from '@/types/telas';
+
 
 interface MedidasPermitidas {
   min: { ancho: number; alto: number | null };
@@ -67,33 +69,79 @@ interface AbacoRoller {
   sistemas: SistemaRoller[];
 }
 
-// Función para determinar el sistema
-const determinarSistema = (tipo: string, ancho: number, alto: number): string => {
-  const tipoSistema = tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase() as keyof typeof abacoData;
-  const sistemaData = abacoData[tipoSistema];
+// Función para normalizar el nombre del sistema
+const normalizarNombreSistema = (tipo: string): string => {
+  // Mapeo de nombres de sistemas
+  const sistemasMap: { [key: string]: string } = {
+    "BARCELONA - BANDAS VERTICALES": "Barcelona",
+    "BARCELONA": "Barcelona",
+    "ROLLER": "ROLLER",
+    // Añade más mappings según sea necesario
+  };
 
-  if (!sistemaData || !("medidas permitidas" in sistemaData)) {
-    return "Tipo de sistema no encontrado";
+  const tipoNormalizado = tipo.toUpperCase().trim();
+  console.log('Tipo original:', tipo);
+  console.log('Tipo normalizado:', tipoNormalizado);
+  
+  const tipoMapeado = sistemasMap[tipoNormalizado] || tipoNormalizado;
+  console.log('Tipo mapeado:', tipoMapeado);
+  console.log('Sistemas disponibles en abacoData:', Object.keys(abacoData));
+
+  return tipoMapeado;
+};
+
+// Actualizar la función determinarSistema
+const determinarSistema = (tipo: string, ancho: number, alto: number): string => {
+  const tipoNormalizado = normalizarNombreSistema(tipo);
+  console.log(`Determinando sistema para: tipo=${tipoNormalizado}, ancho=${ancho}m, alto=${alto}m`);
+  
+  const sistemaData = abacoData[tipoNormalizado];
+  
+  if (!sistemaData || !sistemaData["medidas permitidas"]) {
+    console.error(`Sistema no encontrado o sin medidas permitidas: ${tipoNormalizado}`);
+    return "";
   }
 
   const medidasPermitidas = sistemaData["medidas permitidas"];
 
-  // Validar ancho mínimo si existe
-  if (medidasPermitidas.min?.ancho && ancho < medidasPermitidas.min.ancho) {
-    return `El ancho mínimo permitido es ${medidasPermitidas.min.ancho}m`;
+  // Validar límites máximos
+  if (medidasPermitidas.max?.ancho && ancho > medidasPermitidas.max.ancho) {
+    console.warn(`Ancho ${ancho}m excede el máximo permitido de ${medidasPermitidas.max.ancho}m`);
+    return "EXCEDE_MAXIMO";
   }
 
-  // Validar superficie mínima si existe
+  if (medidasPermitidas.max?.alto && alto > medidasPermitidas.max.alto) {
+    console.warn(`Alto ${alto}m excede el máximo permitido de ${medidasPermitidas.max.alto}m`);
+    return "EXCEDE_MAXIMO";
+  }
+
+  // Validar superficie máxima
   const superficie = ancho * alto;
-  if (medidasPermitidas["sup min"] && superficie < medidasPermitidas["sup min"]) {
-    return `La superficie mínima permitida es ${medidasPermitidas["sup min"]}m²`;
+  if (medidasPermitidas["sup max"] && superficie > medidasPermitidas["sup max"]) {
+    console.warn(`Superficie ${superficie}m² excede el máximo permitido de ${medidasPermitidas["sup max"]}m²`);
+    return "EXCEDE_MAXIMO";
   }
 
-  // Si pasa las validaciones, buscar el sistema correspondiente
-  const sistemas = sistemaData.sistemas;
+  // Validar ancho mínimo
+  if (medidasPermitidas.min?.ancho && ancho < medidasPermitidas.min.ancho) {
+    console.log(`Ancho ${ancho}m es menor que el mínimo ${medidasPermitidas.min.ancho}m`);
+    return ""; // Retornar string vacío en lugar de mensaje de error
+  }
+
+  // Validar alto mínimo si existe
+  if (medidasPermitidas.min?.alto && alto < medidasPermitidas.min.alto) {
+    console.log(`Alto ${alto}m es menor que el mínimo ${medidasPermitidas.min.alto}m`);
+    return ""; // Retornar string vacío en lugar de mensaje de error
+  }
+
+  // Validar superficie mínima
+  if (medidasPermitidas["sup min"] && superficie < medidasPermitidas["sup min"]) {
+    console.log(`Superficie ${superficie}m² es menor que el mínimo ${medidasPermitidas["sup min"]}m²`);
+    return ""; // Retornar string vacío en lugar de mensaje de error
+  }
 
   // Ordenar los sistemas por dimensiones
-  const sortedSistemas = sistemas.sort((a, b) => {
+  const sortedSistemas = [...sistemaData.sistemas].sort((a, b) => {
     if (a.ancho === b.ancho) {
       return a.alto - b.alto;
     }
@@ -101,72 +149,36 @@ const determinarSistema = (tipo: string, ancho: number, alto: number): string =>
   });
 
   // Encontrar el sistema adecuado
-  for (const sistema of sortedSistemas) {
-    if (sistema.ancho >= ancho && sistema.alto >= alto) {
-      return sistema.sistema;
-    }
+  const sistemaEncontrado = sortedSistemas.find(sistema => 
+    sistema.ancho >= ancho && sistema.alto >= alto
+  );
+
+  if (sistemaEncontrado) {
+    console.log('Sistema encontrado:', sistemaEncontrado.sistema);
+    return sistemaEncontrado.sistema;
   }
 
-  return "No hay sistema disponible para estas medidas";
+  console.warn('No se encontró sistema adecuado para estas medidas:', { ancho, alto });
+  return "MEDIDAS_INVALIDAS";
 };
 
 // Actualizar la función helper
 const getUniqueSistemas = (sistemaData: SistemaData): string[] => {
-  if (!sistemaData?.sistemas) return [];
-  return Array.from(new Set(sistemaData.sistemas.map(sistema => sistema.sistema)));
-};
-
-// Agregar cerca de la parte superior del archivo, antes del componente
-const MOCK_TELAS = [
-  {
-    id: 1,
-    nombre: "Screen 5% White/Pearl",
-    tipo: "Screen",
-    color: "Blanco/Perla",
-    precio: 15000
-  },
-  {
-    id: 2,
-    nombre: "Screen 3% Black/Grey",
-    tipo: "Screen",
-    color: "Negro/Gris",
-    precio: 16500
-  },
-  {
-    id: 3,
-    nombre: "Blackout Premium White",
-    tipo: "Blackout",
-    color: "Blanco",
-    precio: 18000
-  },
-  {
-    id: 4,
-    nombre: "Blackout Premium Beige",
-    tipo: "Blackout",
-    color: "Beige",
-    precio: 18000
-  },
-  {
-    id: 5,
-    nombre: "Sunscreen 10% Ivory",
-    tipo: "Sunscreen",
-    color: "Marfil",
-    precio: 17000
-  },
-  {
-    id: 6,
-    nombre: "Sunscreen 10% Grey",
-    tipo: "Sunscreen",
-    color: "Gris",
-    precio: 17000
+  if (!sistemaData?.sistemas) {
+    console.log('No hay sistemas disponibles para:', sistemaData);
+    return [];
   }
-];
-
-// Función helper para normalizar el nombre del sistema
-const normalizarNombreSistema = (nombre: string): string => {
-  // Primero convertimos todo a minúsculas y luego capitalizamos la primera letra
-  const nombreNormalizado = nombre.toLowerCase();
-  return nombreNormalizado.charAt(0).toUpperCase() + nombreNormalizado.slice(1);
+  
+  // Usar Set para eliminar duplicados inmediatamente
+  const sistemasUnicos = new Set(
+    sistemaData.sistemas
+      .filter(sistema => sistema.sistema && typeof sistema.sistema === 'string')
+      .map(sistema => sistema.sistema)
+  );
+  
+  const sistemasArray = Array.from(sistemasUnicos);
+  console.log('Sistemas únicos disponibles:', sistemasArray);
+  return sistemasArray;
 };
 
 // Función helper para obtener el nombre del sistema por ID
@@ -174,6 +186,45 @@ const getSistemaNombreById = (id: number | string): string | null => {
   // Buscar en el JSON de abacos el sistema que corresponde al ID
   const sistema = Object.entries(abacoData).find(([_, value]) => value.id === Number(id));
   return sistema ? sistema[0] : null;
+};
+
+// Función para calcular el área de tela necesaria
+const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = true): number => {
+  // Convertir cm a metros
+  const anchoMetros = Number(ancho) / 100;
+  const altoMetros = Number(alto) / 100;
+  
+  if (telaRotable) {
+    // Para telas que se pueden rotar, usamos el área mínima posible
+    return Math.min(anchoMetros, altoMetros) * Math.max(anchoMetros, altoMetros);
+  } else {
+    // Para telas con patrón direccional, respetamos las dimensiones originales
+    return anchoMetros * altoMetros;
+  }
+};
+
+// Actualizar el cálculo del precio en el resumen
+const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean): number => {
+  const area = calcularAreaTela(ancho, alto, esRotable);
+  return area * precioTela;
+};
+
+// Función helper para procesar los sistemas únicos con su garantía
+const procesarSistemasUnicos = (sistemas: Sistema[]) => {
+  const sistemasMap = new Map<string, string>();
+  
+  sistemas.forEach(sistema => {
+    const nombreBase = sistema.sistema.trim();
+    const garantia = sistema.garantia ? ' - SG' : '';
+    const nombreCompleto = `${nombreBase}${garantia}`;
+    
+    // Solo actualiza si no existe o si este tiene garantía y el anterior no
+    if (!sistemasMap.has(nombreBase) || sistema.garantia) {
+      sistemasMap.set(nombreBase, nombreCompleto);
+    }
+  });
+
+  return Array.from(sistemasMap.values());
 };
 
 export default function GenerarPedidoModal({
@@ -197,8 +248,8 @@ export default function GenerarPedidoModal({
   // Estados específicos de Roller
   const [detalle, setDetalle] = useState("");
   const [caidaPorDelante, setCaidaPorDelante] = useState(false);
-  const [colorSistema, setColorSistema] = useState("");
-  const [ladoComando, setLadoComando] = useState("");
+  const [colorSistema, setColorSistema] = useState<string>("");
+  const [ladoComando, setLadoComando] = useState<string>("");
   const [tipoTela, setTipoTela] = useState("");
   const [soporteIntermedio, setSoporteIntermedio] = useState(false);
   const [soporteDoble, setSoporteDoble] = useState(false);
@@ -219,7 +270,7 @@ export default function GenerarPedidoModal({
     color: string;
     precio: number;
   }>>([]);
-  const [selectedTela, setSelectedTela] = useState<string>("");
+  const [selectedTela, setSelectedTela] = useState<Tela | null>(null);
   const [showTelasList, setShowTelasList] = useState(false);
 
   // Define state to hold calculated prices
@@ -231,6 +282,9 @@ export default function GenerarPedidoModal({
 
   // Nuevo estado para manejar los detalles específicos del sistema
   const [sistemaPedidoDetalles, setSistemaPedidoDetalles] = useState<any>(null);
+
+  // Agregar estado para manejar errores
+  const [error, setError] = useState("");
 
   const resetInputs = () => {
     setCurrentStep(1);
@@ -248,7 +302,7 @@ export default function GenerarPedidoModal({
     setSoporteDoble(false);
     setSearchTela("");
     setTelasFiltradas([]);
-    setSelectedTela("");
+    setSelectedTela(null);
     setShowTelasList(false);
   };
 
@@ -313,29 +367,35 @@ export default function GenerarPedidoModal({
   // Actualizar el useEffect
   useEffect(() => {
     if (selectedSistema && ancho !== "" && alto !== "" && ancho !== "0" && alto !== "0") {
-      // Convertir ancho y alto de cm a m
       const anchoEnMetros = Number(ancho) / 100;
       const altoEnMetros = Number(alto) / 100;
-
-      const sistema = determinarSistema(selectedSistema, anchoEnMetros, altoEnMetros);
-
-      // Si el resultado es un mensaje de error, mostrarlo
-      if (sistema.includes("mínimo") || sistema.includes("No hay sistema")) {
+      
+      const resultado = determinarSistema(selectedSistema, anchoEnMetros, altoEnMetros);
+      
+      if (resultado === "EXCEDE_MAXIMO") {
+        // Mostrar mensaje de error en la UI
+        setError("Las medidas exceden los límites máximos permitidos para este sistema");
         setSistemaRecomendado("");
         setSelectedArticulo("");
-        // Aquí podrías mostrar el mensaje de error al usuario
-        console.error(sistema);
+      } else if (resultado === "MEDIDAS_INVALIDAS") {
+        setError("No hay un sistema disponible para estas medidas");
+        setSistemaRecomendado("");
+        setSelectedArticulo("");
       } else {
-        setSistemaRecomendado(sistema);
-        setSelectedArticulo(sistema);
+        setError("");
+        setSistemaRecomendado(resultado);
+        if (resultado) {
+          setSelectedArticulo(resultado);
+        }
       }
     } else {
       setSistemaRecomendado("");
       setSelectedArticulo("");
+      setError("");
     }
   }, [ancho, alto, selectedSistema]);
 
-  // Agregar función de búsqueda de telas
+  // Actualizar la función handleTelaSearch para no usar MOCK_TELAS
   const handleTelaSearch = async (value: string) => {
     setSearchTela(value);
     setShowTelasList(true);
@@ -346,24 +406,23 @@ export default function GenerarPedidoModal({
       return;
     }
 
-    // Simular búsqueda local
-    const searchTerms = value.toLowerCase().split(' ');
-    const filtered = MOCK_TELAS.filter(tela => {
-      const searchString = `${tela.nombre} ${tela.tipo} ${tela.color}`.toLowerCase();
-      return searchTerms.every(term => searchString.includes(term));
-    });
-
-    setTelasFiltradas(filtered);
+    // Aquí deberías hacer la llamada a tu API o base de datos
+    // Por ejemplo:
+    // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/telas/search?q=${value}`);
+    // const filtered = await response.json();
+    // setTelasFiltradas(filtered);
   };
 
-  // Update the calcularPrecioTotal function to set these values
+  // Actualizar calcularPrecioTotal para no usar MOCK_TELAS
   const calcularPrecioTotal = () => {
     if (!ancho || !alto || !cantidad || !selectedTela) return 0;
 
-    const anchoMetros = Number(ancho) / 100; // Convert to meters
-    const precioSistemaPorMetro = 12000; // Example price
-    const telaSeleccionada = MOCK_TELAS.find(t => t.nombre === selectedTela);
-    const precioTelaPorMetro = telaSeleccionada ? telaSeleccionada.precio : 0;
+    const anchoMetros = Number(ancho) / 100;
+    const precioSistemaPorMetro = 12000;
+    
+    // Aquí deberías obtener el precio de la tela de tu estado o props
+    // const precioTelaPorMetro = selectedTelaData?.precio || 0;
+    const precioTelaPorMetro = 0; // Actualizar según tu implementación
 
     const nuevoPrecioSistema = precioSistemaPorMetro * anchoMetros;
     const nuevoPrecioTela = precioTelaPorMetro * anchoMetros;
@@ -371,49 +430,49 @@ export default function GenerarPedidoModal({
     setPrecioSistema(nuevoPrecioSistema);
     setPrecioTela(nuevoPrecioTela);
 
-    const costoColocacion = 5000; // Fixed cost
+    const costoColocacion = 5000;
     return (nuevoPrecioSistema + nuevoPrecioTela + costoColocacion) * Number(cantidad);
   };
 
+  // Función para validar medidas
   const getValidationMessage = (tipo: 'ancho' | 'alto', value: number) => {
+    console.log(`Validando ${tipo}: ${value}cm`);
+    
     if (!selectedSistema) return undefined;
 
     const medidas = abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"];
-    if (!medidas) return undefined;
+    if (!medidas) {
+      console.log('No se encontraron medidas permitidas');
+      return undefined;
+    }
+
+    // Convertir a metros para la validación
+    const valueInMeters = value / 100;
 
     // Validación de dimensiones
     const minValue = medidas.min?.[tipo];
     const maxValue = medidas.max?.[tipo];
 
-    if (minValue && value < minValue * 100) {
+    if (minValue && valueInMeters < minValue) {
+      console.log(`${tipo} ${valueInMeters}m es menor que el mínimo ${minValue}m`);
       return `El ${tipo} mínimo permitido es ${minValue * 100}cm`;
     }
 
-    if (maxValue && value > maxValue * 100) {
+    if (maxValue && valueInMeters > maxValue) {
+      console.log(`${tipo} ${valueInMeters}m es mayor que el máximo ${maxValue}m`);
       return `El ${tipo} máximo permitido es ${maxValue * 100}cm`;
     }
 
-    // Validación de superficie y sistema disponible
+    // Validación de superficie
     if (ancho && alto) {
       const superficie = (Number(ancho) * Number(alto)) / 10000; // convertir a m²
       if (medidas["sup min"] && superficie < medidas["sup min"]) {
+        console.log(`Superficie ${superficie}m² es menor que el mínimo ${medidas["sup min"]}m²`);
         return `La superficie mínima permitida es ${medidas["sup min"]}m²`;
       }
       if (medidas["sup max"] && superficie > medidas["sup max"]) {
+        console.log(`Superficie ${superficie}m² es mayor que el máximo ${medidas["sup max"]}m²`);
         return `La superficie máxima permitida es ${medidas["sup max"]}m²`;
-      }
-
-      // Verificar si hay sistema disponible
-      const anchoMetros = Number(ancho) / 100;
-      const altoMetros = Number(alto) / 100;
-      const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.sistemas;
-      const haySistemaDisponible = sistemasDisponibles?.some(
-        (sistema: { ancho: number; alto: number; sistema: string }) => 
-          sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
-      );
-
-      if (!haySistemaDisponible) {
-        return "No hay sistema disponible para estas medidas";
       }
     }
 
@@ -493,23 +552,16 @@ export default function GenerarPedidoModal({
                       placeholder="Elegir un sistema"
                       selectedKeys={selectedSistema ? [selectedSistema] : []}
                       onSelectionChange={(keys) => {
-                        const sistemaId = Array.from(keys)[0] as string;
-                        // Encontrar el sistema seleccionado usando el ID
-                        const sistemaSeleccionado = sistemas.find(
-                          sistema => String(sistema.id) === sistemaId
-                        );
+                        const sistemaSeleccionado = Array.from(keys)[0] as string;
+                        setSelectedSistema(sistemaSeleccionado);
                         
-                        if (sistemaSeleccionado) {
-                          const nombreSistema = String(sistemaSeleccionado.nombreSistemas);
-                          setSelectedSistema(nombreSistema);
-                          console.log("Sistema seleccionado:", nombreSistema);
-                        }
+                        console.log("Sistema seleccionado:", sistemaSeleccionado);
                       }}
                     >
                       {sistemas?.map((sistema) => (
                         <SelectItem 
-                          key={String(sistema.id)} 
-                          value={String(sistema.id)}
+                          key={String(sistema.nombreSistemas)} 
+                          value={String(sistema.nombreSistemas)}
                         >
                           {sistema.nombreSistemas} 
                         </SelectItem>
@@ -534,11 +586,20 @@ export default function GenerarPedidoModal({
                           variant="bordered"
                           size="sm"
                           placeholder="0"
-                          isInvalid={!!(selectedSistema && ancho && Number(ancho) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.ancho || 0) * 100)}
+                          isInvalid={
+                            selectedSistema && ancho ? (
+                              Number(ancho) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.ancho || 0) * 100 ||
+                              Number(ancho) > (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.max?.ancho || Infinity) * 100
+                            ) : false
+                          }
                           errorMessage={
-                            selectedSistema && ancho && Number(ancho) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.ancho || 0) * 100
-                              ? `El ancho mínimo permitido es ${(abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.ancho || 0) * 100}cm`
-                              : undefined
+                            selectedSistema && ancho && (
+                              Number(ancho) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.ancho || 0) * 100
+                                ? `El ancho mínimo permitido es ${(abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.ancho || 0) * 100}cm`
+                                : Number(ancho) > (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.max?.ancho || Infinity) * 100
+                                  ? `El ancho máximo permitido es ${(abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.max?.ancho || Infinity) * 100}cm`
+                                  : undefined
+                            )
                           }
                         />
                       </div>
@@ -551,35 +612,58 @@ export default function GenerarPedidoModal({
                           variant="bordered"
                           size="sm"
                           placeholder="0"
-                          isInvalid={!!getValidationMessage('alto', Number(alto))}
-                          errorMessage={getValidationMessage('alto', Number(alto))}
+                          isInvalid={
+                            selectedSistema && alto ? (
+                              Number(alto) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.alto || 0) * 100 ||
+                              Number(alto) > (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.max?.alto || Infinity) * 100
+                            ) : false
+                          }
+                          errorMessage={
+                            selectedSistema && alto && (
+                              Number(alto) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.alto || 0) * 100
+                                ? `El alto mínimo permitido es ${(abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.alto || 0) * 100}cm`
+                                : Number(alto) > (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.max?.alto || Infinity) * 100
+                                  ? `El alto máximo permitido es ${(abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.max?.alto || Infinity) * 100}cm`
+                                  : undefined
+                            )
+                          }
                         />
                       </div>
                     </div>
 
                     <Select
                       label="Artículo"
-                      selectedKeys={selectedArticulo ? [selectedArticulo] : []}
-                      onSelectionChange={(keys) => setSelectedArticulo(Array.from(keys)[0] as string)}
+                      placeholder="Seleccione un artículo"
+                      selectedKeys={selectedArticulo ? [selectedArticulo] : new Set()}
+                      onSelectionChange={(keys) => {
+                        const articulo = Array.from(keys)[0] as string;
+                        setSelectedArticulo(articulo || "");
+                      }}
                     >
-                      {selectedSistema ?
-                        getUniqueSistemas(abacoData[selectedSistema as keyof typeof abacoData] as unknown as SistemaData).map((sistema) => (
-                          <SelectItem key={sistema} value={sistema}>
-                            {sistema}
-                          </SelectItem>
-                        ))
-                        : <SelectItem key="empty" value="">Seleccione un sistema primero</SelectItem>
-                      }
+                      {selectedSistema && abacoData[normalizarNombreSistema(selectedSistema)]?.sistemas ? (
+                        procesarSistemasUnicos(abacoData[normalizarNombreSistema(selectedSistema)].sistemas)
+                          .filter(sistema => sistema !== "NINGUNO") // Filtrar "NINGUNO" si no quieres mostrarlo
+                          .map((sistemaNombre) => (
+                            <SelectItem key={sistemaNombre} value={sistemaNombre}>
+                              {sistemaNombre}
+                            </SelectItem>
+                          ))
+                      ) : (
+                        <SelectItem key="empty" value="">
+                          Seleccione un sistema primero
+                        </SelectItem>
+                      )}
                     </Select>
                   </div>
 
                   {/* PARTE 2: Formulario específico del sistema */}
                   {selectedSistema && (
                     <div className="pt-4 mt-4 border-t">
-                      {/* Renderizado condicional según el sistema seleccionado */}
                       {(() => {
-                        // Normalizar el nombre del sistema para la comparación
-                        const sistemaNormalizado = selectedSistema.trim().toLowerCase();
+                        const sistemaNormalizado = selectedSistema
+                          .split('-')[0]
+                          .trim()
+                          .toLowerCase();
                         
                         switch (sistemaNormalizado) {
                           case "roller":
@@ -652,10 +736,16 @@ export default function GenerarPedidoModal({
                                 alto={alto}
                                 cantidad={cantidad}
                                 selectedArticulo={selectedArticulo}
+                                detalle={detalle}
+                                ladoComando={ladoComando}
+                                colorSistema={colorSistema}
+                                onDetalleChange={setDetalle}
+                                onLadoComandoChange={setLadoComando}
+                                onColorChange={setColorSistema}
                               />
                             );
                           default:
-                            console.log('Sistema seleccionado:', selectedSistema);
+                            console.log('Sistema no coincide:', selectedSistema);
                             return (
                               <div className="p-4 text-center text-gray-500">
                                 Formulario para {selectedSistema} en desarrollo...
@@ -666,51 +756,19 @@ export default function GenerarPedidoModal({
                     </div>
                   )}
 
-                  {/* Tercer paso - Buscador de telas */}
-                  {canProceedToNextStep() && selectedSistema === "Roller" && (
-                    <div className="pt-4 mt-4 border-t">
-                      <div className="relative">
-                        <Input
-                          label="Buscar Tela"
-                          placeholder="Escribe para buscar telas..."
-                          value={searchTela}
-                          onValueChange={handleTelaSearch}
-                          variant="bordered"
-                          className="mb-2"
-                        />
-
-                        {showTelasList && telasFiltradas.length > 0 && (
-                          <div className="overflow-auto absolute z-50 w-full max-h-60 bg-white rounded-lg border shadow-lg">
-                            {telasFiltradas.map((tela) => (
-                              <button
-                                key={tela.id}
-                                className="p-3 w-full text-left border-b hover:bg-gray-50 last:border-b-0"
-                                onClick={() => {
-                                  setSelectedTela(tela.nombre);
-                                  setSearchTela(tela.nombre);
-                                  setShowTelasList(false);
-                                }}
-
-                                tabIndex={0}
-                              >
-                                <div className="font-medium">{tela.nombre}</div>
-                                <div className="text-sm text-gray-600">
-                                  <span className="mr-2">Tipo: {tela.tipo}</span>
-                                  <span className="mr-2">Color: {tela.color}</span>
-                                  <span>Precio: ${tela.precio}</span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {showTelasList && searchTela && telasFiltradas.length === 0 && (
-                          <div className="absolute z-50 p-3 w-full text-center text-gray-500 bg-white rounded-lg border">
-                            No se encontraron telas
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  {/* PARTE 3: Buscador de telas (siempre visible) */}
+                  {selectedSistema && (
+                    <TelasSearch
+                      searchTela={searchTela}
+                      onSearchChange={handleTelaSearch}
+                      telasFiltradas={telasFiltradas as unknown as Tela[]}
+                      showTelasList={showTelasList}
+                      onTelaSelect={(tela: Tela) => {
+                        setSelectedTela(tela);
+                        setSearchTela(tela.nombre);
+                        setShowTelasList(false);
+                      }}
+                    />
                   )}
 
                   {/* Cuarto paso - Resumen de precios */}
@@ -730,7 +788,12 @@ export default function GenerarPedidoModal({
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Precio tela:</span>
-                              <span>${precioTela.toLocaleString()}</span>
+                              <span>${calcularPrecioTela(
+                                Number(ancho),
+                                Number(alto),
+                                selectedTela?.precio ? Number(selectedTela.precio) : 0,
+                                selectedTela?.nombre === 'ROLLER'
+                              ).toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Cantidad:</span>
@@ -758,9 +821,19 @@ export default function GenerarPedidoModal({
 
                         {selectedTela && (
                           <div className="flex justify-between items-center">
-                            <span>Tela ({ancho}cm):</span>
+                            <span>
+                              Tela ({calcularAreaTela(Number(ancho), Number(alto), selectedTela?.nombre === 'ROLLER').toFixed(2)}m²):
+                              {selectedTela?.nombre !== 'ROLLER' && (
+                                <span className="ml-1 text-xs text-gray-500">(Patrón direccional)</span>
+                              )}
+                            </span>
                             <span className="font-medium">
-                              ${(Number(ancho) / 100 * precioTela).toLocaleString()}
+                              ${calcularPrecioTela(
+                                Number(ancho),
+                                Number(alto),
+                                selectedTela?.precio ? Number(selectedTela.precio) : 0,
+                                selectedTela?.nombre === 'ROLLER'
+                              ).toLocaleString()}
                             </span>
                           </div>
                         )}
@@ -783,17 +856,26 @@ export default function GenerarPedidoModal({
                         <div className="flex justify-between items-center pt-3 mt-2 border-t">
                           <span className="font-bold">Total:</span>
                           <span className="font-bold">
-                            ${((Number(ancho) / 100 * 12000) +
-                              (selectedTela ? Number(ancho) / 100 * precioTela : 0) +
-                              (incluirColocacion ? 10000 : 0)).toLocaleString()}
+                            ${((Number(ancho) / 100 * 12000) + 
+                               (selectedTela ? calcularPrecioTela(
+                                 Number(ancho),
+                                 Number(alto),
+                                 selectedTela?.precio ? Number(selectedTela.precio) : 0,
+                                 selectedTela?.nombre === 'ROLLER'
+                               ) : 0) +
+                               (incluirColocacion ? 10000 : 0)).toLocaleString()}
                           </span>
                         </div>
                       </div>
                     </div>
                   )}
 
+                  {error && (
+                    <div className="mt-2 text-sm text-red-500">
+                      {error}
+                    </div>
+                  )}
 
-              
                 </div>
               </ModalBody>
               <ModalFooter className="sticky bottom-0 z-20 bg-white rounded-b-lg border-t">
