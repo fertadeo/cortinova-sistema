@@ -9,10 +9,11 @@ export enum PedidoEstado {
 
 // También podemos agregar los colores asociados
 export const estadoColors: Record<PedidoEstado, string> = {
-    // [PedidoEstado.EMITIDO]: "warning",
+     [PedidoEstado.EMITIDO]: "warning",
     [PedidoEstado.CONFIRMADO]: "primary",
     [PedidoEstado.EN_PRODUCCION]: "secondary",
     [PedidoEstado.CANCELADO]: "danger",
     [PedidoEstado.LISTO_ENTREGA]: "success",
-    [PedidoEstado.ENTREGADO]: "default"
+    [PedidoEstado.ENTREGADO]: "default",
+    
 }; 

@@ -412,7 +412,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       setIsUpdating(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoId}/convertir-a-pedido`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estado: "Confirmado"
+        })
       });
 
       if (!response.ok) {
@@ -426,7 +429,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         )
       );
 
-      // Mostrar notificación de éxito
       setNotification({
         message: "¡Pedido confirmado exitosamente!",
         variant: "success"
