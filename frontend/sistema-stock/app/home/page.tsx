@@ -73,7 +73,7 @@ export default function Home() {
         ) : null} */}
         <PresupuestosTable onDataLoaded={handleDataLoaded}  />
       </div>
-      <TourGuide />
+      {/* <TourGuide /> */}
     </div>
   );
 }
