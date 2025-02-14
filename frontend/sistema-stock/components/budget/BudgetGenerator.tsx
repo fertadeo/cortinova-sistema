@@ -10,6 +10,23 @@ import { useBudgetCalculations } from "../../hooks/useBudgetCalculations";
 import GenerarPedidoModal from "../GenerarPedidoModal";
 import BudgetResume from "../budgetResume";
 
+// Renombrar la declaración local
+interface LocalTableItem {
+  detalles: { sistema: string; detalle: string; caidaPorDelante: string; colorSistema: string; ladoComando: string; tipoTela: string; soporteIntermedio: boolean; soporteDoble: boolean; };
+  id: number;
+  productId: number;
+  name: string;
+  description: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean): number => {
+  const area = ((ancho / 100) * (alto / 100));
+  return area * precioTela;
+};
+
 export const BudgetGenerator = () => {
   // Estados del cliente
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -56,16 +73,58 @@ export const BudgetGenerator = () => {
 
   // Manejador de pedido personalizado
   const handleAddPedido = (pedido: any) => {
+    // Inspeccionar el pedido completo
+    console.log('Pedido recibido:', pedido);
+    console.log('Tela del pedido:', pedido.tela);
+    console.log('Precio de la tela:', pedido.tela?.precio);
+    console.log('Incluir colocación:', pedido.incluirColocacion);
+
+    // Asegurar que los valores sean números válidos
+    const anchoNum = Number(pedido.detalles.ancho) || 0;  // Cambiado a pedido.detalles.ancho
+    const altoNum = Number(pedido.detalles.alto) || 0;    // Cambiado a pedido.detalles.alto
+    const cantidadNum = Number(pedido.detalles.cantidad) || 1;  // Cambiado a pedido.detalles.cantidad
+    const precioTelaNum = pedido.tela?.precio ? Number(pedido.tela.precio) : 0;
+
+    const precioTotal = (
+      (anchoNum / 100 * 12000) + // Precio del sistema
+      (pedido.tela ? calcularPrecioTela(
+        anchoNum,
+        altoNum,
+        precioTelaNum,
+        pedido.tela?.nombre === 'ROLLER'
+      ) : 0) +
+      (pedido.incluirColocacion ? 10000 : 0)
+    ) * cantidadNum;
+
+    console.log('Valores del pedido:', {
+      ancho: anchoNum,
+      alto: altoNum,
+      cantidad: cantidadNum,
+      precioTela: precioTelaNum,
+      precioTotal
+    });
+
     const newTableItem: TableItem = {
       id: Date.now(),
       productId: Date.now(),
       name: `Cortina ${pedido.sistema}`,
-      description: `${pedido.detalles.ancho}cm x ${pedido.detalles.alto}cm - ${pedido.detalles.tela || ''}`,
-      quantity: pedido.detalles.cantidad,
-      price: pedido.precioTotal / pedido.detalles.cantidad
+      description: pedido.detalle || 'Sin detalle',
+      quantity: pedido.cantidad || 1,
+      price: precioTotal / (pedido.cantidad || 1), // Precio unitario
+      total: precioTotal, // Precio total
+      detalles: {
+        sistema: pedido.sistema || "",
+        detalle: pedido.detalle || "",
+        caidaPorDelante: pedido.caidaPorDelante || "",
+        colorSistema: pedido.colorSistema || "",
+        ladoComando: pedido.ladoComando || "",
+        tipoTela: pedido.tipoTela || "",
+        soporteIntermedio: pedido.soporteIntermedio || false,
+        soporteDoble: pedido.soporteDoble || false
+      }
     };
 
-    setTableData(prevData => [...prevData, newTableItem]);
+    setTableData(prev => [...prev, newTableItem]);
   };
 
   // Manejador de emisión de presupuesto

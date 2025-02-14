@@ -16,15 +16,22 @@ import {
   PopoverTrigger,
   PopoverContent,
   Pagination,
+  Switch,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from "@nextui-org/react";
 import BudgetPDFModal from './BudgetPDFModal';
 import { FaFilePdf } from 'react-icons/fa';
+import { Alert } from "@/components/shared/alert";
 
 interface Presupuesto {
   id: number;
   numero_presupuesto: string;
   fecha: string;
-  estado: "Emitido" | "Confirmado" | "En Proceso" | "Entregado" | "Requiere Facturación" | "Cancelado";
+  estado:  "Confirmado" | "En Proceso" | "Entregado" | "Requiere Facturación" | "Cancelado";
   total: number;
   cliente_id: number;
   cliente_nombre: string;
@@ -79,25 +86,51 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     subtotal: number;
     total: number;
   } | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [presupuestoToConfirm, setPresupuestoToConfirm] = useState<Presupuesto | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    variant: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos?include=clientes,producto`);
-        if (!response.ok) throw new Error('Error al cargar los presupuestos');
-        const data = await response.json();
-        
-        if (data.success && Array.isArray(data.data)) {
-          setPresupuestos(data.data);
-        } else if (Array.isArray(data)) {
-          setPresupuestos(data);
-        } else {
-          throw new Error('Formato de datos inválido');
+        setLoading(true);
+        const [presupuestosResponse, pedidosResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos?include=clientes,producto`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos`)
+        ]);
+
+        if (!presupuestosResponse.ok || !pedidosResponse.ok) {
+          throw new Error('Error al cargar los datos');
         }
+
+        const presupuestosData = await presupuestosResponse.json();
+        const pedidosData = await pedidosResponse.json();
+
+        // Asegurarnos de acceder a la propiedad data si existe
+        const pedidos = pedidosData.data || pedidosData;
         
+        // Verificar que pedidos sea un array antes de usar map
+        const presupuestosConfirmados = new Set(
+          Array.isArray(pedidos) 
+            ? pedidos.map((pedido: any) => pedido.presupuesto_id)
+            : []
+        );
+
+        const presupuestosActualizados = (presupuestosData.data || presupuestosData).map(
+          (presupuesto: Presupuesto) => ({
+            ...presupuesto,
+            estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
+          })
+        );
+
+        setPresupuestos(presupuestosActualizados);
         onDataLoaded?.();
       } catch (error) {
-        console.error('Error loading presupuestos:', error);
+        console.error('Error loading data:', error);
+        setError('Error al cargar los datos');
       } finally {
         setLoading(false);
       }
@@ -108,8 +141,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case "Emitido":
-        return { color: "primary", textColor: "text-blue-600" };
       case "Confirmado":
         return { color: "success", textColor: "text-green-600" };
       case "En Proceso":
@@ -168,6 +199,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       });
       setIsPDFModalOpen(true);
     }
+  };
+
+  const handleOpenConfirmModal = (presupuesto: Presupuesto) => {
+    setPresupuestoToConfirm(presupuesto);
+    setShowConfirmModal(true);
   };
 
   const columns = [
@@ -249,19 +285,87 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           </div>
         );
       case "estado":
-        const estadoStyle = getEstadoColor(presupuesto.estado);
         return (
-          <Chip
-            size="md"
-            color={estadoStyle.color as "default" | "primary" | "warning" | "success" | "danger" | "secondary"}
-            variant="dot"
-            classNames={{
-              base: `capitalize ${estadoStyle.textColor}`,
-              content: estadoStyle.textColor
-            }}
-          >
-            {presupuesto.estado} Emitido
-          </Chip>
+          <div className="flex flex-col gap-2">
+            <Button
+              size="sm"
+              color={presupuesto.estado === "Confirmado" ? "success" : "primary"}
+              variant="flat"
+              onClick={() => handleOpenConfirmModal(presupuesto)}
+              isDisabled={presupuesto.estado === "Confirmado" || isUpdating}
+            >
+              {presupuesto.estado === "Confirmado" ? "Pedido Confirmado" : "Convertir a Pedido"}
+            </Button>
+
+            <Modal 
+              isOpen={showConfirmModal} 
+              onClose={() => {
+                setShowConfirmModal(false);
+                setPresupuestoToConfirm(null);
+              }}
+              backdrop="blur"
+              // classNames={{
+              //   backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/30 backdrop-blur-md"
+              // }}
+            >
+              <ModalContent>
+                {presupuestoToConfirm && (
+                  <>
+                    <ModalHeader>
+                      <h3 className="text-xl font-bold">Confirmar Pedido</h3>
+                    </ModalHeader>
+                    <ModalBody>
+                      <div className="space-y-4">
+                        <p className="text-default-600">¿Estás seguro de proceder?</p>
+                        <div className="p-4 space-y-2 rounded-lg bg-default-50">
+                          <h4 className="font-medium">Datos del pedido:</h4>
+                          <p>N° Presupuesto: {presupuestoToConfirm.numero_presupuesto}</p>
+                          <p>Cliente: {presupuestoToConfirm.cliente_nombre}</p>
+                          <p>Teléfono: {presupuestoToConfirm.cliente_telefono}</p>
+                          <p>Total: ${presupuestoToConfirm.total.toLocaleString('es-AR')}</p>
+                          <div className="mt-2">
+                            <p className="font-medium">Productos:</p>
+                            <ul className="list-disc list-inside">
+                              {presupuestoToConfirm.items.map((item, index) => (
+                                <li key={index} className="text-sm">
+                                  {item.cantidad}x {item.nombre} - ${item.subtotal.toLocaleString('es-AR')}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </ModalBody>
+                    <ModalFooter>
+                      <Button
+                        color="danger"
+                        variant="light"
+                        onPress={() => {
+                          setShowConfirmModal(false);
+                          setPresupuestoToConfirm(null);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        color="success"
+                        onPress={() => {
+                          if (presupuestoToConfirm) {
+                            handleConvertirAPedido(presupuestoToConfirm.id);
+                            setShowConfirmModal(false);
+                            setPresupuestoToConfirm(null);
+                          }
+                        }}
+                        isLoading={isUpdating}
+                      >
+                        Confirmar Pedido
+                      </Button>
+                    </ModalFooter>
+                  </>
+                )}
+              </ModalContent>
+            </Modal>
+          </div>
         );
       case "pdf":
         return (
@@ -280,7 +384,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
   const handleEstadoChange = async (
     presupuestoId: number, 
-    nuevoEstado: "Emitido" | "Confirmado" | "En Proceso" | "Entregado" | "Requiere Facturación" | "Cancelado"
+    nuevoEstado:  "Confirmado" | "En Proceso" | "Entregado" | "Requiere Facturación" | "Cancelado"
   ) => {
     try {
       setIsUpdating(true);
@@ -303,6 +407,42 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     }
   };
 
+  const handleConvertirAPedido = async (presupuestoId: number) => {
+    try {
+      setIsUpdating(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoId}/convertir-a-pedido`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al convertir el presupuesto a pedido');
+      }
+
+      // Actualizar el estado local del presupuesto
+      setPresupuestos(prevPresupuestos =>
+        prevPresupuestos.map(p =>
+          p.id === presupuestoId ? { ...p, estado: "Confirmado" } : p
+        )
+      );
+
+      // Mostrar notificación de éxito
+      setNotification({
+        message: "¡Pedido confirmado exitosamente!",
+        variant: "success"
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      setNotification({
+        message: "Hubo un error al confirmar el pedido",
+        variant: "error"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const pages = Math.ceil(presupuestos.length / rowsPerPage);
   const items = presupuestos.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
@@ -319,52 +459,64 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   }
 
   return (
-    <div className="p-4">
-      <Table 
-        aria-label="Tabla de presupuestos"
-        bottomContent={
-          pages > 1 ? (
-            <div className="flex justify-center w-full">
-              <Pagination
-                isCompact
-                showControls
-                showShadow
-                color="primary"
-                page={page}
-                total={pages}
-                onChange={(page) => setPage(page)}
-              />
-            </div>
-          ) : null
-        }
-      >
-        <TableHeader columns={columns}>
-          {(column) => (
-            <TableColumn key={column.uid}>
-              {column.name}
-            </TableColumn>
-          )}
-        </TableHeader>
-        <TableBody>
-          {items.map((presupuesto) => (
-            <TableRow key={presupuesto.id}>
-              {columns.map((column) => (
-                <TableCell key={column.uid}>
-                  {renderCell(presupuesto, column.uid)}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      {formattedPresupuesto && (
-        <BudgetPDFModal
-          isOpen={isPDFModalOpen}
-          onClose={() => setIsPDFModalOpen(false)}
-          presupuestoData={formattedPresupuesto}
-        />
+    <div>
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 w-full max-w-md animate-fade-in">
+          <Alert 
+            message={notification.message} 
+            variant={notification.variant}
+            className="border border-green-700 shadow-lg"
+          />
+        </div>
       )}
+      <div className="p-4 presupuestos-table">
+        <Table 
+          className="presupuestos-table"
+          aria-label="Tabla de presupuestos"
+          bottomContent={
+            pages > 1 ? (
+              <div className="flex justify-center w-full">
+                <Pagination
+                  isCompact
+                  showControls
+                  showShadow
+                  color="primary"
+                  page={page}
+                  total={pages}
+                  onChange={(page) => setPage(page)}
+                />
+              </div>
+            ) : null
+          }
+        >
+          <TableHeader columns={columns}>
+            {(column) => (
+              <TableColumn key={column.uid}>
+                {column.name}
+              </TableColumn>
+            )}
+          </TableHeader>
+          <TableBody>
+            {items.map((presupuesto) => (
+              <TableRow key={presupuesto.id}>
+                {columns.map((column) => (
+                  <TableCell key={column.uid}>
+                    {renderCell(presupuesto, column.uid)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        {formattedPresupuesto && (
+          <BudgetPDFModal
+            isOpen={isPDFModalOpen}
+            onClose={() => setIsPDFModalOpen(false)}
+            presupuestoData={formattedPresupuesto}
+          />
+        )}
+      </div>
     </div>
   );
 }
