@@ -93,12 +93,12 @@ const normalizarNombreSistema = (tipo: string): string => {
 // Actualizar la función determinarSistema
 const determinarSistema = (tipo: string, ancho: number, alto: number): string => {
   const tipoNormalizado = normalizarNombreSistema(tipo);
-  console.log(`Determinando sistema para: tipo=${tipoNormalizado}, ancho=${ancho}m, alto=${alto}m`);
+  // console.log(`Determinando sistema para: tipo=${tipoNormalizado}, ancho=${ancho}m, alto=${alto}m`);
   
   const sistemaData = abacoData[tipoNormalizado];
   
   if (!sistemaData || !sistemaData["medidas permitidas"]) {
-    console.error(`Sistema no encontrado o sin medidas permitidas: ${tipoNormalizado}`);
+    // console.error(`Sistema no encontrado o sin medidas permitidas: ${tipoNormalizado}`);
     return "";
   }
 
@@ -124,19 +124,19 @@ const determinarSistema = (tipo: string, ancho: number, alto: number): string =>
 
   // Validar ancho mínimo
   if (medidasPermitidas.min?.ancho && ancho < medidasPermitidas.min.ancho) {
-    console.log(`Ancho ${ancho}m es menor que el mínimo ${medidasPermitidas.min.ancho}m`);
+    // console.log(`Ancho ${ancho}m es menor que el mínimo ${medidasPermitidas.min.ancho}m`);
     return ""; // Retornar string vacío en lugar de mensaje de error
   }
 
   // Validar alto mínimo si existe
   if (medidasPermitidas.min?.alto && alto < medidasPermitidas.min.alto) {
-    console.log(`Alto ${alto}m es menor que el mínimo ${medidasPermitidas.min.alto}m`);
+    // console.log(`Alto ${alto}m es menor que el mínimo ${medidasPermitidas.min.alto}m`);
     return ""; // Retornar string vacío en lugar de mensaje de error
   }
 
   // Validar superficie mínima
   if (medidasPermitidas["sup min"] && superficie < medidasPermitidas["sup min"]) {
-    console.log(`Superficie ${superficie}m² es menor que el mínimo ${medidasPermitidas["sup min"]}m²`);
+    // console.log(`Superficie ${superficie}m² es menor que el mínimo ${medidasPermitidas["sup min"]}m²`);
     return ""; // Retornar string vacío en lugar de mensaje de error
   }
 
@@ -154,18 +154,18 @@ const determinarSistema = (tipo: string, ancho: number, alto: number): string =>
   );
 
   if (sistemaEncontrado) {
-    console.log('Sistema encontrado:', sistemaEncontrado.sistema);
+    // console.log('Sistema encontrado:', sistemaEncontrado.sistema);
     return sistemaEncontrado.sistema;
   }
 
-  console.warn('No se encontró sistema adecuado para estas medidas:', { ancho, alto });
+  // console.warn('No se encontró sistema adecuado para estas medidas:', { ancho, alto });
   return "MEDIDAS_INVALIDAS";
 };
 
 // Actualizar la función helper
 const getUniqueSistemas = (sistemaData: SistemaData): string[] => {
   if (!sistemaData?.sistemas) {
-    console.log('No hay sistemas disponibles para:', sistemaData);
+    // console.log('No hay sistemas disponibles para:', sistemaData);
     return [];
   }
   
@@ -177,7 +177,7 @@ const getUniqueSistemas = (sistemaData: SistemaData): string[] => {
   );
   
   const sistemasArray = Array.from(sistemasUnicos);
-  console.log('Sistemas únicos disponibles:', sistemasArray);
+  // console.log('Sistemas únicos disponibles:', sistemasArray);
   return sistemasArray;
 };
 
@@ -285,6 +285,12 @@ export default function GenerarPedidoModal({
 
   // Agregar estado para manejar errores
   const [error, setError] = useState("");
+
+  // Agregar nuevo estado para el precio de colocación
+  const [precioColocacion, setPrecioColocacion] = useState<number>(0);
+
+  // Agregar nuevo estado para manejar el input manual
+  const [showManualPrecioInput, setShowManualPrecioInput] = useState(false);
 
   const resetInputs = () => {
     setCurrentStep(1);
@@ -436,13 +442,13 @@ export default function GenerarPedidoModal({
 
   // Función para validar medidas
   const getValidationMessage = (tipo: 'ancho' | 'alto', value: number) => {
-    console.log(`Validando ${tipo}: ${value}cm`);
+    // console.log(`Validando ${tipo}: ${value}cm`);
     
     if (!selectedSistema) return undefined;
 
     const medidas = abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"];
     if (!medidas) {
-      console.log('No se encontraron medidas permitidas');
+      // console.log('No se encontraron medidas permitidas');
       return undefined;
     }
 
@@ -454,12 +460,12 @@ export default function GenerarPedidoModal({
     const maxValue = medidas.max?.[tipo];
 
     if (minValue && valueInMeters < minValue) {
-      console.log(`${tipo} ${valueInMeters}m es menor que el mínimo ${minValue}m`);
+      // console.log(`${tipo} ${valueInMeters}m es menor que el mínimo ${minValue}m`);
       return `El ${tipo} mínimo permitido es ${minValue * 100}cm`;
     }
 
     if (maxValue && valueInMeters > maxValue) {
-      console.log(`${tipo} ${valueInMeters}m es mayor que el máximo ${maxValue}m`);
+      // console.log(`${tipo} ${valueInMeters}m es mayor que el máximo ${maxValue}m`);
       return `El ${tipo} máximo permitido es ${maxValue * 100}cm`;
     }
 
@@ -467,17 +473,51 @@ export default function GenerarPedidoModal({
     if (ancho && alto) {
       const superficie = (Number(ancho) * Number(alto)) / 10000; // convertir a m²
       if (medidas["sup min"] && superficie < medidas["sup min"]) {
-        console.log(`Superficie ${superficie}m² es menor que el mínimo ${medidas["sup min"]}m²`);
+        // console.log(`Superficie ${superficie}m² es menor que el mínimo ${medidas["sup min"]}m²`);
         return `La superficie mínima permitida es ${medidas["sup min"]}m²`;
       }
       if (medidas["sup max"] && superficie > medidas["sup max"]) {
-        console.log(`Superficie ${superficie}m² es mayor que el máximo ${medidas["sup max"]}m²`);
+        // console.log(`Superficie ${superficie}m² es mayor que el máximo ${medidas["sup max"]}m²`);
         return `La superficie máxima permitida es ${medidas["sup max"]}m²`;
       }
     }
 
     return undefined;
   };
+
+  // Agregar useEffect para obtener el precio de colocación
+  useEffect(() => {
+    const fetchPrecioColocacion = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/4`);
+        if (!response.ok) throw new Error('Error al obtener precio de colocación');
+        const data = await response.json();
+        
+        // Validar que el producto sea el correcto
+        const nombreProducto = data.nombreProducto?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (!nombreProducto?.includes('colocacion')) {
+          // console.error('El producto no corresponde a colocación');
+          setShowManualPrecioInput(true);
+          return;
+        }
+
+        const precio = Number(data.precio);
+        if (isNaN(precio)) {
+          setShowManualPrecioInput(true);
+          return;
+        }
+
+        setPrecioColocacion(precio);
+        setShowManualPrecioInput(false);
+
+      } catch (error) {
+        // console.error('Error al obtener precio de colocación:', error);
+        setShowManualPrecioInput(true);
+      }
+    };
+
+    fetchPrecioColocacion();
+  }, []);
 
   return (
     <Modal
@@ -745,7 +785,7 @@ export default function GenerarPedidoModal({
                               />
                             );
                           default:
-                            console.log('Sistema no coincide:', selectedSistema);
+                            // console.log('Sistema no coincide:', selectedSistema);
                             return (
                               <div className="p-4 text-center text-gray-500">
                                 Formulario para {selectedSistema} en desarrollo...
@@ -846,10 +886,33 @@ export default function GenerarPedidoModal({
                             >
                               Incluir colocación
                             </Checkbox>
-                            <span className="text-sm text-gray-600">($10,000)</span>
+                            {showManualPrecioInput ? (
+                              <div className="flex gap-2 items-center">
+                                <Input
+                                  type="number"
+                                  placeholder="Ingrese precio"
+                                  size="sm"
+                                  className="w-32"
+                                  value={precioColocacion.toString()}
+                                  onValueChange={(value) => setPrecioColocacion(Number(value))}
+                                  startContent={
+                                    <div className="flex items-center pointer-events-none">
+                                      <span className="text-default-400 text-small">$</span>
+                                    </div>
+                                  }
+                                />
+                                <span className="w-36 text-xs font-bold text-red-500">
+                                  No se encontró el precio de colocación, por favor ingrese el precio manualmente
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-600">
+                                (${precioColocacion.toLocaleString()})
+                              </span>
+                            )}
                           </div>
                           {incluirColocacion && (
-                            <span className="font-medium">$10,000</span>
+                            <span className="font-medium">${precioColocacion.toLocaleString()}</span>
                           )}
                         </div>
 
@@ -863,7 +926,7 @@ export default function GenerarPedidoModal({
                                  selectedTela?.precio ? Number(selectedTela.precio) : 0,
                                  selectedTela?.nombre === 'ROLLER'
                                ) : 0) +
-                               (incluirColocacion ? 10000 : 0)).toLocaleString()}
+                               (incluirColocacion ? precioColocacion : 0)).toLocaleString()}
                           </span>
                         </div>
                       </div>

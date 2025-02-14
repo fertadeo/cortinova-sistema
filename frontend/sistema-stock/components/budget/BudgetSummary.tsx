@@ -72,23 +72,23 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
   }, [shouldRound, applyDiscount, adjustedDiscountValue, discountValue]);
 
   // Console.log para debugging
-  console.log('=== RESUMEN DEL PRESUPUESTO (Desglosado) ===', {
-    items: items.map(item => ({
-      ...item,
-      itemTotal: Number(item.price) * Number(item.quantity)
-    })),
-    calculoSubtotal: {
-      valores: items.map(item => Number(item.price) * Number(item.quantity)),
-      subtotalFinal: subtotal
-    },
-    subtotal: subtotal.toFixed(2),
-    descuento: discount.toFixed(2),
-    total: total.toFixed(2),
-    tipoDescuento: discountType,
-    valorDescuento: discountValue,
-    aplicarDescuento: applyDiscount,
-    redondear: shouldRound
-  });
+  // console.log('=== RESUMEN DEL PRESUPUESTO (Desglosado) ===', {
+  //   items: items.map(item => ({
+  //     ...item,
+  //     itemTotal: Number(item.price) * Number(item.quantity)
+  //   })),
+  //   calculoSubtotal: {
+  //     valores: items.map(item => Number(item.price) * Number(item.quantity)),
+  //     subtotalFinal: subtotal
+  //   },
+  //   subtotal: subtotal.toFixed(2),
+  //   descuento: discount.toFixed(2),
+  //   total: total.toFixed(2),
+  //   tipoDescuento: discountType,
+  //   valorDescuento: discountValue,
+  //   aplicarDescuento: applyDiscount,
+  //   redondear: shouldRound
+  // });
 
   return (
     <div className="flex justify-start mt-4">
