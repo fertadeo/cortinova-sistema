@@ -4,9 +4,9 @@ import SimpleTable from '@/components/simpleTable';
 import BarChart from '@/components/chart';
 import PresupuestosTable from '@/components/presupuestosTable';
 import AnimatedButton from '@/components/animatedButton';
-import { Skeleton } from "@nextui-org/react";
+// import { Skeleton } from "@nextui-org/react";
 import { useState, useEffect } from "react";
-import TourGuide from "@/components/TourGuide";
+// import TourGuide from "@/components/TourGuide";
 
 
 export default function Home() {
