@@ -303,10 +303,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                 setShowConfirmModal(false);
                 setPresupuestoToConfirm(null);
               }}
-              backdrop="blur"
-              // classNames={{
-              //   backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/30 backdrop-blur-md"
-              // }}
+              backdrop="opaque"
+              classNames={{
+                backdrop: "bg-black/20 backdrop-blur-sm"
+              }}
             >
               <ModalContent>
                 {presupuestoToConfirm && (
