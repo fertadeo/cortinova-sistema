@@ -186,36 +186,42 @@ export default function MedidasPage() {
       return;
     }
 
-    // Preparar los datos para enviar al backend
-    const medidasParaEnviar = medidas.map(medida => {
-      // Si la ubicación es "Otro", usar la ubicación personalizada
-      const ubicacionFinal = medida.ubicacion === "Otro" && medida.ubicacionPersonalizada 
-        ? medida.ubicacionPersonalizada 
-        : medida.ubicacion;
-      
-      // Crear una copia sin el campo ubicacionPersonalizada
-      const { ubicacionPersonalizada, ...restoDatos } = medida;
-      
-      return {
-        ...restoDatos,
-        ubicacion: ubicacionFinal,
-      };
-    });
-
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/medidas`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          clienteId: selectedCliente,
-          medidas: medidasParaEnviar,
-        }),
+      // Crear un array de promesas para enviar cada medida individualmente
+      const promesas = medidas.map(async (medida) => {
+        // Determinar la ubicación final (normal o personalizada)
+        const ubicacionFinal = medida.ubicacion === "Otro" && medida.ubicacionPersonalizada 
+          ? medida.ubicacionPersonalizada 
+          : medida.ubicacion;
+
+        // Crear el objeto de medida en el formato requerido
+        const medidaData = {
+          elemento: medida.elemento,
+          ancho: parseFloat(medida.ancho.toString()),
+          alto: parseFloat(medida.alto.toString()),
+          cantidad: parseInt(medida.cantidad.toString()),
+          ubicacion: ubicacionFinal,
+          detalles: medida.detalles,
+          clienteId: parseInt(selectedCliente),
+          medidoPor: medida.medidoPor
+        };
+
+        // Enviar la medida al backend
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/medidas/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(medidaData),
+        });
+
+        if (!response.ok) throw new Error("Error al guardar la medida");
+        return response.json();
       });
 
-      if (!response.ok) throw new Error("Error al guardar las medidas");
+      // Esperar a que todas las medidas se guarden
+      await Promise.all(promesas);
       
       setAlert({
         visible: true,
