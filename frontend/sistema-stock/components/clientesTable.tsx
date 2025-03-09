@@ -94,16 +94,22 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
 
   const fetchClientes = async () => {
     try {
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes`);
       if (!response.ok) {
         throw new Error("Error al obtener los clientes");
       }
 
-      const data = await response.json();
-      setUsers(data);
+      const result = await response.json();
+      console.log('Respuesta completa del servidor:', result);
+      
+      if (result.success && Array.isArray(result.data)) {
+        setUsers(result.data); // Usamos result.data en lugar de data directamente
+      } else {
+        setUsers([]); // Si no hay datos válidos, inicializamos como array vacío
+      }
     } catch (error) {
-      // console.error("Error al obtener los clientes:", error);
+      console.error("Error al obtener los clientes:", error);
+      setUsers([]); // En caso de error, inicializamos como array vacío
     }
   };
 
@@ -148,7 +154,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         );
       case "actions":
         return (
-          <div className="relative flex gap-2">
+          <div className="flex relative gap-2">
             <Tooltip content="Ver">
               <span
                 role="button"
@@ -193,7 +199,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
                   }
                 }}
               >
-                <DeleteIcon />
+                <DeleteIcon className="hidden" />
               </span>
             </Tooltip>
 
@@ -221,7 +227,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="flex items-center justify-between h-20 p-4 bg-white rounded-lg shadow-medium">
+      <div className="flex justify-between items-center p-4 h-20 bg-white rounded-lg shadow-medium">
         <Input
           isClearable
           placeholder="Buscar"
@@ -234,7 +240,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         </Button>
       </div>
 
-      <div className="flex-1 mt-4 overflow-auto">
+      <div className="overflow-auto flex-1 mt-4">
         <Table aria-label="Tabla de Clientes" className="w-full">
           <TableHeader columns={filteredColumns}>
             {(column) => (
