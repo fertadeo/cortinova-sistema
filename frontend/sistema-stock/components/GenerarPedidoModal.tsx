@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox} from "@nextui-org/react";
 import { RollerForm } from "./utils/abacos/forms/RollerForm";
 import DubaiForm from "./utils/abacos/forms/DubaiForm";
+import DunesForm from "./utils/abacos/forms/DunesForm";
 import PanelesForm from "./utils/abacos/forms/PanelesForm";
 import FitForm from "./utils/abacos/forms/FitForm";
 import VenecianasForm from "./utils/abacos/forms/VenecianasForm";
 import BarcelonaForm from "./utils/abacos/forms/BarcelonaForm";
+import RomanasForm from "./utils/abacos/forms/RomanasForm";
 import { TelasSearch } from "./utils/TelasSearch";
 import { type Tela } from '@/types/telas';
 
@@ -83,6 +85,9 @@ const normalizarNombreSistema = (tipo: string): string => {
     "BARCELONA - BANDAS VERTICALES": "Barcelona",
     "BARCELONA": "Barcelona",
     "ROLLER": "ROLLER",
+    "DUNES": "Dunes",
+    "DUNES - CORTINA TRADICIONAL": "Dunes",
+    "ROMANAS": "Romanas",
     // Añade más mappings según sea necesario
   };
 
@@ -749,6 +754,19 @@ export default function GenerarPedidoModal({
                                 onPedidoDetailsChange={setSistemaPedidoDetalles}
                               />
                             );
+                          case "dunes":
+                          case "dunes - cortina tradicional":
+                            return (
+                              <DunesForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                                detalle={detalle}
+                                onDetalleChange={setDetalle}
+                                onPedidoDetailsChange={setSistemaPedidoDetalles}
+                              />
+                            );
                           case "fit":
                             return (
                               <FitForm
@@ -756,6 +774,9 @@ export default function GenerarPedidoModal({
                                 alto={alto}
                                 cantidad={cantidad}
                                 selectedArticulo={selectedArticulo}
+                                detalle={detalle}
+                                onDetalleChange={setDetalle}
+                                onPedidoDetailsChange={setSistemaPedidoDetalles}
                               />
                             );
                           case "paneles":
@@ -765,6 +786,7 @@ export default function GenerarPedidoModal({
                                 alto={alto}
                                 cantidad={cantidad}
                                 selectedArticulo={selectedArticulo}
+                                onPedidoDetailsChange={setSistemaPedidoDetalles}
                               />
                             );
                           case "venecianas":
@@ -774,6 +796,9 @@ export default function GenerarPedidoModal({
                                 alto={alto}
                                 cantidad={cantidad}
                                 selectedArticulo={selectedArticulo}
+                                detalle={detalle}
+                                onDetalleChange={setDetalle}
+                                onPedidoDetailsChange={setSistemaPedidoDetalles}
                               />
                             );
                           case "barcelona":
@@ -789,6 +814,18 @@ export default function GenerarPedidoModal({
                                 onDetalleChange={setDetalle}
                                 onLadoComandoChange={setLadoComando}
                                 onColorChange={setColorSistema}
+                              />
+                            );
+                          case "romanas":
+                            return (
+                              <RomanasForm
+                                ancho={ancho}
+                                alto={alto}
+                                cantidad={cantidad}
+                                selectedArticulo={selectedArticulo}
+                                detalle={detalle}
+                                onDetalleChange={setDetalle}
+                                onPedidoDetailsChange={setSistemaPedidoDetalles}
                               />
                             );
                           default:
