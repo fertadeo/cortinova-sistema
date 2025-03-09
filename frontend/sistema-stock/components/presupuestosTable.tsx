@@ -92,6 +92,8 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     message: string;
     variant: "success" | "error";
   } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -206,6 +208,81 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     setShowConfirmModal(true);
   };
 
+  const handleDuplicatePresupuesto = async (presupuesto: Presupuesto) => {
+    try {
+      setIsDuplicating(true);
+      
+      // Crear nuevo número de presupuesto
+      const fechaActual = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const numeroAleatorio = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const nuevoNumeroPresupuesto = `P${fechaActual}${numeroAleatorio}`;
+
+      // Crear el nuevo presupuesto duplicado
+      const nuevoPrespuesto = {
+        ...presupuesto,
+        numero_presupuesto: nuevoNumeroPresupuesto,
+        fecha: new Date().toISOString(),
+        estado: "En Proceso"
+      };
+      // Crear nuevo presupuesto sin el ID
+      const { id, ...nuevoPrespuestoSinId } = nuevoPrespuesto;
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nuevoPrespuesto),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al duplicar el presupuesto');
+      }
+
+      // Actualizar la lista de presupuestos
+      const [presupuestosResponse, pedidosResponse] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos?include=clientes,producto`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos`)
+      ]);
+
+      if (!presupuestosResponse.ok || !pedidosResponse.ok) {
+        throw new Error('Error al actualizar los datos');
+      }
+
+      const presupuestosData = await presupuestosResponse.json();
+      const pedidosData = await pedidosResponse.json();
+
+      const pedidos = pedidosData.data || pedidosData;
+      const presupuestosConfirmados = new Set(
+        Array.isArray(pedidos) 
+          ? pedidos.map((pedido: any) => pedido.presupuesto_id)
+          : []
+      );
+
+      const presupuestosActualizados = (presupuestosData.data || presupuestosData).map(
+        (presupuesto: Presupuesto) => ({
+          ...presupuesto,
+          estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
+        })
+      );
+
+      setPresupuestos(presupuestosActualizados);
+      setNotification({
+        message: "Presupuesto duplicado exitosamente",
+        variant: "success"
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      setNotification({
+        message: "Error al duplicar el presupuesto",
+        variant: "error"
+      });
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   const columns = [
     { name: "N° PRESUPUESTO", uid: "numero_presupuesto" },
     { name: "FECHA", uid: "fecha" },
@@ -213,7 +290,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     { name: "PRODUCTOS", uid: "productos" },
     { name: "TOTAL", uid: "total" },
     { name: "ESTADO", uid: "estado" },
-    { name: "PDF", uid: "pdf" },
+    { name: "ACCIONES", uid: "acciones" },
   ];
 
   const renderCell = (presupuesto: Presupuesto, columnKey: React.Key) => {
@@ -367,15 +444,17 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             </Modal>
           </div>
         );
-      case "pdf":
+      case "acciones":
         return (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => handleViewPDF(presupuesto)}
-          >
-            <FaFilePdf />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleViewPDF(presupuesto)}
+            >
+              <FaFilePdf />
+            </Button>
+          </div>
         );
       default:
         return null;

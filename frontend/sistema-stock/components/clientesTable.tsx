@@ -94,16 +94,22 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
 
   const fetchClientes = async () => {
     try {
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes`);
       if (!response.ok) {
         throw new Error("Error al obtener los clientes");
       }
 
-      const data = await response.json();
-      setUsers(data);
+      const result = await response.json();
+      console.log('Respuesta completa del servidor:', result);
+      
+      if (result.success && Array.isArray(result.data)) {
+        setUsers(result.data); // Usamos result.data en lugar de data directamente
+      } else {
+        setUsers([]); // Si no hay datos válidos, inicializamos como array vacío
+      }
     } catch (error) {
-      // console.error("Error al obtener los clientes:", error);
+      console.error("Error al obtener los clientes:", error);
+      setUsers([]); // En caso de error, inicializamos como array vacío
     }
   };
 

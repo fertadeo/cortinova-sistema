@@ -6,14 +6,14 @@ import { useState, useEffect } from 'react';
 interface BudgetSummaryProps {
   items: TableItem[];
   applyDiscount: boolean;
-  onDiscountChange: (checked: boolean) => void;
+  onDiscountChange: (checked: boolean, type?: "percentage" | "amount", value?: string, round?: boolean) => void;
+  shouldRound: boolean;
 }
 
-export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: BudgetSummaryProps) => {
+export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRound }: BudgetSummaryProps) => {
   const { calculateTotals } = useBudgetCalculations();
   const [discountType, setDiscountType] = useState<"percentage" | "amount">("percentage");
   const [discountValue, setDiscountValue] = useState("10");
-  const [shouldRound, setShouldRound] = useState(false);
 
   // Calcular el subtotal primero
   const subtotal = items.reduce((acc, item) => {
@@ -34,7 +34,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
 
   // Función para redondear a la centena más cercana
   const roundToHundred = (num: number): number => {
-    return Math.ceil(num / 100) * 100;
+    return Math.round(num / 100) * 100;
   };
 
   // Calcular valores finales sin actualizar el estado
@@ -44,14 +44,14 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
     
     if (shouldRound && applyDiscount) {
       const roundedTotal = roundToHundred(finalTotal);
-      const adjustedDiscount = subtotal - roundedTotal;
+      const adjustedDiscount = roundToHundred(subtotal - roundedTotal);
       
       return {
         discount: adjustedDiscount,
         total: roundedTotal,
         adjustedDiscountValue: discountType === "percentage" 
-          ? ((adjustedDiscount / subtotal) * 100).toFixed(2)
-          : adjustedDiscount.toFixed(2)
+          ? ((adjustedDiscount / subtotal) * 100).toFixed(0)
+          : adjustedDiscount.toFixed(0)
       };
     }
 
@@ -64,12 +64,10 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
 
   const { discount, total, adjustedDiscountValue } = calculateFinalValues();
 
-  // Actualizar el valor del descuento cuando cambie el redondeo
+  // Efecto para notificar cambios en el descuento
   useEffect(() => {
-    if (shouldRound && applyDiscount && adjustedDiscountValue !== discountValue) {
-      setDiscountValue(adjustedDiscountValue);
-    }
-  }, [shouldRound, applyDiscount, adjustedDiscountValue, discountValue]);
+    onDiscountChange(applyDiscount, discountType, discountValue, shouldRound);
+  }, [applyDiscount, discountType, discountValue, shouldRound, onDiscountChange]);
 
   // Console.log para debugging
   // console.log('=== RESUMEN DEL PRESUPUESTO (Desglosado) ===', {
@@ -97,7 +95,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
           <div className="flex gap-2 items-center">
             <Checkbox
               checked={applyDiscount}
-              onChange={(e) => onDiscountChange(e.target.checked)}
+              onChange={(e) => onDiscountChange(e.target.checked, discountType, discountValue, shouldRound)}
             >
               Aplicar descuento
             </Checkbox>
@@ -110,7 +108,11 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
                   size="sm"
                   className="w-32"
                   selectedKeys={[discountType]}
-                  onChange={(e) => setDiscountType(e.target.value as "percentage" | "amount")}
+                  onChange={(e) => {
+                    const newType = e.target.value as "percentage" | "amount";
+                    setDiscountType(newType);
+                    onDiscountChange(applyDiscount, newType, discountValue, shouldRound);
+                  }}
                 >
                   <SelectItem key="percentage" value="percentage">Porcentaje</SelectItem>
                   <SelectItem key="amount" value="amount">Monto</SelectItem>
@@ -120,7 +122,10 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
                   className="w-24"
                   type="number"
                   value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
+                  onChange={(e) => {
+                    setDiscountValue(e.target.value);
+                    onDiscountChange(applyDiscount, discountType, e.target.value, shouldRound);
+                  }}
                   endContent={discountType === "percentage" ? "%" : "$"}
                   min={0}
                   max={discountType === "percentage" ? 100 : undefined}
@@ -129,7 +134,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
               <div className="flex gap-2 items-center">
                 <Checkbox
                   checked={shouldRound}
-                  onChange={(e) => setShouldRound(e.target.checked)}
+                  onChange={(e) => onDiscountChange(applyDiscount, discountType, discountValue, e.target.checked)}
                 >
                   Redondear a centenas
                 </Checkbox>
@@ -149,7 +154,9 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange }: Budget
               <div className="flex justify-between text-base text-green-600">
                 <span>
                   Descuento {discountType === "percentage" 
-                    ? `(${discountValue}%)` 
+                    ? shouldRound 
+                      ? `(${((discount / subtotal) * 100).toFixed(2)}%)` 
+                      : `(${discountValue}%)`
                     : `($${discountValue})`
                   }:
                 </span>
