@@ -188,11 +188,11 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                   <td className="px-4 py-3 font-bold">Subtotal</td>
                   <td className="px-4 py-3">${presupuestoData.subtotal.toFixed(2)}</td>
                 </tr>
-                {presupuestoData.descuento && (
+                {(presupuestoData.descuento ?? 0) > 0 && (
                   <tr>
                     <td colSpan={3}></td>
                     <td className="px-4 py-3 font-bold">Descuento</td>
-                    <td className="px-4 py-3">-${presupuestoData.descuento.toFixed(2)}</td>
+                    <td className="px-4 py-3">-${(presupuestoData.descuento ?? 0).toFixed(2)}</td>
                   </tr>
                 )}
                 <tr>

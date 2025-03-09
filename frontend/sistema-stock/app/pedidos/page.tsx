@@ -10,6 +10,7 @@ interface Pedido {
   fecha_pedido: string;
   fecha_entrega: string | null;
   estado: PedidoEstado;
+  presupuesto_id: number;
   pedido_json: {
     numeroPresupuesto: string;
     productos: Array<{
@@ -22,6 +23,7 @@ interface Pedido {
   };
   cliente: {
     nombre: string;
+    telefono: string;
   };
 }
 
@@ -33,7 +35,13 @@ interface ProduccionModalProps {
 }
 
 const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModalProps) => {
-  const [fechaEntrega, setFechaEntrega] = useState<string>("");
+  // Calcular la fecha por defecto (30 días después de la fecha del pedido)
+  const fechaPorDefecto = new Date(pedido.fecha_pedido);
+  fechaPorDefecto.setDate(fechaPorDefecto.getDate() + 30);
+  
+  const [fechaEntrega, setFechaEntrega] = useState<string>(
+    fechaPorDefecto.toISOString().split('T')[0]
+  );
 
   return (
     <Modal 
@@ -90,10 +98,14 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
 
             {/* Fecha de Entrega */}
             <div className="mt-4">
-              <label className="block mb-2 text-sm font-medium text-gray-700 md:text-base">
+              <label 
+                htmlFor="fechaEntrega" 
+                className="block mb-2 text-sm font-medium text-gray-700 md:text-base"
+              >
                 Fecha de Entrega Estimada
               </label>
               <Input
+                id="fechaEntrega"
                 type="date"
                 value={fechaEntrega}
                 onChange={(e) => setFechaEntrega(e.target.value)}
@@ -131,9 +143,11 @@ interface DetalleModalProps {
   isOpen: boolean;
   onClose: () => void;
   pedido: Pedido;
+  onMarcarComoListo: (pedido: Pedido) => void;
+  onMarcarComoEntregado: (pedido: Pedido) => void;
 }
 
-const DetalleModal = ({ isOpen, onClose, pedido }: DetalleModalProps) => {
+const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComoEntregado }: DetalleModalProps) => {
   const handlePrintPDF = () => {
     const doc = new jsPDF();
     
@@ -225,6 +239,72 @@ const DetalleModal = ({ isOpen, onClose, pedido }: DetalleModalProps) => {
           </div>
         </ModalBody>
         <ModalFooter className="flex flex-col gap-2 md:flex-row">
+          {pedido.estado === PedidoEstado.EN_PRODUCCION && (
+            <Button 
+              color="success"
+              variant="solid"
+              onPress={() => {
+                onMarcarComoListo(pedido);
+                onClose();
+              }}
+              className="w-full md:w-auto"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-2 w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+              </svg>
+              Avisar que el pedido está listo
+            </Button>
+          )}
+          {pedido.estado === PedidoEstado.LISTO_ENTREGA && (
+            <>
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    color="success"
+                    variant="light"
+                  >
+                    <svg height="20" width="20" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 58 58">
+                      <g>
+                        <path fill="#2CB742" d="M0,58l4.988-14.963C2.457,38.78,1,33.812,1,28.5C1,12.76,13.76,0,29.5,0S58,12.76,58,28.5
+                          S45.24,57,29.5,57c-4.789,0-9.299-1.187-13.26-3.273L0,58z"/>
+                        <path fill="#FFFFFF" d="M47.683,37.985c-1.316-2.487-6.169-5.331-6.169-5.331c-1.098-0.626-2.423-0.696-3.049,0.42
+                          c0,0-1.577,1.891-1.978,2.163c-1.832,1.241-3.529,1.193-5.242-0.52l-3.981-3.981l-3.981-3.981c-1.713-1.713-1.761-3.41-0.52-5.242
+                          c0.272-0.401,2.163-1.978,2.163-1.978c1.116-0.627,1.046-1.951,0.42-3.049c0,0-2.844-4.853-5.331-6.169
+                          c-1.058-0.56-2.357-0.364-3.203,0.482l-1.758,1.758c-5.577,5.577-2.831,11.873,2.746,17.45l5.097,5.097l5.097,5.097
+                          c5.577,5.577,11.873,8.323,17.45,2.746l1.758-1.758C48.048,40.341,48.243,39.042,47.683,37.985z"/>
+                      </g>
+                    </svg>
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu 
+                  aria-label="Opciones de WhatsApp"
+                  onAction={(key) => {
+                    const mensaje = key === "retiro" 
+                      ? `Hola ${pedido.cliente.nombre}! Queremos avisarte que tu pedido N° ${pedido.pedido_json.numeroPresupuesto}, está listo para retirar en local`
+                      : `Hola ${pedido.cliente.nombre}, queremos avisarte que tu pedido está listo y podemos comenzar a coordinar el día de colocación.`;
+                    
+                    // Formatear el número de teléfono (eliminar espacios, guiones y asegurarse que empiece con el código de país)
+                    const telefono = pedido.cliente.telefono
+                      .replace(/\D/g, '') // Eliminar todo lo que no sea número
+                      .replace(/^0/, '') // Eliminar el 0 inicial si existe
+                      .replace(/^15/, '') // Eliminar el 15 inicial si existe
+                      .replace(/^54/, ''); // Eliminar el 54 inicial si existe
+                    
+                    window.open(`https://wa.me/54${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+                  }}
+                >
+                  <DropdownItem key="retiro">
+                    Avisar para retiro en local
+                  </DropdownItem>
+                  <DropdownItem key="colocacion">
+                    Coordinar colocación
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            </>
+          )}
           <Button 
             color="primary" 
             variant="light" 
@@ -236,6 +316,18 @@ const DetalleModal = ({ isOpen, onClose, pedido }: DetalleModalProps) => {
             </svg>
             Imprimir PDF
           </Button>
+          {pedido.estado === PedidoEstado.LISTO_ENTREGA && (
+            <Button 
+              color="success" 
+              className="w-full md:w-auto"
+              onPress={() => onMarcarComoEntregado(pedido)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-2 w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              Marcar como Entregado
+            </Button>
+          )}
           <Button 
             color="danger" 
             variant="light" 
@@ -312,31 +404,100 @@ export default function PedidosPage() {
     if (!selectedPedido) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos/${selectedPedido.id}/produccion`, {
-        method: 'POST',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos/${selectedPedido.presupuesto_id}/estado-entrega`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fecha_entrega: fechaEntrega.toISOString(),
-          estado: PedidoEstado.EN_PRODUCCION
+          estado: PedidoEstado.EN_PRODUCCION,
+          fechaEntrega: fechaEntrega.toISOString().split('T')[0]
         }),
       });
 
       if (!response.ok) throw new Error('Error al actualizar el pedido');
 
-      // Actualizar la lista de pedidos
-      setPedidos(pedidos.map(pedido => 
-        pedido.id === selectedPedido.id 
-          ? { ...pedido, estado: PedidoEstado.EN_PRODUCCION, fecha_entrega: fechaEntrega.toISOString() }
-          : pedido
-      ));
+      const data = await response.json();
+      
+      if (data.success) {
+        // Actualizar la lista de pedidos
+        setPedidos(pedidos.map(pedido => 
+          pedido.id === selectedPedido.id 
+            ? { ...pedido, estado: PedidoEstado.EN_PRODUCCION, fecha_entrega: fechaEntrega.toISOString() }
+            : pedido
+        ));
 
-      setIsProduccionModalOpen(false);
-      setSelectedPedido(null);
+        setIsProduccionModalOpen(false);
+        setSelectedPedido(null);
+      }
     } catch (error) {
       console.error('Error:', error);
-      // Aquí podrías mostrar una notificación de error
+    }
+  };
+
+  const handleMarcarComoListo = async (pedido: Pedido) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos/${pedido.presupuesto_id}/estado-entrega`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          estado: PedidoEstado.LISTO_ENTREGA,
+          fechaEntrega: pedido.fecha_entrega
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar el pedido');
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Actualizar la lista de pedidos
+        setPedidos(pedidos.map(p => 
+          p.id === pedido.id 
+            ? { ...p, estado: PedidoEstado.LISTO_ENTREGA }
+            : p
+        ));
+        
+        setIsDetalleModalOpen(false);
+        setSelectedPedidoDetalle(null);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleMarcarComoEntregado = async (pedido: Pedido) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos/${pedido.presupuesto_id}/estado-entrega`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          estado: PedidoEstado.ENTREGADO,
+          fechaEntrega: pedido.fecha_entrega
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar el pedido');
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Actualizar la lista de pedidos
+        setPedidos(pedidos.map(p => 
+          p.id === pedido.id 
+            ? { ...p, estado: PedidoEstado.ENTREGADO }
+            : p
+        ));
+        
+        setIsDetalleModalOpen(false);
+        setSelectedPedidoDetalle(null);
+      }
+    } catch (error) {
+      console.error('Error:', error);
     }
   };
 
@@ -373,12 +534,14 @@ export default function PedidosPage() {
               onAction={(key) => setSelectedEstado(key as string)}
               selectedKeys={new Set([selectedEstado])}
             >
-              <DropdownItem key="todos">Todos</DropdownItem>
-              {Object.values(PedidoEstado).map((estado) => (
-                <DropdownItem key={estado} textValue={estado}>
-                  {estado}
-                </DropdownItem>
-              ))}
+              <>
+                <DropdownItem key="todos">Todos</DropdownItem>
+                {Object.values(PedidoEstado).map((estado) => (
+                  <DropdownItem key={estado} textValue={estado}>
+                    {estado}
+                  </DropdownItem>
+                ))}
+              </>
             </DropdownMenu>
           </Dropdown>
         </div>
@@ -430,12 +593,76 @@ export default function PedidosPage() {
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  {pedido.estado === PedidoEstado.CONFIRMADO && (
-                    <Tooltip content="Llevar a producción">
+                  {pedido.estado === PedidoEstado.EN_PRODUCCION && (
+                    <Tooltip content="Marcar como listo para entrega">
                       <Button
                         isIconOnly
                         size="sm"
                         color="success"
+                        variant="light"
+                        onPress={() => handleMarcarComoListo(pedido)}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                        </svg>
+                      </Button>
+                    </Tooltip>
+                  )}
+                  {pedido.estado === PedidoEstado.LISTO_ENTREGA ? (
+                    <>
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            color="success"
+                            variant="light"
+                          >
+                            <svg height="20" width="20" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 58 58">
+                              <g>
+                                <path fill="#2CB742" d="M0,58l4.988-14.963C2.457,38.78,1,33.812,1,28.5C1,12.76,13.76,0,29.5,0S58,12.76,58,28.5
+                                  S45.24,57,29.5,57c-4.789,0-9.299-1.187-13.26-3.273L0,58z"/>
+                                <path fill="#FFFFFF" d="M47.683,37.985c-1.316-2.487-6.169-5.331-6.169-5.331c-1.098-0.626-2.423-0.696-3.049,0.42
+                                  c0,0-1.577,1.891-1.978,2.163c-1.832,1.241-3.529,1.193-5.242-0.52l-3.981-3.981l-3.981-3.981c-1.713-1.713-1.761-3.41-0.52-5.242
+                                  c0.272-0.401,2.163-1.978,2.163-1.978c1.116-0.627,1.046-1.951,0.42-3.049c0,0-2.844-4.853-5.331-6.169
+                                  c-1.058-0.56-2.357-0.364-3.203,0.482l-1.758,1.758c-5.577,5.577-2.831,11.873,2.746,17.45l5.097,5.097l5.097,5.097
+                                  c5.577,5.577,11.873,8.323,17.45,2.746l1.758-1.758C48.048,40.341,48.243,39.042,47.683,37.985z"/>
+                              </g>
+                            </svg>
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu 
+                          aria-label="Opciones de WhatsApp"
+                          onAction={(key) => {
+                            const mensaje = key === "retiro" 
+                              ? `Hola ${pedido.cliente.nombre}! Queremos avisarte que tu pedido N° ${pedido.pedido_json.numeroPresupuesto}, está listo para retirar en local`
+                              : `Hola ${pedido.cliente.nombre}, queremos avisarte que tu pedido está listo y podemos comenzar a coordinar el día de colocación.`;
+                            
+                            // Formatear el número de teléfono (eliminar espacios, guiones y asegurarse que empiece con el código de país)
+                            const telefono = pedido.cliente.telefono
+                              .replace(/\D/g, '') // Eliminar todo lo que no sea número
+                              .replace(/^0/, '') // Eliminar el 0 inicial si existe
+                              .replace(/^15/, '') // Eliminar el 15 inicial si existe
+                              .replace(/^54/, ''); // Eliminar el 54 inicial si existe
+                            
+                            window.open(`https://wa.me/54${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+                          }}
+                        >
+                          <DropdownItem key="retiro">
+                            Avisar para retiro en local
+                          </DropdownItem>
+                          <DropdownItem key="colocacion">
+                            Coordinar colocación
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </>
+                  ) : pedido.estado === PedidoEstado.CONFIRMADO && (
+                    <Tooltip content="Llevar a producción">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        color="secondary"
                         variant="light"
                         onPress={() => {
                           setSelectedPedido(pedido);
@@ -461,18 +688,6 @@ export default function PedidosPage() {
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                      </svg>
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="Editar pedido">
-                    <Button 
-                      isIconOnly 
-                      size="sm" 
-                      variant="light" 
-                      onPress={() => console.log('Editar pedido', pedido.id)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                       </svg>
                     </Button>
                   </Tooltip>
@@ -503,6 +718,8 @@ export default function PedidosPage() {
             setSelectedPedidoDetalle(null);
           }}
           pedido={selectedPedidoDetalle}
+          onMarcarComoListo={handleMarcarComoListo}
+          onMarcarComoEntregado={handleMarcarComoEntregado}
         />
       )}
     </div>

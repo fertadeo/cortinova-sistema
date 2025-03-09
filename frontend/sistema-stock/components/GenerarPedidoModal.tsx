@@ -55,6 +55,13 @@ interface GenerarPedidoModalProps {
   }>;
   total: number;
   onPedidoCreated: (pedido: any) => void;
+  medidasPrecargadas?: {
+    ancho: number;
+    alto: number;
+    cantidad: number;
+    ubicacion: string;
+    medidaId: number;
+  };
 }
 
 // Actualizar la interfaz para el JSON
@@ -233,16 +240,14 @@ export default function GenerarPedidoModal({
   selectedClient,
   productos,
   total,
-  onPedidoCreated
+  onPedidoCreated,
+  medidasPrecargadas
 }: GenerarPedidoModalProps) {
   // Estado para controlar el paso actual
   const [currentStep, setCurrentStep] = useState(1);
 
   // Estados del primer paso
   const [selectedSistema, setSelectedSistema] = useState<string>("");
-  const [cantidad, setCantidad] = useState<string>("1");
-  const [ancho, setAncho] = useState<string>("");
-  const [alto, setAlto] = useState<string>("");
   const [selectedArticulo, setSelectedArticulo] = useState<string>("");
 
   // Estados específicos de Roller
@@ -291,6 +296,21 @@ export default function GenerarPedidoModal({
 
   // Agregar nuevo estado para manejar el input manual
   const [showManualPrecioInput, setShowManualPrecioInput] = useState(false);
+
+  // Inicializar los estados con las medidas precargadas si existen
+  const [ancho, setAncho] = useState(medidasPrecargadas?.ancho?.toString() || '');
+  const [alto, setAlto] = useState(medidasPrecargadas?.alto?.toString() || '');
+  const [cantidad, setCantidad] = useState(medidasPrecargadas?.cantidad?.toString() || '1');
+  
+  // Actualizar los valores cuando cambian las medidas precargadas
+  useEffect(() => {
+    if (medidasPrecargadas) {
+      setAncho(medidasPrecargadas.ancho.toString());
+      setAlto(medidasPrecargadas.alto.toString());
+      setCantidad(medidasPrecargadas.cantidad.toString());
+      // También podemos precargar otros campos si es necesario
+    }
+  }, [medidasPrecargadas]);
 
   const resetInputs = () => {
     setCurrentStep(1);
@@ -426,18 +446,24 @@ export default function GenerarPedidoModal({
     const anchoMetros = Number(ancho) / 100;
     const precioSistemaPorMetro = 12000;
     
-    // Aquí deberías obtener el precio de la tela de tu estado o props
-    // const precioTelaPorMetro = selectedTelaData?.precio || 0;
-    const precioTelaPorMetro = 0; // Actualizar según tu implementación
-
+    // Calcular precio del sistema
     const nuevoPrecioSistema = precioSistemaPorMetro * anchoMetros;
-    const nuevoPrecioTela = precioTelaPorMetro * anchoMetros;
+
+    // Calcular precio de la tela
+    const nuevoPrecioTela = calcularPrecioTela(
+      Number(ancho),
+      Number(alto),
+      selectedTela?.precio ? Number(selectedTela.precio) : 0,
+      selectedTela?.nombre === 'ROLLER'
+    );
+
+    // Incluir precio de colocación si está seleccionado
+    const costoColocacionFinal = incluirColocacion ? precioColocacion : 0;
 
     setPrecioSistema(nuevoPrecioSistema);
     setPrecioTela(nuevoPrecioTela);
 
-    const costoColocacion = 5000;
-    return (nuevoPrecioSistema + nuevoPrecioTela + costoColocacion) * Number(cantidad);
+    return (nuevoPrecioSistema + nuevoPrecioTela + costoColocacionFinal) * Number(cantidad);
   };
 
   // Función para validar medidas
@@ -519,6 +545,36 @@ export default function GenerarPedidoModal({
     fetchPrecioColocacion();
   }, []);
 
+  const handleSubmit = () => {
+    const pedido = {
+      sistema: selectedSistema,
+      detalles: {
+        cantidad: parseFloat(cantidad),
+        ancho: Number(ancho),
+        alto: Number(alto),
+        sistemaRecomendado,
+        articuloSeleccionado: selectedArticulo,
+        tela: selectedTela,
+        caidaPorDelante,
+        colorSistema,
+        ladoComando,
+        tipoTela,
+        soporteIntermedio,
+        soporteDoble,
+        detalle,
+        incluirColocacion
+      },
+      fecha: new Date().toISOString(),
+      precioTotal: calcularPrecioTotal(),
+      medidaId: medidasPrecargadas?.medidaId,
+      incluirColocacion,
+      precioColocacion
+    };
+    
+    onPedidoCreated(pedido);
+    onOpenChange(false);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -528,55 +584,6 @@ export default function GenerarPedidoModal({
     >
       <ModalContent className="max-h-[90vh] rounded-lg">
         {(onClose) => {
-          const handleGenerarPedido = () => {
-            if (!selectedClient) return;
-
-            const pedido = {
-              sistema: selectedSistema,
-              detalles: {
-                cantidad: parseFloat(cantidad),
-                ancho: Number(ancho),
-                alto: Number(alto),
-                sistemaRecomendado,
-                articuloSeleccionado: selectedArticulo,
-                tela: selectedTela,
-                caidaPorDelante,
-                colorSistema,
-                ladoComando,
-                tipoTela,
-                soporteIntermedio,
-                soporteDoble,
-                detalle
-              },
-              fecha: new Date().toISOString(),
-              precioTotal: calcularPrecioTotal()
-            };
-
-            // Agregar console.log detallado
-            console.log('=== DETALLE DEL PEDIDO ===');
-            console.log('Cliente:', selectedClient.nombre);
-            console.log('Sistema:', selectedSistema);
-            console.log('Medidas:', `${ancho}cm x ${alto}cm`);
-            console.log('Sistema recomendado:', sistemaRecomendado);
-            console.log('Cantidad:', cantidad);
-            console.log('Tela seleccionada:', selectedTela);
-            console.log('Detalles de instalación:', {
-              'Caída por delante': caidaPorDelante ? 'Sí' : 'No',
-              'Color del sistema': colorSistema,
-              'Lado del comando': ladoComando,
-              'Tipo de tela': tipoTela,
-              'Soporte intermedio': soporteIntermedio ? 'Sí' : 'No',
-              'Soporte doble': soporteDoble ? 'Sí' : 'No'
-            });
-            console.log('Observaciones:', detalle || 'Sin observaciones');
-            console.log('Precio total:', `$${calcularPrecioTotal().toLocaleString()}`);
-            console.log('========================');
-
-            setPedidoJSON(JSON.stringify(pedido, null, 2));
-            onPedidoCreated(pedido);
-            onClose();
-          };
-
           return (
             <>
               <ModalHeader className="sticky top-0 z-20 bg-white rounded-t-lg border-b">
@@ -947,23 +954,7 @@ export default function GenerarPedidoModal({
                 </Button>
                 <Button
                   color="primary"
-                  onPress={() => {
-                    const pedido = {
-                      sistema: selectedSistema,
-                      detalles: {
-                        cantidad: parseFloat(cantidad),
-                        ancho: Number(ancho),
-                        alto: Number(alto),
-                        sistemaRecomendado,
-                        articuloSeleccionado: selectedArticulo,
-                        ...sistemaPedidoDetalles // Incluimos los detalles específicos del sistema
-                      },
-                      fecha: new Date().toISOString(),
-                      precioTotal: calcularPrecioTotal()
-                    };
-                    onPedidoCreated(pedido);
-                    onClose();
-                  }}
+                  onPress={handleSubmit}
                   isDisabled={!selectedSistema || !cantidad || !ancho || !alto || !selectedArticulo}
                 >
                   Generar Pedido

@@ -57,7 +57,7 @@ const icons: Record<AlertProps['variant'] & string, JSX.Element> = {
 };
 
 const closeIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
   </svg>
 );
@@ -71,13 +71,13 @@ export function Alert({
 }: AlertProps) {
   return (
     <div className={cn(
-      "flex justify-between items-center px-5 py-3 text-sm rounded-md border",
+      "relative px-5 py-3 text-sm rounded-md border",
       variantStyles[variant],
       className
     )}>
-      <div className="flex items-center">
+      <div className="flex items-center pr-8">
         {showIcon && variant in icons && (
-          <div className="mr-2 w-4">
+          <div className="flex-shrink-0 mr-2 w-4">
             {icons[variant]}
           </div>
         )}
@@ -86,7 +86,8 @@ export function Alert({
       {onClose && (
         <button 
           onClick={onClose}
-          className="ml-2 w-4 transition-opacity hover:opacity-75"
+          className="flex absolute right-3 top-1/2 justify-center items-center w-5 h-5 transition-opacity transform -translate-y-1/2 hover:opacity-75"
+          aria-label="Cerrar"
         >
           {closeIcon}
         </button>

@@ -24,6 +24,8 @@ interface APIResponse {
 
 const BarChart = ({ options }: BarChartProps) => {
   const chartRef = useRef<HTMLCanvasElement | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [chartData, setChartData] = useState<ChartData<'bar', number[], string>>({
     labels: [],
     datasets: [
@@ -62,34 +64,33 @@ const BarChart = ({ options }: BarChartProps) => {
         const clientesData: ClienteData[] = await clientesResponse.json();
         const presupuestosData: APIResponse = await presupuestosResponse.json();
 
-        console.log('=== DATOS DEL GRÁFICO ===');
-        console.log('Clientes por mes:', clientesData);
-        console.log('Presupuestos por mes:', presupuestosData);
+        // Extraer años únicos de los datos
+        const years = new Set<number>();
+        presupuestosData.data.forEach((data) => {
+          const year = parseInt(data.mes.split('-')[0]);
+          years.add(year);
+        });
+        setAvailableYears(Array.from(years).sort());
 
         // Inicializa los datos
         const monthlyClientData = Array(12).fill(0);
         const monthlyPresupuestoPendienteData = Array(12).fill(0);
         const monthlyPresupuestoEmitidoData = Array(12).fill(0);
 
-        // Llenar los datos de clientes
-        clientesData.forEach((monthData) => {
-          if (monthData.mes >= 1 && monthData.mes <= 12) {
-            monthlyClientData[monthData.mes - 1] = monthData.cantidad;
-          }
-        });
+        // Filtrar y llenar los datos según el año seleccionado
+        presupuestosData.data
+          .filter((data) => data.mes.startsWith(selectedYear.toString()))
+          .forEach((monthData: PresupuestoData) => {
+            const [_, month] = monthData.mes.split('-');
+            const monthIndex = parseInt(month) - 1;
+            
+            if (monthIndex >= 0 && monthIndex < 12) {
+              monthlyPresupuestoEmitidoData[monthIndex] = monthData.total_presupuestos;
+              monthlyClientData[monthIndex] = monthData.total_clientes;
+            }
+          });
 
-        // Llenar los datos de presupuestos según su estado
-        presupuestosData.data.forEach((monthData: PresupuestoData) => {
-          const [year, month] = monthData.mes.split('-');
-          const monthIndex = parseInt(month) - 1;
-          
-          if (monthIndex >= 0 && monthIndex < 12) {
-            monthlyPresupuestoEmitidoData[monthIndex] = monthData.total_presupuestos;
-            monthlyClientData[monthIndex] = monthData.total_clientes;
-          }
-        });
-
-        console.log('Datos procesados:');
+        console.log('=== DATOS DEL GRÁFICO ===');
         console.log('Clientes por mes:', monthlyClientData);
         console.log('Presupuestos por mes:', monthlyPresupuestoEmitidoData);
 
@@ -131,7 +132,7 @@ const BarChart = ({ options }: BarChartProps) => {
     };
 
     fetchData();
-  }, []);
+  }, [selectedYear]);
 
   useEffect(() => {
     if (chartRef.current) {
@@ -154,7 +155,24 @@ const BarChart = ({ options }: BarChartProps) => {
     }
   }, [chartData, options]);
 
-  return <canvas ref={chartRef}></canvas>;
+  return (
+    <div>
+      <div className="mb-4">
+        <select 
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+          className="p-2 rounded border"
+        >
+          {availableYears.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </div>
+      <canvas ref={chartRef}></canvas>
+    </div>
+  );
 };
 
 export default BarChart;

@@ -15,6 +15,10 @@ export interface TableItem {
     tipoTela: string;
     soporteIntermedio: boolean;
     soporteDoble: boolean;
+    medidaId?: number;
+    ancho?: number;
+    alto?: number;
+    ubicacion?: string;
   };
 }
 
