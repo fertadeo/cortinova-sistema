@@ -38,7 +38,8 @@ export const BudgetProductSection = ({ onProductSelect, onShowPedidoModal }: Bud
       name: product.nombreProducto,
       description: product.descripcion,
       quantity: 1,
-      price: Number(product.precio)
+      price: typeof product.precio === 'string' ? parseFloat(product.precio) : product.precio,
+      total: typeof product.precio === 'string' ? parseFloat(product.precio) : product.precio
     };
 
     onProductSelect(newTableItem);

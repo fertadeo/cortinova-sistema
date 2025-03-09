@@ -2,12 +2,15 @@
 // import BudgetTable from '@/components/budgetResume'
 import '../../styles/globals.css'
 import { BudgetGenerator } from '../../components/budget/BudgetGenerator'
+import { Suspense } from 'react'
 
 export default function Page() {
     return (
         <div>
-<BudgetGenerator/>
-{/* <BudgetTable/> */}
+            <Suspense fallback={<div>Cargando...</div>}>
+                <BudgetGenerator/>
+            </Suspense>
+            {/* <BudgetTable/> */}
         </div>
     )
 }
