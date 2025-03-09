@@ -4,7 +4,6 @@ import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
 import { Button, Spinner } from '@nextui-org/react';
 import { AiOutlineUpload } from 'react-icons/ai';
-import handleFileUpload from '../../components/utils/excelUtil'; // Importa la función desde excelUtil.ts
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
 import OneProductModal from '@/components/oneProductModal';
 import PricesModal from '@/components/pricesModal';
@@ -14,7 +13,6 @@ import PricesModal from '@/components/pricesModal';
 
 const ProductosPage = () => {
   const tableRef = useRef<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -36,43 +34,6 @@ const ProductosPage = () => {
     // Llamamos a refreshProducts a través de la ref al guardar un producto
     tableRef.current?.refreshProducts();
   };
-  const handleButtonClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  // Manejamos la subida del archivo
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files && event.target.files[0];
-    
-    if (file) {
-      setFileName(file.name);
-      setLoading(true);
-      setStatus('loading');
-      setMessage(null);
-
-      try {
-        // Llamamos a la función de excelUtil.ts para parsear y enviar el archivo
-        await handleFileUpload(file);
-        setLoading(false);
-        setStatus('success');
-        setMessage('Archivo importado exitosamente!');
-        setShowSpinner(true); // Mostrar el spinner
-
-        // Después de 3 segundos, ocultar el spinner y actualizar la tabla
-        setTimeout(() => {
-          setShowSpinner(false);
-          tableRef.current.updateTable(); // Actualiza la tabla
-        }, 3000);
-      } catch (error) {
-        // console.error("Error al procesar el archivo:", error);
-        setLoading(false);
-        setStatus('error');
-        setMessage(null);
-      }
-    }
-  };
 
   const getButtonColor = () => {
     switch (status) {
@@ -89,40 +50,30 @@ const ProductosPage = () => {
 
 
   return (
-    <div className='flex-col justify-center w-full h-full m-2 align-middle columns-1'>
+    <div className='flex-col justify-center m-2 w-full h-full align-middle columns-1'>
       <TopBar>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className='hidden'>
-              <input
-                ref={fileInputRef}
-                accept=".csv"
-                className="hidden"
-                type="file"
-                onChange={handleFileChange}
-              />
-
-              <Button
-                className={` flex items-center justify-center gap-2 px-4 py-2 text-white rounded-md ${getButtonColor()}`}
-                disabled={loading}
-                onClick={handleButtonClick}
-              >
-                {loading ? (
-                  <>
-                    <Spinner
-                      color='white'
-                      size="sm"
-                    />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <AiOutlineUpload className='size-14' />
-                    {fileName ? fileName : 'Cargar archivo Excel'}
-                  </>
-                )}
-              </Button>
-            </div>
+        <div className="flex gap-4 justify-between items-center">
+          <div className="flex gap-4 items-center">
+            <Button
+              className={`flex gap-2 justify-center items-center px-4 py-2 text-white rounded-md ${getButtonColor()}`}
+              disabled={loading}
+              onPress={() => tableRef.current?.refreshProducts()}
+            >
+              {loading ? (
+                <>
+                  <Spinner
+                    color='white'
+                    size="sm"
+                  />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <AiOutlineUpload size={22} />
+                  Actualizar Tabla
+                </>
+              )}
+            </Button>
             <Button onPress={handleOpenModal}> Agregar Producto + </Button>
             <OneProductModal
               isOpen={showProdModal}
@@ -153,7 +104,7 @@ const ProductosPage = () => {
 
       <div>
         {showSpinner ? (
-          <div className="flex items-center justify-center">
+          <div className="flex justify-center items-center">
             <Spinner
               color="primary"
               size="lg"
