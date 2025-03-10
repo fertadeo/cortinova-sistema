@@ -47,8 +47,8 @@ export default function DunesForm(props: DunesFormProps) {
           value={formData.colorSistema}
           onChange={(e) => handleChange('colorSistema', e.target.value)}
         >
-          <SelectItem key="beige" value="beige">Beige</SelectItem>
-          <SelectItem key="blanco" value="blanco">Blanco</SelectItem>
+          <SelectItem key="beige" >Beige</SelectItem>
+          <SelectItem key="blanco" >Blanco</SelectItem>
         </Select>
 
         {/* Lado Comando */}
@@ -57,8 +57,8 @@ export default function DunesForm(props: DunesFormProps) {
           value={formData.ladoComando}
           onChange={(e) => handleChange('ladoComando', e.target.value)}
         >
-          <SelectItem key="derecho" value="derecho">Derecho</SelectItem>
-          <SelectItem key="izquierdo" value="izquierdo">Izquierdo</SelectItem>
+          <SelectItem key="derecho" >Derecho</SelectItem>
+          <SelectItem key="izquierdo" >Izquierdo</SelectItem>
         </Select>
       </div>
 
@@ -70,8 +70,8 @@ export default function DunesForm(props: DunesFormProps) {
           value={formData.ladoApertura}
           onChange={(e) => handleChange('ladoApertura', e.target.value)}
         >
-          <SelectItem key="izquierdo" value="izquierdo">Izquierdo</SelectItem>
-          <SelectItem key="derecho" value="derecho">Derecho</SelectItem>
+          <SelectItem key="izquierdo" >Izquierdo</SelectItem>
+          <SelectItem key="derecho" >Derecho</SelectItem>
         </Select>
 
         {/* Instalación */}
@@ -80,8 +80,8 @@ export default function DunesForm(props: DunesFormProps) {
           value={formData.instalacion}
           onChange={(e) => handleChange('instalacion', e.target.value)}
         >
-          <SelectItem key="en_vano" value="en_vano">En vano</SelectItem>
-          <SelectItem key="fuera_vano" value="fuera_vano">Fuera de vano</SelectItem>
+          <SelectItem key="en_vano" >En vano</SelectItem>
+          <SelectItem key="fuera_vano" >Fuera de vano</SelectItem>
         </Select>
       </div>
 

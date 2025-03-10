@@ -49,8 +49,8 @@ export default function DubaiForm(props: DubaiFormProps) {
           value={formData.ladoComando}
           onChange={(e) => handleChange('ladoComando', e.target.value)}
         >
-          <SelectItem key="derecho" value="derecho">Derecho</SelectItem>
-          <SelectItem key="izquierdo" value="izquierdo">Izquierdo</SelectItem>
+          <SelectItem key="derecho" >Derecho</SelectItem>
+          <SelectItem key="izquierdo" >Izquierdo</SelectItem>
         </Select>
 
         {/* Soporte Intermedio */}
@@ -69,8 +69,8 @@ export default function DubaiForm(props: DubaiFormProps) {
           value={formData.cenefaCompartida}
           onChange={(e) => handleChange('cenefaCompartida', e.target.value)}
         >
-          <SelectItem key="si" value="si">Sí</SelectItem>
-          <SelectItem key="no" value="no">No</SelectItem>
+          <SelectItem key="si" >Sí</SelectItem>
+          <SelectItem key="no" >No</SelectItem>
         </Select>
       </div>
 
@@ -82,10 +82,10 @@ export default function DubaiForm(props: DubaiFormProps) {
           value={formData.hermanada}
           onChange={(e) => handleChange('hermanada', e.target.value)}
         >
-          <SelectItem key="no" value="no">No, van en diferentes ambientes</SelectItem>
-          <SelectItem key="enfrentadas" value="enfrentadas">No, van enfrentadas</SelectItem>
-          <SelectItem key="separadas" value="separadas">Sí, están separadas entre 20 cm y 30 cm, una de otra</SelectItem>
-          <SelectItem key="pegadas" value="pegadas">Sí, van pegadas, una al lado de la otra</SelectItem>
+          <SelectItem key="no" >No, van en diferentes ambientes</SelectItem>
+          <SelectItem key="enfrentadas" >No, van enfrentadas</SelectItem>
+          <SelectItem key="separadas" >Sí, están separadas entre 20 cm y 30 cm, una de otra</SelectItem>
+          <SelectItem key="pegadas" >Sí, van pegadas, una al lado de la otra</SelectItem>
         </Select>
 
         {/* Caída por delante */}
@@ -94,8 +94,8 @@ export default function DubaiForm(props: DubaiFormProps) {
           value={formData.caidaPorDelante}
           onChange={(e) => handleChange('caidaPorDelante', e.target.value)}
         >
-          <SelectItem key="si" value="si">Sí</SelectItem>
-          <SelectItem key="no" value="no">No</SelectItem>
+          <SelectItem key="si" >Sí</SelectItem>
+          <SelectItem key="no" >No</SelectItem>
         </Select>
 
         {/* Color de Sistema */}
@@ -104,10 +104,10 @@ export default function DubaiForm(props: DubaiFormProps) {
           value={formData.colorSistema}
           onChange={(e) => handleChange('colorSistema', e.target.value)}
         >
-          <SelectItem key="blanco" value="blanco">Blanco</SelectItem>
-          <SelectItem key="beige" value="beige" description="(solo caída por atrás)">Beige</SelectItem>
-          <SelectItem key="gris" value="gris">Gris</SelectItem>
-          <SelectItem key="negro" value="negro">Negro</SelectItem>
+          <SelectItem key="blanco" >Blanco</SelectItem>
+          <SelectItem key="beige" description="(solo caída por atrás)">Beige</SelectItem>
+          <SelectItem key="gris" >Gris</SelectItem>
+          <SelectItem key="negro" >Negro</SelectItem>
         </Select>
       </div>
 

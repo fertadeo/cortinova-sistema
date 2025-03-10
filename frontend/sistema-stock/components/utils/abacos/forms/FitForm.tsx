@@ -48,8 +48,8 @@ export default function FitForm(props: FitFormProps) {
           value={formData.ladoComando}
           onChange={(e) => handleChange('ladoComando', e.target.value)}
         >
-          <SelectItem key="derecho" value="derecho">Derecho</SelectItem>
-          <SelectItem key="izquierdo" value="izquierdo">Izquierdo</SelectItem>
+          <SelectItem key="derecho" >Derecho</SelectItem>
+          <SelectItem key="izquierdo" >Izquierdo</SelectItem>
         </Select>
 
         {/* Detalles */}

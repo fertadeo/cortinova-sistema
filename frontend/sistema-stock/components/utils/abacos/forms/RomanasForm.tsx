@@ -49,8 +49,8 @@ export default function RomanasForm(props: RomanasFormProps) {
           value={formData.ladoComando}
           onChange={(e) => handleChange('ladoComando', e.target.value)}
         >
-          <SelectItem key="derecho" value="derecho">Derecho</SelectItem>
-          <SelectItem key="izquierdo" value="izquierdo">Izquierdo</SelectItem>
+          <SelectItem key="derecho" >Derecho</SelectItem>
+          <SelectItem key="izquierdo" >Izquierdo</SelectItem>
         </Select>
 
         {/* Tipo de Tela */}
@@ -59,10 +59,10 @@ export default function RomanasForm(props: RomanasFormProps) {
           value={formData.tipoTela}
           onChange={(e) => handleChange('tipoTela', e.target.value)}
         >
-          <SelectItem key="black_out" value="black_out">BLACK OUT POLIESTER</SelectItem>
-          <SelectItem key="poliester" value="poliester">POLIESTER</SelectItem>
-          <SelectItem key="screen" value="screen">SCREEN</SelectItem>
-          <SelectItem key="sin_tela" value="sin_tela">SIN TELA</SelectItem>
+          <SelectItem key="black_out" >BLACK OUT POLIESTER</SelectItem>
+          <SelectItem key="poliester" >POLIESTER</SelectItem>
+          <SelectItem key="screen" >SCREEN</SelectItem>
+          <SelectItem key="sin_tela" >SIN TELA</SelectItem>
         </Select>
       </div>
 

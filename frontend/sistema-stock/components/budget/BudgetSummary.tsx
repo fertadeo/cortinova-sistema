@@ -114,8 +114,8 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
                     onDiscountChange(applyDiscount, newType, discountValue, shouldRound);
                   }}
                 >
-                  <SelectItem key="percentage" value="percentage">Porcentaje</SelectItem>
-                  <SelectItem key="amount" value="amount">Monto</SelectItem>
+                  <SelectItem key="percentage" >Porcentaje</SelectItem>
+                  <SelectItem key="amount">Monto</SelectItem>
                 </Select>
                 <Input
                   size="sm"

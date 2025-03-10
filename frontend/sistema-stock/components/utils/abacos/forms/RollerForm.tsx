@@ -59,9 +59,9 @@ export const RollerForm = ({
               onColorChange(color);
             }}
           >
-            <SelectItem key="blanco" value="blanco">Blanco</SelectItem>
-            <SelectItem key="negro" value="negro">Negro</SelectItem>
-            <SelectItem key="gris" value="gris">Gris</SelectItem>
+            <SelectItem key="blanco" >Blanco</SelectItem>
+            <SelectItem key="negro" >Negro</SelectItem>
+            <SelectItem key="gris" >Gris</SelectItem>
           </Select>
         </div>
 
@@ -74,8 +74,8 @@ export const RollerForm = ({
               onLadoComandoChange(lado);
             }}
           >
-            <SelectItem key="izquierda" value="izquierda">Izquierda</SelectItem>
-            <SelectItem key="derecha" value="derecha">Derecha</SelectItem>
+            <SelectItem key="izquierda" >Izquierda</SelectItem>
+            <SelectItem key="derecha" >Derecha</SelectItem>
           </Select>
         </div>
       </div>
@@ -90,9 +90,9 @@ export const RollerForm = ({
               onTipoTelaChange(tipo);
             }}
           >
-            <SelectItem key="screen" value="screen">Screen</SelectItem>
-            <SelectItem key="blackout" value="blackout">Blackout</SelectItem>
-            <SelectItem key="sunscreen" value="sunscreen">Sunscreen</SelectItem>
+              <SelectItem key="screen" >Screen</SelectItem>
+            <SelectItem key="blackout" >Blackout</SelectItem>
+            <SelectItem key="sunscreen" >Sunscreen</SelectItem>
           </Select>
         </div>
 

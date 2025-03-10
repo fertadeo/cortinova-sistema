@@ -371,7 +371,6 @@ export default function MedidasPage() {
                 id="cliente-busqueda"
                 type="text"
                 placeholder="Nombre o teléfono del cliente..."
-                value={busquedaCliente}
                 onChange={(e) => {
                   setBusquedaCliente(e.target.value);
                   setMostrarResultados(true);
@@ -453,14 +452,14 @@ export default function MedidasPage() {
                 <Input
                   label="Nombre"
                   placeholder="Nombre completo"
-                  value={nuevoCliente.nombre}
+                   
                   onChange={(e) => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
                   isRequired
                 />
                 <Input
                   label="Teléfono"
                   placeholder="Número de teléfono"
-                  value={nuevoCliente.telefono}
+                  
                   onChange={(e) => setNuevoCliente({...nuevoCliente, telefono: e.target.value})}
                   isRequired
                 />
@@ -468,19 +467,19 @@ export default function MedidasPage() {
                   label="Email"
                   placeholder="Correo electrónico (opcional)"
                   type="email"
-                  value={nuevoCliente.email}
+                  
                   onChange={(e) => setNuevoCliente({...nuevoCliente, email: e.target.value})}
                 />
                 <Input
                   label="Dirección"
                   placeholder="Dirección completa (opcional)"
-                  value={nuevoCliente.direccion}
+                  
                   onChange={(e) => setNuevoCliente({...nuevoCliente, direccion: e.target.value})}
                 />
                 <Input
                   label="CUIL/CUIT"
                   placeholder="CUIL/CUIT (opcional)"
-                  value={nuevoCliente.cuil}
+                 
                   onChange={(e) => setNuevoCliente({...nuevoCliente, cuil: e.target.value})}
                 />
               </div>
@@ -527,7 +526,7 @@ export default function MedidasPage() {
                     <Input
                       label="Elemento"
                       placeholder="Ej: Ventana comedor, Puerta principal"
-                      value={medida.elemento}
+                      
                       onChange={(e) => handleUpdateMedida(medida.id, "elemento", e.target.value)}
                       className="max-w-full"
                     />
@@ -559,7 +558,7 @@ export default function MedidasPage() {
                   <Input
                     label="Especifique ubicación"
                     placeholder="Ej: Balcón, Estudio"
-                    value={medida.ubicacionPersonalizada || ""}
+                    key={medida.ubicacionPersonalizada || ""}
                     onChange={(e) => handleUpdateMedida(medida.id, "ubicacionPersonalizada", e.target.value)}
                     className="max-w-full"
                   />

@@ -44,8 +44,8 @@ export default function PanelesForm(props: PanelesFormProps) {
           value={formData.ladoComando}
           onChange={(e) => handleChange('ladoComando', e.target.value)}
         >
-          <SelectItem key="derecho" value="derecho">Derecho</SelectItem>
-          <SelectItem key="izquierdo" value="izquierdo">Izquierdo</SelectItem>
+          <SelectItem key="derecho" >Derecho</SelectItem>
+          <SelectItem key="izquierdo" >Izquierdo</SelectItem>
         </Select>
 
         {/* Lado Apertura */}
@@ -54,8 +54,8 @@ export default function PanelesForm(props: PanelesFormProps) {
           value={formData.ladoApertura}
           onChange={(e) => handleChange('ladoApertura', e.target.value)}
         >
-          <SelectItem key="derecha" value="derecha">Derecha</SelectItem>
-          <SelectItem key="izquierda" value="izquierda">Izquierda</SelectItem>
+          <SelectItem key="derecha" >Derecha</SelectItem>
+          <SelectItem key="izquierda" >Izquierda</SelectItem>
         </Select>
       </div>
 
@@ -67,11 +67,11 @@ export default function PanelesForm(props: PanelesFormProps) {
           value={formData.tipoTela}
           onChange={(e) => handleChange('tipoTela', e.target.value)}
         >
-          <SelectItem key="black_out" value="black_out">BLACK OUT POLIESTER</SelectItem>
-          <SelectItem key="dubai" value="dubai">DUBAI PARA ROLLER</SelectItem>
-          <SelectItem key="poliester" value="poliester">POLIESTER</SelectItem>
-          <SelectItem key="screen" value="screen">SCREEN</SelectItem>
-          <SelectItem key="sin_tela" value="sin_tela">SIN TELA</SelectItem>
+          <SelectItem key="black_out" >BLACK OUT POLIESTER</SelectItem>
+          <SelectItem key="dubai" >DUBAI PARA ROLLER</SelectItem>
+          <SelectItem key="poliester" >POLIESTER</SelectItem>
+          <SelectItem key="screen" >SCREEN</SelectItem>
+          <SelectItem key="sin_tela" >SIN TELA</SelectItem>
         </Select>
       </div>
     </div>

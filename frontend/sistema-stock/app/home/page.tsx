@@ -1,12 +1,8 @@
 "use client"
-import { Menucards } from '@/components/menucards';
 import SimpleTable from '@/components/simpleTable';
 import BarChart from '@/components/chart';
 import PresupuestosTable from '@/components/presupuestosTable';
-import AnimatedButton from '@/components/animatedButton';
-// import { Skeleton } from "@heroui/react";
 import { useState, useEffect } from "react";
-// import TourGuide from "@/components/TourGuide";
 
 
 export default function Home() {
@@ -23,7 +19,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   const handleDataLoaded = () => {
-    // console.log('Datos cargados, desactivando skeleton'); // Para debug
     setIsLoading(false);
   };
 
@@ -58,22 +53,10 @@ export default function Home() {
       {/* Seguimiento de Presupuestos - Columna completa */}
       <div className="p-6 px-4 py-6 mt-6 w-full bg-white rounded-lg shadow">
         <h2 className="mb-4 text-lg font-medium text-center"> Seguimiento de Presupuestos </h2>
-        {/* {isLoading ? (
-          <div className="space-y-3 w-full">
-            <Skeleton className="w-full rounded-lg">
-              <div className="h-12 rounded-lg bg-default-300"></div>
-            </Skeleton>
-            <Skeleton className="w-full rounded-lg">
-              <div className="h-12 rounded-lg bg-default-300"></div>
-            </Skeleton>
-            <Skeleton className="w-full rounded-lg">
-              <div className="h-12 rounded-lg bg-default-300"></div>
-            </Skeleton>
-          </div>
-        ) : null} */}
+   
         <PresupuestosTable onDataLoaded={handleDataLoaded}  />
       </div>
-      {/* <TourGuide /> */}
+   
     </div>
   );
 }

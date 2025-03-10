@@ -276,7 +276,6 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
                   {proveedores.map((proveedor) => (
                     <SelectItem
                       key={proveedor.id}
-                      value={proveedor.id}
                     >
                       {proveedor.nombreProveedores}
                     </SelectItem>
@@ -292,7 +291,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
                   startContent="%"
                 />
                 {isLoading ? (
-                  <div className="flex items-center justify-center h-32">
+                  <div className="flex justify-center items-center h-32">
                     <Spinner label="Cargando..." />
                   </div>
                 ) : errorMessage ? (
@@ -328,11 +327,11 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
           </div>
         </ModalBody>
 
-        <ModalFooter className="flex flex-col items-start gap-2">
+        <ModalFooter className="flex flex-col gap-2 items-start">
           {/* Alert dentro del Footer */}
           {showAlert && (
             <div
-              className="relative w-full px-4 py-3 text-teal-700 bg-teal-200 border border-teal-500 rounded bg-opacity-30 border-opacity-30"
+              className="relative px-4 py-3 w-full text-teal-700 bg-teal-200 bg-opacity-30 rounded border border-teal-500 border-opacity-30"
               role="alert"
             >
               <strong className="font-bold">

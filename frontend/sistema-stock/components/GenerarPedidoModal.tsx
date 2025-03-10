@@ -613,7 +613,7 @@ export default function GenerarPedidoModal({
                       {sistemas?.map((sistema) => (
                         <SelectItem 
                           key={String(sistema.nombreSistemas)} 
-                          value={String(sistema.nombreSistemas)}
+                         
                         >
                           {sistema.nombreSistemas} 
                         </SelectItem>
@@ -696,12 +696,12 @@ export default function GenerarPedidoModal({
                         procesarSistemasUnicos(abacoData[normalizarNombreSistema(selectedSistema)].sistemas)
                           .filter(sistema => sistema !== "NINGUNO") // Filtrar "NINGUNO" si no quieres mostrarlo
                           .map((sistemaNombre) => (
-                            <SelectItem key={sistemaNombre} value={sistemaNombre}>
+                            <SelectItem key={sistemaNombre} >
                               {sistemaNombre}
                             </SelectItem>
                           ))
                       ) : (
-                        <SelectItem key="empty" value="">
+                        <SelectItem key="empty" >
                           Seleccione un sistema primero
                         </SelectItem>
                       )}

@@ -10,11 +10,10 @@ import {
   ModalFooter,
   Button,
   Select,
-  SelectItem
+  SelectItem,
+  Input
 } from "@heroui/react";
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
-import EditableField from "./EditableField";
-
 
 export type Product = {
   precio: number;
@@ -151,34 +150,44 @@ useEffect(() => {
         <ModalBody>
           {editedProduct && (
             <div>
-              <EditableField
-                label="ID/SKU"
-                value={editedProduct.id}
-                onChange={() => { }}
-                isEditable={false}
-              />
-              <EditableField
-                label="Producto"
-                value={editedProduct.nombreProducto}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    nombreProducto: value.toString(),
-                  })
-                }
-              />
-              <EditableField
-                label="Descripción"
-                value={editedProduct.descripcion}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    descripcion: value.toString(),
-                  })
-                }
-              />
+              <div className="mb-4">
+                <label htmlFor="id-input" className="block mb-1 font-medium">ID/SKU</label>
+                <Input
+                  id="id-input"
+                  value={editedProduct.id.toString()}
+                  disabled
+                  readOnly
+                />
+              </div>
 
-              {/* Proveedor como Select */}
+              <div className="mb-4">
+                <label htmlFor="nombreProducto-input" className="block mb-1 font-medium">Producto</label>
+                <Input
+                  id="nombreProducto-input"
+                  value={editedProduct.nombreProducto}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      nombreProducto: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="descripcion-input" className="block mb-1 font-medium">Descripción</label>
+                <Input
+                  id="descripcion-input"
+                  value={editedProduct.descripcion}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      descripcion: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              {/* Mantenemos el Select de Proveedor sin cambios */}
               <div className="mb-4">
                 <label htmlFor="proveedor-select" className="block mb-1 font-medium">
                   Proveedor
@@ -190,46 +199,56 @@ useEffect(() => {
                   aria-label="Seleccionar proveedor"
                 >
                   {proveedores.map((proveedor) => (
-                    <SelectItem key={proveedor.id} value={proveedor.nombreProveedores}>
+                    <SelectItem key={proveedor.id} >
                       {proveedor.nombreProveedores}
                     </SelectItem>
                   ))}
                 </Select>
               </div>
 
-              <EditableField
-                label="Cantidad Disponible"
-                value={editedProduct.cantidadDisponible ?? 0}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    cantidadDisponible: Number(value),
-                  })
-                }
-                type="number"
-              />
-              <EditableField
-                label="Precio"
-                value={editedProduct.precio}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    precio: Number(value),
-                  })
-                }
-                type="number"
-              />
-              <EditableField
-                label="Descuento (%)"
-                value={editedProduct.descuento}
-                onChange={(value) =>
-                  setEditedProduct({
-                    ...editedProduct,
-                    descuento: Number(value),
-                  })
-                }
-                type="number"
-              />
+              <div className="mb-4">
+                <label htmlFor="cantidadDisponible-input" className="block mb-1 font-medium">Cantidad Disponible</label>
+                <Input
+                  type="number"
+                  value={editedProduct.cantidadDisponible.toString()}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      cantidadDisponible: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="precio-input" className="block mb-1 font-medium">Precio</label>
+                <Input
+                  id="precio-input"
+                  type="number"
+                  value={editedProduct.precio.toString()}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      precio: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="descuento-input" className="block mb-1 font-medium">Descuento (%)</label>
+                <Input
+                  id="descuento-input"
+                  type="number"
+                  value={editedProduct.descuento.toString()}
+                  onChange={(e) =>
+                    setEditedProduct({
+                      ...editedProduct,
+                      descuento: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
             </div>
           )}
         </ModalBody>
@@ -258,7 +277,20 @@ useEffect(() => {
               color="danger"
               onClick={handleDelete}
             >
-              <FaTrash style={{ marginRight: "5px" }} />
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                strokeWidth="1.5" 
+                stroke="currentColor" 
+                className="mr-2 size-6"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" 
+                />
+              </svg>
               Eliminar
             </Button>
           )}

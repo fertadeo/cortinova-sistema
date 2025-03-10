@@ -39,9 +39,9 @@ export default function BarcelonaForm({
               console.log("Color del sistema seleccionado:", color);
             }}
           >
-            <SelectItem key="blanco" value="blanco">Blanco</SelectItem>
-            <SelectItem key="negro" value="negro">Negro</SelectItem>
-            <SelectItem key="gris" value="gris">Gris</SelectItem>
+            <SelectItem key="blanco" >Blanco</SelectItem>
+            <SelectItem key="negro" >Negro</SelectItem>
+            <SelectItem key="gris" >Gris</SelectItem>
           </Select>
         </div>
 
@@ -55,8 +55,8 @@ export default function BarcelonaForm({
               console.log("Lado del comando seleccionado:", lado);
             }}
           >
-            <SelectItem key="izquierda" value="izquierda">Izquierda</SelectItem>
-            <SelectItem key="derecha" value="derecha">Derecha</SelectItem>
+            <SelectItem key="izquierda" >Izquierda</SelectItem>
+            <SelectItem key="derecha" >Derecha</SelectItem>
           </Select>
         </div>
       </div>
