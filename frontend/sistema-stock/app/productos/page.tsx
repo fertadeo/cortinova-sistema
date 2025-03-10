@@ -54,26 +54,8 @@ const ProductosPage = () => {
       <TopBar>
         <div className="flex gap-4 justify-between items-center">
           <div className="hidden gap-4 items-center md:flex">
-            <Button
-              className={`flex hidden gap-2 justify-center items-center px-4 py-2 text-white rounded-md ${getButtonColor()}`}
-              disabled={loading}
-              onPress={() => tableRef.current?.refreshProducts()}
-            >
-              {loading ? (
-                <>
-                  <Spinner
-                    color='white'
-                    size="sm"
-                  />
-                  Procesando...
-                </>
-              ) : (
-                <>
-                  <AiOutlineUpload size={22} />
-                  Actualizar Tabla
-                </>
-              )}
-            </Button>
+         
+      
             <Button onPress={handleOpenModal}> Agregar Producto + </Button>
             <OneProductModal
               isOpen={showProdModal}
