@@ -3,7 +3,7 @@ import "../styles/globals.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Spinner } from "@nextui-org/react";
+import { Spinner } from "@heroui/react";
 import Link from "next/link";
 
 export const Login = () => {

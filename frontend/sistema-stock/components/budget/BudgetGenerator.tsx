@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, Spacer } from "@nextui-org/react";
+import { Card, Spacer } from "@heroui/react";
 import { Client, TableItem, PresupuestoResumen } from '../../types/budget';
 import { BudgetClientSection } from "./BudgetClientSection";
 import { BudgetProductSection } from "./BudgetProductSection";

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input, Select, SelectItem } from "@nextui-org/react";
+import { Input, Select, SelectItem } from "@heroui/react";
 
 interface BarcelonaFormProps {
   ancho: string;
