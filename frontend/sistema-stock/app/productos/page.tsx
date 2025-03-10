@@ -53,9 +53,9 @@ const ProductosPage = () => {
     <div className='flex-col justify-center m-2 w-full h-full align-middle columns-1'>
       <TopBar>
         <div className="flex gap-4 justify-between items-center">
-          <div className="flex gap-4 items-center">
+          <div className="hidden gap-4 items-center md:flex">
             <Button
-              className={`flex gap-2 justify-center items-center px-4 py-2 text-white rounded-md ${getButtonColor()}`}
+              className={`flex hidden gap-2 justify-center items-center px-4 py-2 text-white rounded-md ${getButtonColor()}`}
               disabled={loading}
               onPress={() => tableRef.current?.refreshProducts()}
             >
