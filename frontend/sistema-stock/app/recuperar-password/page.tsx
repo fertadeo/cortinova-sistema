@@ -2,7 +2,7 @@
 'use client'
 import '../../styles/globals.css';
 import { useState } from 'react';
-import { Button, Input, Spacer, Spinner } from '@nextui-org/react'; // Asegúrate de importar Spinner
+import { Button, Input, Spacer, Spinner } from "@heroui/react"; // Asegúrate de importar Spinner
 
 const RecoverPassword = () => {
     const [email, setEmail] = useState<string>('');

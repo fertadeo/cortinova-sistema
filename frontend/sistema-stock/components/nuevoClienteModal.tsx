@@ -8,7 +8,7 @@ import {
   Button,
   Input,
   Spinner,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import Notification from "./notification"; // Importa el componente de notificación
 
 interface NuevoClienteModalProps {

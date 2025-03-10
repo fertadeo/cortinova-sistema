@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, ModalContent, ModalBody } from "@nextui-org/react";
+import { Modal, ModalContent, ModalBody } from "@heroui/react";
 import BudgetResume from './budgetResume';
 
 interface BudgetPDFModalProps {

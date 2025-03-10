@@ -22,7 +22,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import BudgetPDFModal from './BudgetPDFModal';
 import { FaFilePdf } from 'react-icons/fa';
 import { Alert } from "@/components/shared/alert";

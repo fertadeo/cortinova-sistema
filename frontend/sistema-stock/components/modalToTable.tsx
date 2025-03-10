@@ -10,9 +10,9 @@ import {
   PopoverContent,
   PopoverTrigger,
   Pagination
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useRouter } from 'next/navigation';
-import { Checkbox } from "@nextui-org/react";
+import { Checkbox } from "@heroui/react";
 import LoadingTransition from './LoadingTransition';
 
 interface Producto {

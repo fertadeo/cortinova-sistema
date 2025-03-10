@@ -17,7 +17,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { FaFilter } from "react-icons/fa";
 
 type Product = {

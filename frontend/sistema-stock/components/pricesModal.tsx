@@ -3,7 +3,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Select, SelectItem, Input, Button, Spinner, Selection
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { Product } from "@/types/productos";
 import { Proveedores } from "@/types/proveedores";
 

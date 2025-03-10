@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Card } from "@nextui-org/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Card } from "@heroui/react";
 import { FaEye } from "react-icons/fa";
 import ProductModal from "./productModal";
-import { SearchIcon } from "@nextui-org/shared-icons";
+import { SearchIcon } from "@heroui/shared-icons";
 import { Product } from './productModal';
 
 

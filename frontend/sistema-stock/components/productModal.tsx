@@ -11,7 +11,7 @@ import {
   Button,
   Select,
   SelectItem
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { FaTrash, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import EditableField from "./EditableField";
 

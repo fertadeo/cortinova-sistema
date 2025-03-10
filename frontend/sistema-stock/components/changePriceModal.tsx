@@ -1,7 +1,7 @@
 // ChangePriceModal.tsx
 
 import React, { useState } from "react";
-import { Modal, Input, Button, ModalFooter, ModalBody, ModalHeader } from "@nextui-org/react";
+import { Modal, Input, Button, ModalFooter, ModalBody, ModalHeader } from "@heroui/react";
 
 type ChangePriceModalProps = {
   isOpen: boolean;
