@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Input, Button } from "@nextui-org/react";
+import { Input, Button } from "@heroui/react";
 import { Product, TableItem } from '../../types/budget';
 import { useProductSearch } from '../../hooks/useProductSearch';
 

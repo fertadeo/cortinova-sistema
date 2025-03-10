@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Select, SelectItem, Checkbox, Textarea } from "@nextui-org/react";
+import { Input, Select, SelectItem, Checkbox, Textarea } from "@heroui/react";
 
 interface RollerFormProps {
   // Props generales que necesitamos mantener

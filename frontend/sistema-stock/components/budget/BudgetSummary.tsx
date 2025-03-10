@@ -1,4 +1,4 @@
-import { Checkbox, Input, Select, SelectItem } from "@nextui-org/react";
+import { Checkbox, Input, Select, SelectItem } from "@heroui/react";
 import { useBudgetCalculations } from '../../hooks/useBudgetCalculations';
 import { TableItem } from '../../types/budget';
 import { useState, useEffect } from 'react';

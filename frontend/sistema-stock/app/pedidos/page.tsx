@@ -1,7 +1,7 @@
 "use client"
 import "@/styles/globals.css"
 import { useEffect, useState } from 'react';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Input, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Input, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { PedidoEstado, estadoColors } from "@/types/pedido";
 import { jsPDF } from "jspdf";
 
@@ -506,7 +506,6 @@ export default function PedidosPage() {
   return (
     <div className="p-4 z-[20]">
       <h1 className="mb-6 text-2xl font-bold">Pedidos</h1>
-      
       <div className="p-4 mb-4 bg-white rounded-lg shadow-sm">
         <div className="flex gap-4 justify-between items-center">
           <div className="w-96">
@@ -546,7 +545,6 @@ export default function PedidosPage() {
           </Dropdown>
         </div>
       </div>
-
       <Table aria-label="Tabla de pedidos">
         <TableHeader>
           <TableColumn>N° PEDIDO</TableColumn>
@@ -697,7 +695,6 @@ export default function PedidosPage() {
           ))}
         </TableBody>
       </Table>
-
       {selectedPedido && (
         <ProduccionModal
           isOpen={isProduccionModalOpen}
@@ -709,7 +706,6 @@ export default function PedidosPage() {
           onConfirm={handleLlevarAProduccion}
         />
       )}
-
       {selectedPedidoDetalle && (
         <DetalleModal
           isOpen={isDetalleModalOpen}

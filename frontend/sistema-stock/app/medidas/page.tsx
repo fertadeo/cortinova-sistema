@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from "react";
-import { Button, Input, Select, SelectItem, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Selection, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
+import { Button, Input, Select, SelectItem, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Selection, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { Alert } from "@/components/shared/alert";
 
 interface Cliente {
@@ -548,7 +548,7 @@ export default function MedidasPage() {
                   }}
                 >
                   {UBICACIONES.map((ubicacion) => (
-                    <SelectItem key={ubicacion} value={ubicacion}>
+                    <SelectItem key={ubicacion} >
                       {ubicacion}
                     </SelectItem>
                   ))}

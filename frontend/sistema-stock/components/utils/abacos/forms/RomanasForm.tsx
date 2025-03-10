@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Select, SelectItem, Input } from "@nextui-org/react";
+import { Select, SelectItem, Input } from "@heroui/react";
 
 interface RomanasFormProps {
   ancho: string;

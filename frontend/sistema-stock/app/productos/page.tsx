@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
-import { Button, Spinner } from '@nextui-org/react';
+import { Button, Spinner } from "@heroui/react";
 import { AiOutlineUpload } from 'react-icons/ai';
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
 import OneProductModal from '@/components/oneProductModal';
@@ -95,13 +95,11 @@ const ProductosPage = () => {
           </div>
         </div>
       </TopBar>
-
       {message && (
         <div className="m-2 mt-4 font-bold text-green-600">
           {message}
         </div>
       )}
-
       <div>
         {showSpinner ? (
           <div className="flex justify-center items-center">
@@ -111,7 +109,7 @@ const ProductosPage = () => {
             />
           </div>
         ) : (
-          <TableProducts ref={tableRef} userLevel={2} /> // Aquí es donde la tabla se renderiza o actualiza
+          (<TableProducts ref={tableRef} userLevel={2} />) // Aquí es donde la tabla se renderiza o actualiza
         )}
       </div>
     </div>

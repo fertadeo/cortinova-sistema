@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Spinner } from "@nextui-org/react";
+import { Input, Spinner } from "@heroui/react";
 import { Tela, TelaResponse } from '@/types/telas';
 
 interface TelasSearchProps {
@@ -121,11 +121,11 @@ export const TelasSearch = ({
                 >
                   <div className="font-medium">{tela.nombre}</div>
                   {tela.id !== 0 && ( // Solo mostrar detalles si no es "Sin tela"
-                    <div className="text-sm text-gray-600">
+                    (<div className="text-sm text-gray-600">
                       {tela.color && <span className="mr-2">Color: {tela.color}</span>}
                       {tela.precio && Number(tela.precio) > 0 && <span className="mr-2">Precio: ${Number(tela.precio).toFixed(2)}</span>}
                       {tela.tipo && <span>Descripción: {tela.tipo}</span>}
-                    </div>
+                    </div>)
                   )}
                 </button>
               ))

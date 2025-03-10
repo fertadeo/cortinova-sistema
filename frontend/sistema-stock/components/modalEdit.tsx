@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from "react";
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, useDisclosure } from "@nextui-org/react";
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Input, useDisclosure } from "@heroui/react";
 
 type Cliente = {
   id: number;

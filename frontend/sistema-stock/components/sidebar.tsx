@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { Divider } from "@nextui-org/react"
+import { Divider } from "@heroui/react"
 
 export const SideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -218,7 +218,6 @@ export const SideBar = () => {
           </div>
         </div>
       </div>
-
       {/* Overlay solo para móvil */}
       {isOpen && (
         <div
@@ -227,7 +226,6 @@ export const SideBar = () => {
           onClick={() => setIsOpen(false)}
         />
       )}
-
       {/* Botón de toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -235,7 +233,7 @@ export const SideBar = () => {
       >
         {isOpen ? (
           // Ícono X para cerrar
-          <svg
+          (<svg
             className="w-5 h-5 fill-current"
             viewBox="0 0 20 20"
             xmlns="http://www.w3.org/2000/svg"
@@ -245,10 +243,10 @@ export const SideBar = () => {
               d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
               clipRule="evenodd"
             />
-          </svg>
+          </svg>)
         ) : (
           // Ícono de menú hamburguesa
-          <svg
+          (<svg
             className="w-5 h-5 fill-current"
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -259,9 +257,9 @@ export const SideBar = () => {
               d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
               clipRule="evenodd"
             />
-          </svg>
+          </svg>)
         )}
       </button>
     </section>
-  )
+  );
 }

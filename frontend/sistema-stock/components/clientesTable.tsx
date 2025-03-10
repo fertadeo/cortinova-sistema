@@ -1,6 +1,6 @@
 import '../styles/globals.css';
 import React, { useState, useCallback, useEffect } from "react";
-import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip, useDisclosure, Pagination, Button, User } from "@nextui-org/react";
+import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Tooltip, useDisclosure, Pagination, Button, User } from "@heroui/react";
 import ModalToTable from "@/components/modalToTable";
 import NuevoClienteModal from "@/components/nuevoClienteModal";
 import ModalConfirmation from "@/components/modalConfirmation";

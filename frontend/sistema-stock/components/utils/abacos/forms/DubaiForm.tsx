@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Select, SelectItem, Checkbox, Input } from "@nextui-org/react";
+import { Select, SelectItem, Checkbox, Input } from "@heroui/react";
 
 interface DubaiFormProps {
   ancho: string;

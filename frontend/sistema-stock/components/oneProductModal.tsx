@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal,ModalContent,ModalHeader,ModalFooter,Button,Input,Checkbox,Select,SelectItem,Spinner,} from "@nextui-org/react";
+import { Modal,ModalContent,ModalHeader,ModalFooter,Button,Input,Checkbox,Select,SelectItem,Spinner,} from "@heroui/react";
 import Notification from "./notification";
 import { Proveedores } from "@/types/proveedores";
 
