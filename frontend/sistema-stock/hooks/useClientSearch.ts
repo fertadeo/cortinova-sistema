@@ -14,7 +14,10 @@ export const useClientSearch = () => {
       if (!response.ok) throw new Error('Error al buscar clientes');
       const data = await response.json();
       
-      const filteredData = data.filter((client: Client) => {
+      // Asegurarnos de que data sea un array
+      const clientsArray = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+      
+      const filteredData = clientsArray.filter((client: Client) => {
         const searchLower = searchTerm.toLowerCase();
         return (
           client.nombre?.toLowerCase().includes(searchLower) ||

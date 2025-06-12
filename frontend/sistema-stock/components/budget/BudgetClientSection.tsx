@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input, Button } from "@heroui/react";
 import { Client } from '../../types/budget';
 import { useClientSearch } from '../../hooks/useClientSearch';
@@ -16,16 +16,38 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
   const clientsListRef = useRef<HTMLDivElement>(null);
   const { isLoading, clients, searchClients } = useClientSearch();
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (clientsListRef.current && !clientsListRef.current.contains(event.target as Node)) {
+        setShowClientsList(false);
+      }
+    };
+
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowClientsList(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, []);
+
   const handleClientSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setClientSearch(value);
-    setShowClientsList(true);
-
+    
     if (!value.trim()) {
       setShowClientsList(false);
       return;
     }
 
+    setShowClientsList(true);
     const timeoutId = setTimeout(() => {
       searchClients(value);
     }, 300);
@@ -100,8 +122,30 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
                 onClick={() => handleClientSelect(client)}
                 onKeyDown={(e) => e.key === 'Enter' && handleClientSelect(client)}
               >
-                <div className="font-semibold">{client.nombre}</div>
-                <div className="text-sm text-gray-600">{client.telefono}</div>
+                <div className="font-semibold">
+                  <span className="mr-2">👤</span>
+                  {client.nombre}
+                </div>
+                <div className="ml-6 text-sm text-gray-600">
+                  {client.telefono && (
+                    <div>
+                      <span className="mr-2">📞</span>
+                      {client.telefono}
+                    </div>
+                  )}
+                  {client.email && (
+                    <div>
+                      <span className="mr-2">✉️</span>
+                      {client.email}
+                    </div>
+                  )}
+                  {client.direccion && (
+                    <div>
+                      <span className="mr-2">🏠</span>
+                      {client.direccion}
+                    </div>
+                  )}
+                </div>
               </div>
             ))
           ) : (

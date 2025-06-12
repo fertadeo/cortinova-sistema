@@ -244,7 +244,10 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         <Table aria-label="Tabla de Clientes" className="w-full">
           <TableHeader columns={filteredColumns}>
             {(column) => (
-              <TableColumn key={column.uid} align={column.uid === "actions" ? "start" : "center"}>
+              <TableColumn 
+                key={column.uid} 
+                align={column.uid === "actions" ? "start" : column.uid === "name" ? "start" : "center"}
+              >
                 {column.name}
               </TableColumn>
             )}

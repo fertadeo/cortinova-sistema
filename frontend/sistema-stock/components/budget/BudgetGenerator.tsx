@@ -155,108 +155,9 @@ export const BudgetGenerator = () => {
 
   // Manejador de pedido personalizado
   const handleAddPedido = (pedido: any) => {
-    // Log inicial con todos los datos recibidos
-    console.log('=== DATOS INICIALES DEL PEDIDO ===');
-    console.log('Pedido completo:', {
-      sistema: pedido.sistema,
-      tela: pedido.tela,
-      detalles: pedido.detalles,
-      colorSistema: pedido.colorSistema,
-      ladoComando: pedido.ladoComando,
-      soportes: {
-        intermedio: pedido.soporteIntermedio,
-        doble: pedido.soporteDoble
-      },
-      medidas: {
-        ancho: pedido.detalles?.ancho,
-        alto: pedido.detalles?.alto,
-        cantidad: pedido.detalles?.cantidad
-      },
-      ubicacion: pedido.detalles?.ubicacion,
-      observaciones: pedido.detalle,
-      medidaId: pedido.medidaId,
-      incluirColocacion: pedido.incluirColocacion,
-      colocacionDetalles: pedido.detalles?.incluirColocacion
-    });
-
-    // Asegurar que los valores sean números válidos
-    const anchoNum = Number(pedido.detalles.ancho) || 0;
-    const altoNum = Number(pedido.detalles.alto) || 0;
-    const cantidadNum = Number(pedido.detalles.cantidad) || 1;
-    
-    // Mejorar la obtención del precio de la tela
-    const precioTelaNum = pedido.tela?.precio 
-      ? Number(pedido.tela.precio) 
-      : pedido.detalles?.tela?.precio 
-        ? Number(pedido.detalles.tela.precio)
-        : 0;
-
-    // Calcular precio del sistema
-    const precioSistema = (anchoNum / 100) * 12000;
-
-    // Calcular precio de la tela
-    const precioTela = precioTelaNum > 0 
-      ? calcularPrecioTela(
-          anchoNum,
-          altoNum,
-          precioTelaNum,
-          pedido.tela?.nombre === 'ROLLER' || pedido.detalles?.tela?.nombre === 'ROLLER'
-        )
-      : 0;
-
-    // Calcular precio de colocación - Mejorado para verificar en múltiples lugares
-    const incluirColocacion = pedido.incluirColocacion || 
-                            pedido.detalles?.incluirColocacion || 
-                            false;
-    const precioColocacion = incluirColocacion ? 10000 : 0;
-
-    // Log específico para debug de colocación
-    console.log('=== DEBUG COLOCACIÓN ===', {
-      'pedido.incluirColocacion': pedido.incluirColocacion,
-      'pedido.detalles.incluirColocacion': pedido.detalles?.incluirColocacion,
-      'incluirColocacion final': incluirColocacion,
-      'precioColocacion': precioColocacion
-    });
-
-    // Calcular precio total
-    const precioTotal = (precioSistema + precioTela + precioColocacion) * cantidadNum;
-
-    // Log de los cálculos de precio
-    console.log('=== CÁLCULOS DE PRECIO ===');
-    console.log('Valores calculados:', {
-      dimensiones: `${anchoNum}cm x ${altoNum}cm`,
-      cantidad: cantidadNum,
-      precioTela: precioTelaNum,
-      precioSistema: precioSistema,
-      precioTelaCalculado: precioTela,
-      costoColocacion: precioColocacion,
-      precioTotalFinal: precioTotal,
-      desglose: {
-        sistema: precioSistema,
-        tela: precioTela,
-        colocacion: precioColocacion,
-        subtotal: precioSistema + precioTela + precioColocacion,
-        cantidadAplicada: `x${cantidadNum}`,
-        total: precioTotal
-      }
-    });
-
-    // Crear la descripción detallada
-    const descripcionDetallada = `${anchoNum}cm x ${altoNum}cm - ${
-      pedido.detalles?.tela?.nombre || pedido.tela?.nombre || ''
-    }${
-      pedido.detalles?.colorSistema ? ` - Color ${pedido.detalles.colorSistema}` : ''
-    }${
-      pedido.detalles?.ladoComando ? ` - Comando ${pedido.detalles.ladoComando}` : ''
-    }${
-      pedido.detalles?.caidaPorDelante ? ' - Caída por delante' : ''
-    }${
-      pedido.detalles?.soporteDoble ? ' - Soporte Doble' : 
-      pedido.detalles?.soporteIntermedio ? ' - Soporte Intermedio' : ''
-    }${
-      pedido.detalles?.detalle ? ` - ${pedido.detalles.detalle}` : ''
-    }`;
-
+    // Usar los precios calculados y pasados desde el modal
+    const precioUnitario = pedido.precioUnitario;
+    const precioTotal = pedido.precioTotal;
     // Si el pedido viene de una medida precargada, actualizar ese item
     if (pedido.medidaId) {
       setTableData(prev => prev.map(item => 
@@ -264,7 +165,7 @@ export const BudgetGenerator = () => {
           ? {
               ...item,
               name: `Cortina ${item.detalles.ubicacion || pedido.detalles?.ubicacion} - ${pedido.sistema}`,
-              description: `${anchoNum}cm x ${altoNum}cm - ${
+              description: `${pedido.detalles?.ancho}cm x ${pedido.detalles?.alto}cm - ${
                 pedido.detalles?.tela?.nombre || pedido.tela?.nombre || ''
               }${
                 pedido.detalles?.colorSistema ? ` - Color ${pedido.detalles.colorSistema}` : ''
@@ -274,7 +175,7 @@ export const BudgetGenerator = () => {
                 pedido.detalles?.detalle ? ` - ${pedido.detalles.detalle}` : ''
               }`,
               quantity: pedido.detalles?.cantidad || 1,
-              price: precioTotal / (pedido.detalles?.cantidad || 1),
+              price: precioUnitario,
               total: precioTotal,
               detalles: {
                 sistema: pedido.sistema || "",
@@ -286,8 +187,8 @@ export const BudgetGenerator = () => {
                 soporteIntermedio: pedido.detalles?.soporteIntermedio || false,
                 soporteDoble: pedido.detalles?.soporteDoble || false,
                 medidaId: pedido.medidaId,
-                ancho: anchoNum,
-                alto: altoNum,
+                ancho: pedido.detalles?.ancho,
+                alto: pedido.detalles?.alto,
                 ubicacion: pedido.detalles?.ubicacion
               }
             }
@@ -299,7 +200,7 @@ export const BudgetGenerator = () => {
         id: Date.now(),
         productId: Date.now(),
         name: `Cortina ${pedido.sistema}`,
-        description: `${anchoNum}cm x ${altoNum}cm - ${
+        description: `${pedido.detalles?.ancho}cm x ${pedido.detalles?.alto}cm - ${
           pedido.detalles?.tela?.nombre || pedido.tela?.nombre || ''
         }${
           pedido.detalles?.colorSistema ? ` - Color ${pedido.detalles.colorSistema}` : ''
@@ -309,7 +210,7 @@ export const BudgetGenerator = () => {
           pedido.detalles?.detalle ? ` - ${pedido.detalles.detalle}` : ''
         }`,
         quantity: pedido.detalles?.cantidad || 1,
-        price: precioTotal / (pedido.detalles?.cantidad || 1),
+        price: precioUnitario,
         total: precioTotal,
         detalles: {
           sistema: pedido.sistema || "",

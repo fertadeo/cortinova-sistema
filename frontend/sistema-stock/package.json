@@ -27,6 +27,7 @@
     "@heroui/theme": "2.4.12",
     "@react-aria/ssr": "3.9.4",
     "@react-aria/visually-hidden": "3.8.12",
+    "@tremor/react": "^3.18.7",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.3",
     "clsx": "2.1.1",
@@ -45,6 +46,7 @@
     "react-dom": "18.3.1",
     "react-icons": "^5.2.1",
     "react-to-print": "^3.0.2",
+    "recharts": "^2.15.3",
     "swapy": "^0.0.6"
   },
   "devDependencies": {

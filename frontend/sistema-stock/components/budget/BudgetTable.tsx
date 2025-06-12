@@ -172,6 +172,7 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
             
             <Tooltip content="Duplicar pedido con las mismas medidas">
               <Button
+                className="hidden"
                 color="primary"
                 variant="flat"
                 size="sm"

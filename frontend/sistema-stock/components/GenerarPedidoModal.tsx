@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox} from "@heroui/react";
+import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox, Popover, PopoverTrigger, PopoverContent} from "@heroui/react";
 import { RollerForm } from "./utils/abacos/forms/RollerForm";
 import DubaiForm from "./utils/abacos/forms/DubaiForm";
 import DunesForm from "./utils/abacos/forms/DunesForm";
@@ -10,6 +10,7 @@ import BarcelonaForm from "./utils/abacos/forms/BarcelonaForm";
 import RomanasForm from "./utils/abacos/forms/RomanasForm";
 import { TelasSearch } from "./utils/TelasSearch";
 import { type Tela } from '@/types/telas';
+import AbacoCohorteTable from "./utils/abacos/AbacoCohorteTable";
 
 
 interface MedidasPermitidas {
@@ -254,6 +255,28 @@ export default function GenerarPedidoModal({
   // Estados del primer paso
   const [selectedSistema, setSelectedSistema] = useState<string>("");
   const [selectedArticulo, setSelectedArticulo] = useState<string>("");
+
+  // Agregar nuevos estados para rieles y barrales
+  const [rielesBarrales, setRielesBarrales] = useState<Array<{
+    id: number;
+    nombreProducto: string;
+    cantidad_stock: string;
+    descripcion: string;
+    precioCosto: string;
+    precio: string;
+    divisa: string;
+    descuento: number;
+    rubro_id: string;
+    sistema_id: string;
+    disponible: boolean;
+    proveedor: {
+      id: number;
+      nombreProveedores: string;
+    };
+  }>>([]);
+  const [selectedRielBarral, setSelectedRielBarral] = useState<any>(null);
+  const [searchRielBarral, setSearchRielBarral] = useState("");
+  const [isLoadingRielesBarrales, setIsLoadingRielesBarrales] = useState(false);
 
   // Estados específicos de Roller
   const [detalle, setDetalle] = useState("");
@@ -550,7 +573,48 @@ export default function GenerarPedidoModal({
     fetchPrecioColocacion();
   }, []);
 
+  // Agregar useEffect para cargar rieles y barrales
+  useEffect(() => {
+    const fetchRielesBarrales = async () => {
+      if (!selectedSistema) return;
+      
+      setIsLoadingRielesBarrales(true);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/rieles-barrales`);
+        if (!response.ok) throw new Error('Error al cargar rieles y barrales');
+        const data = await response.json();
+        console.log('Respuesta de rieles y barrales:', data);
+        setRielesBarrales(data.productos);
+      } catch (error) {
+        console.error('Error:', error);
+        setRielesBarrales([]);
+      } finally {
+        setIsLoadingRielesBarrales(false);
+      }
+    };
+
+    fetchRielesBarrales();
+  }, [selectedSistema]);
+
   const handleSubmit = () => {
+    // Calcular el precio unitario según la lógica del resumen
+    let precioUnitario = 0;
+    if (selectedRielBarral) {
+      precioUnitario = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
+    } else {
+      precioUnitario = (Number(ancho) / 100) * 12000;
+    }
+    // Sumar tela y colocación al total
+    const precioTelaTotal = selectedTela ? calcularPrecioTela(
+      Number(ancho),
+      Number(alto),
+      selectedTela?.precio ? Number(selectedTela.precio) : 0,
+      selectedTela?.nombre === 'ROLLER'
+    ) : 0;
+    const colocacionTotal = incluirColocacion ? precioColocacion : 0;
+    const cantidadNum = Number(cantidad) || 1;
+    const precioTotal = (precioUnitario + precioTelaTotal + colocacionTotal) * cantidadNum;
+
     const pedido = {
       sistema: selectedSistema,
       detalles: {
@@ -570,12 +634,12 @@ export default function GenerarPedidoModal({
         incluirColocacion
       },
       fecha: new Date().toISOString(),
-      precioTotal: calcularPrecioTotal(),
+      precioUnitario: precioUnitario + precioTelaTotal + colocacionTotal,
+      precioTotal: precioTotal,
       medidaId: medidasPrecargadas?.medidaId,
       incluirColocacion,
       precioColocacion
     };
-    
     onPedidoCreated(pedido);
     onOpenChange(false);
   };
@@ -599,26 +663,44 @@ export default function GenerarPedidoModal({
                 <div className="space-y-6">
                   {/* PARTE 1: Inputs generales */}
                   <div className="space-y-4">
-                    <Select
-                      label="Seleccionar Sistema"
-                      placeholder="Elegir un sistema"
-                      selectedKeys={selectedSistema ? [selectedSistema] : []}
-                      onSelectionChange={(keys) => {
-                        const sistemaSeleccionado = Array.from(keys)[0] as string;
-                        setSelectedSistema(sistemaSeleccionado);
-                        
-                        console.log("Sistema seleccionado:", sistemaSeleccionado);
-                      }}
-                    >
-                      {sistemas?.map((sistema) => (
-                        <SelectItem 
-                          key={String(sistema.nombreSistemas)} 
-                         
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <Select
+                          label="Seleccionar Sistema"
+                          placeholder="Elegir un sistema"
+                          selectedKeys={selectedSistema ? [selectedSistema] : []}
+                          onSelectionChange={(keys) => {
+                            const sistemaSeleccionado = Array.from(keys)[0] as string;
+                            setSelectedSistema(sistemaSeleccionado);
+                            console.log("Sistema seleccionado:", sistemaSeleccionado);
+                          }}
                         >
-                          {sistema.nombreSistemas} 
-                        </SelectItem>
-                      ))}
-                    </Select>
+                          {sistemas?.map((sistema) => (
+                            <SelectItem 
+                              key={String(sistema.nombreSistemas)} 
+                            >
+                              {sistema.nombreSistemas} 
+                            </SelectItem>
+                          ))}
+                        </Select>
+                      </div>
+                      <Popover placement="bottom" color="foreground">
+                        <PopoverTrigger>
+                          <Button
+                            color="default"
+                            variant="bordered"
+                            className="h-12"
+                          >
+                            Consultar Ábaco de Medidas
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                          <div className="px-1 py-2">
+                            <div className="font-bold text-small">Aún estamos desarrollando esto!</div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
 
                     <div className="grid grid-cols-3 gap-4">
                       <Input
@@ -685,7 +767,7 @@ export default function GenerarPedidoModal({
 
                     <Select
                       label="Artículo"
-                      placeholder="Seleccione un artículo"
+                      placeholder="Artículo Recomendado"
                       selectedKeys={selectedArticulo ? [selectedArticulo] : new Set()}
                       onSelectionChange={(keys) => {
                         const articulo = Array.from(keys)[0] as string;
@@ -706,6 +788,62 @@ export default function GenerarPedidoModal({
                         </SelectItem>
                       )}
                     </Select>
+                  </div>
+
+                  {/* Input de rieles y barrales debajo del select de artículo */}
+                  <div className="mt-4">
+                    <Input
+                      label="Agregar Riel/Barral"
+                      placeholder="Buscar por nombre o ID..."
+                      value={searchRielBarral}
+                      onValueChange={setSearchRielBarral}
+                      size="sm"
+                      startContent={
+                        <div className="flex items-center pointer-events-none">
+                          <span className="text-default-400 text-small">🔍</span>
+                        </div>
+                      }
+                      endContent={
+                        selectedRielBarral && (
+                          <button
+                            type="button"
+                            className="px-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                            aria-label="Quitar riel/barral"
+                            onClick={() => {
+                              setSelectedRielBarral(null);
+                              setSearchRielBarral("");
+                            }}
+                          >
+                            ×
+                          </button>
+                        )
+                      }
+                    />
+                    {searchRielBarral && rielesBarrales.length > 0 && (
+                      <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border">
+                        {rielesBarrales
+                          .filter(item => 
+                            item.nombreProducto.toLowerCase().includes(searchRielBarral.toLowerCase())
+                          )
+                          .map(item => (
+                            <button
+                              key={item.id}
+                              className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-100 last:border-b-0"
+                              onClick={() => {
+                                setSelectedRielBarral(item);
+                                setSearchRielBarral(item.nombreProducto);
+                              }}
+                              role="option"
+                              aria-selected={selectedRielBarral === item}
+                            >
+                              <div className="font-medium">{item.nombreProducto}</div>
+                              <div className="text-sm text-gray-600">
+                                Precio: ${item.precio}
+                              </div>
+                            </button>
+                          ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* PARTE 2: Formulario específico del sistema */}
@@ -893,15 +1031,37 @@ export default function GenerarPedidoModal({
                     </div>
                   )}
                   {selectedSistema && ancho && alto && (
-                    <div className="p-4 mt-4 bg-gray-50 rounded-lg border">
+                    <div className="sticky bottom-0 z-30 p-4 mt-4 bg-white rounded-t-lg border-t shadow">
                       <h3 className="mb-3 text-lg font-semibold">Resumen de Precios</h3>
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span>Sistema ({ancho}cm):</span>
-                          <span className="font-medium">
-                            ${(Number(ancho) / 100 * 12000).toLocaleString()}
-                          </span>
-                        </div>
+                        {selectedRielBarral ? (
+                          <div className="flex justify-between items-center">
+                            <span className="flex gap-2 items-center">
+                              {selectedRielBarral.nombreProducto} ({ancho}cm)
+                              <button
+                                type="button"
+                                className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                aria-label="Quitar riel/barral"
+                                onClick={() => {
+                                  setSelectedRielBarral(null);
+                                  setSearchRielBarral("");
+                                }}
+                              >
+                                ×
+                              </button>
+                            </span>
+                            <span className="font-medium">
+                              ${((Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)).toLocaleString()}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <span>Sistema ({ancho}cm):</span>
+                            <span className="font-medium">
+                              ${(Number(ancho) / 100 * 12000).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
 
                         {selectedTela && (
                           <div className="flex justify-between items-center">
@@ -963,14 +1123,19 @@ export default function GenerarPedidoModal({
                         <div className="flex justify-between items-center pt-3 mt-2 border-t">
                           <span className="font-bold">Total:</span>
                           <span className="font-bold">
-                            ${((Number(ancho) / 100 * 12000) + 
-                               (selectedTela ? calcularPrecioTela(
-                                 Number(ancho),
-                                 Number(alto),
-                                 selectedTela?.precio ? Number(selectedTela.precio) : 0,
-                                 selectedTela?.nombre === 'ROLLER'
-                               ) : 0) +
-                               (incluirColocacion ? precioColocacion : 0)).toLocaleString()}
+                            ${(
+                              (selectedRielBarral
+                                ? (Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)
+                                : (Number(ancho) / 100 * 12000)
+                              ) +
+                              (selectedTela ? calcularPrecioTela(
+                                Number(ancho),
+                                Number(alto),
+                                selectedTela?.precio ? Number(selectedTela.precio) : 0,
+                                selectedTela?.nombre === 'ROLLER'
+                              ) : 0) +
+                              (incluirColocacion ? precioColocacion : 0)
+                            ).toLocaleString()}
                           </span>
                         </div>
                       </div>
