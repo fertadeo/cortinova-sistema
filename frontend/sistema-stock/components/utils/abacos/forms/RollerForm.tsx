@@ -24,6 +24,9 @@ interface RollerFormProps {
   onTipoTelaChange: (value: string) => void;
   onSoporteIntermedioChange: (value: boolean) => void;
   onSoporteDobleChange: (value: boolean) => void;
+  soporteIntermedioTipo?: any;
+  soportesIntermedios?: any[];
+  onSoporteIntermedioTipoChange?: (item: any) => void;
 }
 
 export const RollerForm = ({
@@ -45,7 +48,10 @@ export const RollerForm = ({
   onLadoComandoChange,
   onTipoTelaChange,
   onSoporteIntermedioChange,
-  onSoporteDobleChange
+  onSoporteDobleChange,
+  soporteIntermedioTipo,
+  soportesIntermedios,
+  onSoporteIntermedioTipoChange
 }: RollerFormProps) => {
   return (
     <div className="space-y-4">
@@ -82,26 +88,10 @@ export const RollerForm = ({
 
       <div className="flex gap-4">
         <div className="w-1/2">
-          <Select
-            label="Tipo de Tela"
-            selectedKeys={tipoTela ? [tipoTela] : []}
-            onSelectionChange={(keys) => {
-              const tipo = Array.from(keys)[0] as string;
-              onTipoTelaChange(tipo);
-            }}
-          >
-              <SelectItem key="screen" >Screen</SelectItem>
-            <SelectItem key="blackout" >Blackout</SelectItem>
-            <SelectItem key="sunscreen" >Sunscreen</SelectItem>
-          </Select>
-        </div>
-
-        <div className="w-1/2">
           <Input
             label="Detalles adicionales"
             value={detalle}
             onValueChange={onDetalleChange}
-           
           />
         </div>
       </div>
@@ -116,13 +106,32 @@ export const RollerForm = ({
       </div>
 
       <div className="flex gap-4">
-        <Checkbox
-          isSelected={soporteIntermedio}
-          onValueChange={onSoporteIntermedioChange}
-        >
-          Soporte intermedio
-        </Checkbox>
-        
+        {soportesIntermedios && soportesIntermedios.length > 0 && (
+          <div className="w-56">
+            <Select
+              label="Soporte intermedio"
+              placeholder="Seleccionar tipo"
+              selectedKeys={soporteIntermedioTipo ? new Set([String(soporteIntermedioTipo.id)]) : new Set(["none"])}
+              onSelectionChange={(keys) => {
+                const id = Array.from(keys)[0];
+                if (id === "none") {
+                  if (onSoporteIntermedioTipoChange) onSoporteIntermedioTipoChange(null);
+                  return;
+                }
+                const found = soportesIntermedios.find((s) => String(s.id) === String(id));
+                if (found && onSoporteIntermedioTipoChange) onSoporteIntermedioTipoChange(found);
+              }}
+            >
+              {[<SelectItem key="none">Sin soporte intermedio</SelectItem>,
+                ...soportesIntermedios.map((s) => (
+                  <SelectItem key={String(s.id)}>
+                    {s.nombre} (${Number(s.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                  </SelectItem>
+                ))
+              ]}
+            </Select>
+          </div>
+        )}
         <Checkbox
           isSelected={soporteDoble}
           onValueChange={onSoporteDobleChange}

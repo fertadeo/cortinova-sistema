@@ -340,6 +340,44 @@ export default function GenerarPedidoModal({
     }
   }, [medidasPrecargadas]);
 
+  // Estado para soportes intermedios
+  const [soportesIntermedios, setSoportesIntermedios] = useState<any[]>([]);
+  const [selectedSoporteIntermedio, setSelectedSoporteIntermedio] = useState<any>(null);
+
+  // Buscar soportes intermedios al abrir el modal si se selecciona Roller
+  useEffect(() => {
+    if (isOpen && selectedSistema?.toLowerCase().includes('roller')) {
+      const fetchSoportes = async () => {
+        try {
+          // Buscar ambos por id
+          const resCorto = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/148`);
+          const resLargo = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/149`);
+          const dataCorto = await resCorto.json();
+          const dataLargo = await resLargo.json();
+          setSoportesIntermedios([
+            { id: dataCorto.id, nombre: 'CORTO/INTERMEDIO', precio: dataCorto.precio },
+            { id: dataLargo.id, nombre: 'LARGO/INTERMEDIO', precio: dataLargo.precio }
+          ]);
+          setSelectedSoporteIntermedio({ id: dataCorto.id, nombre: 'CORTO/INTERMEDIO', precio: dataCorto.precio });
+        } catch (e) {
+          setSoportesIntermedios([]);
+          setSelectedSoporteIntermedio(null);
+        }
+      };
+      fetchSoportes();
+    }
+  }, [isOpen, selectedSistema]);
+
+  // Cuando se tilda soporte intermedio, seleccionar por defecto el corto
+  useEffect(() => {
+    if (soporteIntermedio && soportesIntermedios.length > 0 && !selectedSoporteIntermedio) {
+      setSelectedSoporteIntermedio(soportesIntermedios[0]);
+    }
+    if (!soporteIntermedio) {
+      setSelectedSoporteIntermedio(null);
+    }
+  }, [soporteIntermedio, soportesIntermedios]);
+
   const resetInputs = () => {
     setCurrentStep(1);
     setSelectedSistema("");
@@ -631,7 +669,8 @@ export default function GenerarPedidoModal({
         soporteIntermedio,
         soporteDoble,
         detalle,
-        incluirColocacion
+        incluirColocacion,
+        soporteIntermedioTipo: selectedSoporteIntermedio,
       },
       fecha: new Date().toISOString(),
       precioUnitario: precioUnitario + precioTelaTotal + colocacionTotal,
@@ -650,6 +689,9 @@ export default function GenerarPedidoModal({
       onOpenChange={onOpenChange}
       size="3xl"
       scrollBehavior="inside"
+      hideCloseButton={false}
+      isDismissable={false}
+      shouldBlockScroll={true}
     >
       <ModalContent className="max-h-[90vh] rounded-lg">
         {(onClose) => {
@@ -674,10 +716,17 @@ export default function GenerarPedidoModal({
                             setSelectedSistema(sistemaSeleccionado);
                             console.log("Sistema seleccionado:", sistemaSeleccionado);
                           }}
+                          disallowEmptySelection={false}
+                          selectionMode="single"
+                          className="w-full"
+                          onClose={() => {
+                            // Prevenir el cierre del modal
+                            return false;
+                          }}
                         >
                           {sistemas?.map((sistema) => (
                             <SelectItem 
-                              key={String(sistema.nombreSistemas)} 
+                              key={String(sistema.nombreSistemas)}
                             >
                               {sistema.nombreSistemas} 
                             </SelectItem>
@@ -793,7 +842,7 @@ export default function GenerarPedidoModal({
                   {/* Input de rieles y barrales debajo del select de artículo */}
                   <div className="mt-4">
                     <Input
-                      label="Agregar Riel/Barral"
+                      label="Agregar Sistema"
                       placeholder="Buscar por nombre o ID..."
                       value={searchRielBarral}
                       onValueChange={setSearchRielBarral}
@@ -878,6 +927,9 @@ export default function GenerarPedidoModal({
                                 onSoporteIntermedioChange={setSoporteIntermedio}
                                 onSoporteDobleChange={setSoporteDoble}
                                 onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                soporteIntermedioTipo={selectedSoporteIntermedio}
+                                soportesIntermedios={soportesIntermedios}
+                                onSoporteIntermedioTipoChange={setSelectedSoporteIntermedio}
                               />
                             );
                           case "dubai":
@@ -1082,6 +1134,13 @@ export default function GenerarPedidoModal({
                           </div>
                         )}
 
+                        {soporteIntermedio && selectedSoporteIntermedio && (
+                          <div className="flex justify-between items-center">
+                            <span>Soporte Intermedio ({selectedSoporteIntermedio.nombre}):</span>
+                            <span className="font-medium">${Number(selectedSoporteIntermedio?.precio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-center pt-2">
                           <div className="flex gap-2 items-center">
                             <Checkbox
@@ -1134,8 +1193,9 @@ export default function GenerarPedidoModal({
                                 selectedTela?.precio ? Number(selectedTela.precio) : 0,
                                 selectedTela?.nombre === 'ROLLER'
                               ) : 0) +
+                              (soporteIntermedio && selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0) +
                               (incluirColocacion ? precioColocacion : 0)
-                            ).toLocaleString()}
+                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </div>
