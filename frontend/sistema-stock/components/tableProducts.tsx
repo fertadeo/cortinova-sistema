@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Card, addToast } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Pagination, Card, addToast, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { FaEye } from "react-icons/fa";
 import ProductModal from "./productModal";
+import ModalConfirmation from "./modalConfirmation";
 import { SearchIcon } from "@heroui/shared-icons";
 import { Product } from "./productModal";
 
@@ -25,6 +26,20 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [editingPriceId, setEditingPriceId] = useState<number | null>(null);
   const [editingPriceValue, setEditingPriceValue] = useState<string>("");
+  
+  // Estados para edición de nombre y descripción
+  const [editingNameId, setEditingNameId] = useState<number | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState<string>("");
+  const [editingDescId, setEditingDescId] = useState<number | null>(null);
+  const [editingDescValue, setEditingDescValue] = useState<string>("");
+
+  // Estados para modal de confirmación de campos vacíos
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [pendingEmptyField, setPendingEmptyField] = useState<{
+    type: 'name' | 'desc' | 'price';
+    productId: number;
+    value: string;
+  } | null>(null);
 
   // Configuración de columnas según nivel de usuario
   const columns = [
@@ -106,8 +121,8 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
   const handlePriceSave = async (productId: number) => {
     try {
-      // Si el valor está vacío o es 0, no actualizar
-      if (!editingPriceValue.trim() || parseFloat(editingPriceValue) === 0) {
+      // Si el valor está vacío, no actualizar
+      if (!editingPriceValue.trim()) {
         setEditingPriceId(null);
         setEditingPriceValue("");
         return;
@@ -174,12 +189,220 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
   const handlePriceKeyDown = (e: React.KeyboardEvent, productId: number) => {
     if (e.key === 'Enter') {
-      handlePriceSave(productId);
+      handlePriceSaveWithValidation(productId);
     } else if (e.key === 'Escape') {
       handlePriceCancel();
     }
     // Las flechas izquierda y derecha se manejan automáticamente por el input
     // No necesitamos hacer nada especial para ellas
+  };
+
+  // Funciones para edición de nombre
+  const handleNameEdit = (product: Product) => {
+    setEditingNameId(product.id);
+    setEditingNameValue(""); // Inicializar vacío para usar placeholder
+  };
+
+  const handleNameSave = async (productId: number) => {
+    try {
+      // Si el valor está vacío, no actualizar
+      if (!editingNameValue.trim()) {
+        setEditingNameId(null);
+        setEditingNameValue("");
+        return;
+      }
+
+      const newName = editingNameValue.trim();
+      if (newName.length < 2) {
+        alert("El nombre del producto debe tener al menos 2 caracteres");
+        return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const url = `${apiUrl}/productos/${productId}`;
+      const body = JSON.stringify({ nombreProducto: newName });
+      
+      console.log('Actualizando nombre:', { url, body, productId, newName });
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      });
+
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error al actualizar el nombre: ${response.status} ${response.statusText}`);
+      }
+
+      // Actualizar el estado local
+      setProducts(prevProducts =>
+        prevProducts.map(product =>
+          product.id === productId ? { ...product, nombreProducto: newName } : product
+        )
+      );
+
+      setFilteredProducts(prevProducts =>
+        prevProducts.map(product =>
+          product.id === productId ? { ...product, nombreProducto: newName } : product
+        )
+      );
+
+      setEditingNameId(null);
+      setEditingNameValue("");
+      addToast({
+        title: "¡Éxito!",
+        description: "Nombre actualizado correctamente",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("Error al actualizar el nombre:", error);
+      alert("Error al actualizar el nombre. Intente nuevamente.");
+    }
+  };
+
+  const handleNameSaveWithValidation = async (productId: number) => {
+    const trimmedValue = editingNameValue.trim();
+    
+    // Si no se escribió nada, mantener el original
+    if (editingNameValue === "") {
+      setEditingNameId(null);
+      setEditingNameValue("");
+      return;
+    }
+    
+    // Si se dejó vacío, mostrar modal de confirmación
+    if (trimmedValue === "") {
+      setPendingEmptyField({
+        type: 'name',
+        productId,
+        value: trimmedValue
+      });
+      setIsConfirmationModalOpen(true);
+      return;
+    }
+    
+    // Si tiene contenido válido, guardar directamente
+    if (trimmedValue.length < 2) {
+      alert("El nombre del producto debe tener al menos 2 caracteres");
+      return;
+    }
+    
+    await handleNameSave(productId);
+  };
+
+  const handleNameCancel = () => {
+    setEditingNameId(null);
+    setEditingNameValue("");
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent, productId: number) => {
+    if (e.key === 'Enter') {
+      handleNameSaveWithValidation(productId);
+    } else if (e.key === 'Escape') {
+      handleNameCancel();
+    }
+  };
+
+  // Funciones para edición de descripción
+  const handleDescEdit = (product: Product) => {
+    setEditingDescId(product.id);
+    setEditingDescValue(""); // Inicializar vacío para usar placeholder
+  };
+
+  const handleDescSave = async (productId: number) => {
+    try {
+      const newDesc = editingDescValue.trim();
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const url = `${apiUrl}/productos/${productId}`;
+      const body = JSON.stringify({ descripcion: newDesc });
+      
+      console.log('Actualizando descripción:', { url, body, productId, newDesc });
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      });
+
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error al actualizar la descripción: ${response.status} ${response.statusText}`);
+      }
+
+      // Actualizar el estado local
+      setProducts(prevProducts =>
+        prevProducts.map(product =>
+          product.id === productId ? { ...product, descripcion: newDesc } : product
+        )
+      );
+
+      setFilteredProducts(prevProducts =>
+        prevProducts.map(product =>
+          product.id === productId ? { ...product, descripcion: newDesc } : product
+        )
+      );
+
+      setEditingDescId(null);
+      setEditingDescValue("");
+      addToast({
+        title: "¡Éxito!",
+        description: "Descripción actualizada correctamente",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("Error al actualizar la descripción:", error);
+      alert("Error al actualizar la descripción. Intente nuevamente.");
+    }
+  };
+
+  const handleDescSaveWithValidation = async (productId: number) => {
+    const trimmedValue = editingDescValue.trim();
+    
+    // Si no se escribió nada, mantener el original
+    if (editingDescValue === "") {
+      setEditingDescId(null);
+      setEditingDescValue("");
+      return;
+    }
+    
+    // Si se dejó vacío, mostrar modal de confirmación
+    if (trimmedValue === "") {
+      setPendingEmptyField({
+        type: 'desc',
+        productId,
+        value: trimmedValue
+      });
+      setIsConfirmationModalOpen(true);
+      return;
+    }
+    
+    // Si tiene contenido, guardar directamente
+    await handleDescSave(productId);
+  };
+
+  const handleDescCancel = () => {
+    setEditingDescId(null);
+    setEditingDescValue("");
+  };
+
+  const handleDescKeyDown = (e: React.KeyboardEvent, productId: number) => {
+    if (e.key === 'Enter') {
+      handleDescSaveWithValidation(productId);
+    } else if (e.key === 'Escape') {
+      handleDescCancel();
+    }
   };
 
   const handleSave = (updatedProduct: Product) => {
@@ -205,6 +428,139 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
         product.id === productId ? { ...product, habilitado: enabled } : product
       )
     );
+  };
+
+  const handlePriceSaveWithValidation = async (productId: number) => {
+    const trimmedValue = editingPriceValue.trim();
+    
+    // Si no se escribió nada, mantener el original
+    if (editingPriceValue === "") {
+      setEditingPriceId(null);
+      setEditingPriceValue("");
+      return;
+    }
+    
+    // Si se dejó vacío, mostrar modal de confirmación
+    if (trimmedValue === "") {
+      setPendingEmptyField({
+        type: 'price',
+        productId,
+        value: trimmedValue
+      });
+      setIsConfirmationModalOpen(true);
+      return;
+    }
+    
+    // Si tiene contenido válido, guardar directamente
+    const newPrice = parseFloat(trimmedValue);
+    if (isNaN(newPrice) || newPrice < 0) {
+      alert("Por favor ingrese un precio válido mayor a 0");
+      return;
+    }
+    
+    await handlePriceSave(productId);
+  };
+
+  const handleConfirmEmptyField = async () => {
+    if (!pendingEmptyField) return;
+    
+    const { type, productId, value } = pendingEmptyField;
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const url = `${apiUrl}/productos/${productId}`;
+      
+      let body;
+      if (type === 'name') {
+        body = JSON.stringify({ nombreProducto: value });
+      } else if (type === 'desc') {
+        body = JSON.stringify({ descripcion: value });
+      } else if (type === 'price') {
+        body = JSON.stringify({ precio: 0 });
+      }
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error al actualizar el campo: ${response.status} ${response.statusText}`);
+      }
+
+      // Actualizar el estado local
+      setProducts(prevProducts =>
+        prevProducts.map(product => {
+          if (product.id === productId) {
+            if (type === 'name') return { ...product, nombreProducto: value };
+            if (type === 'desc') return { ...product, descripcion: value };
+            if (type === 'price') return { ...product, precio: 0 };
+          }
+          return product;
+        })
+      );
+
+      setFilteredProducts(prevProducts =>
+        prevProducts.map(product => {
+          if (product.id === productId) {
+            if (type === 'name') return { ...product, nombreProducto: value };
+            if (type === 'desc') return { ...product, descripcion: value };
+            if (type === 'price') return { ...product, precio: 0 };
+          }
+          return product;
+        })
+      );
+
+      // Limpiar estados de edición
+      setEditingNameId(null);
+      setEditingNameValue("");
+      setEditingDescId(null);
+      setEditingDescValue("");
+      setEditingPriceId(null);
+      setEditingPriceValue("");
+      
+      addToast({
+        title: "¡Éxito!",
+        description: "Campo actualizado correctamente",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("Error al actualizar el campo:", error);
+      alert("Error al actualizar el campo. Intente nuevamente.");
+    } finally {
+      setIsConfirmationModalOpen(false);
+      setPendingEmptyField(null);
+    }
+  };
+
+  const handleCancelEmptyField = () => {
+    setIsConfirmationModalOpen(false);
+    setPendingEmptyField(null);
+    
+    // Limpiar estados de edición
+    setEditingNameId(null);
+    setEditingNameValue("");
+    setEditingDescId(null);
+    setEditingDescValue("");
+    setEditingPriceId(null);
+    setEditingPriceValue("");
+  };
+
+  // Función para determinar el estilo de un campo
+  const getFieldStyle = (fieldType: 'name' | 'desc' | 'price', productId: number) => {
+    const isEditing = 
+      (fieldType === 'name' && editingNameId === productId) ||
+      (fieldType === 'desc' && editingDescId === productId) ||
+      (fieldType === 'price' && editingPriceId === productId);
+    
+    return {
+      fontWeight: "bold" as const,
+      color: isEditing ? "#0070f3" : "inherit",
+      cursor: "pointer" as const
+    };
   };
 
   return (
@@ -238,8 +594,132 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
                   {columns.map((column) => (
                     <TableCell key={column.uid}>
                       {column.uid === "id" && product.id}
-                      {column.uid === "nombreProducto" && product.nombreProducto}
-                      {column.uid === "descripcion" && product.descripcion}
+                      {column.uid === "nombreProducto" && (
+                        editingNameId === product.id ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="text"
+                                value={editingNameValue}
+                                onChange={(e) => setEditingNameValue(e.target.value)}
+                                onKeyDown={(e) => handleNameKeyDown(e, product.id)}
+                                className="w-32"
+                                size="sm"
+                                placeholder={product.nombreProducto}
+                              />
+                              <button
+                                tabIndex={0}
+                                onClick={() => handleNameSaveWithValidation(product.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    handleNameSaveWithValidation(product.id);
+                                  }
+                                }}
+                                className="text-green-600 hover:text-green-800 text-sm"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                tabIndex={0}
+                                onClick={handleNameCancel}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    handleNameCancel();
+                                  }
+                                }}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <div className="text-xs text-blue-600">
+                              Para dejar el campo vacío escriba un espacio
+                            </div>
+                          </div>
+                        ) : (
+                          <span 
+                            role="button"
+                            tabIndex={0}
+                            style={getFieldStyle('name', product.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNameEdit(product);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation();
+                                handleNameEdit(product);
+                              }
+                            }}
+                            title="Haz clic para editar el nombre"
+                          >
+                            {product.nombreProducto}
+                          </span>
+                        )
+                      )}
+                      {column.uid === "descripcion" && (
+                        editingDescId === product.id ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="text"
+                                value={editingDescValue}
+                                onChange={(e) => setEditingDescValue(e.target.value)}
+                                onKeyDown={(e) => handleDescKeyDown(e, product.id)}
+                                className="w-40"
+                                size="sm"
+                                placeholder={product.descripcion || "Sin descripción"}
+                              />
+                              <button
+                                tabIndex={0}
+                                onClick={() => handleDescSaveWithValidation(product.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    handleDescSaveWithValidation(product.id);
+                                  }
+                                }}
+                                className="text-green-600 hover:text-green-800 text-sm"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                tabIndex={0}
+                                onClick={handleDescCancel}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    handleDescCancel();
+                                  }
+                                }}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <div className="text-xs text-blue-600">
+                              Para dejar el campo vacío escriba un espacio
+                            </div>
+                          </div>
+                        ) : (
+                          <span 
+                            role="button"
+                            tabIndex={0}
+                            style={getFieldStyle('desc', product.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDescEdit(product);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation();
+                                handleDescEdit(product);
+                              }
+                            }}
+                            title="Haz clic para editar la descripción"
+                          >
+                            {product.descripcion || "Sin descripción"}
+                          </span>
+                        )
+                      )}
                       {column.uid === "cantidad_stock" && (
                         <span style={getCantidadStyle(product.cantidad_stock)}>
                           {product.cantidad_stock}
@@ -248,6 +728,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
                       {column.uid === "precioCosto" && product.precioCosto}
                       {column.uid === "precio" && (
                         editingPriceId === product.id ? (
+                          <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                             <Input
                               type="number"
@@ -269,10 +750,10 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
                             />
                             <button
                               tabIndex={0}
-                              onClick={() => handlePriceSave(product.id)}
+                                onClick={() => handlePriceSaveWithValidation(product.id)}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
-                                  handlePriceSave(product.id);
+                                    handlePriceSaveWithValidation(product.id);
                                 }
                               }}
                               className="text-green-600 hover:text-green-800 text-sm"
@@ -291,12 +772,16 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
                             >
                               ✕
                             </button>
+                            </div>
+                            <div className="text-xs text-blue-600">
+                              Para dejar el campo vacío escriba un espacio
+                            </div>
                           </div>
                         ) : (
                           <span 
                             role="button"
                             tabIndex={0}
-                            style={{ fontWeight: "bold", color: "#0070f3", cursor: "pointer" }}
+                            style={getFieldStyle('price', product.id)}
                             onClick={(e) => {
                               e.stopPropagation();
                               handlePriceEdit(product);
@@ -368,6 +853,23 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      <Modal isOpen={isConfirmationModalOpen} onClose={handleCancelEmptyField}>
+        <ModalContent>
+          <ModalHeader>Confirmación</ModalHeader>
+          <ModalBody>
+            <p>¿Estás seguro de que quieres actualizar el campo &quot;{pendingEmptyField?.type === 'name' ? 'nombre' : pendingEmptyField?.type === 'desc' ? 'descripción' : 'precio'}&quot;?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" onPress={handleCancelEmptyField}>
+              Cancelar
+            </Button>
+            <Button color="primary" onPress={handleConfirmEmptyField}>
+              Aceptar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 });
