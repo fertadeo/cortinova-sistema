@@ -3,10 +3,34 @@ import React, { useRef, useState, useEffect } from 'react';
 import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
 import { Button, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { AiOutlineUpload, AiOutlineMenu, AiOutlinePlus, AiOutlineDollar } from 'react-icons/ai';
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
 import OneProductModal from '@/components/oneProductModal';
 import PricesModal from '@/components/pricesModal';
+
+// Componentes SVG inline
+const PlusIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+  </svg>
+);
+
+const DollarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+  </svg>
+);
+
+const MenuIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+  </svg>
+);
+
+const UploadIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+  </svg>
+);
 
 // Hook personalizado para detectar el tamaño de pantalla
 const useIsMobile = () => {
@@ -93,7 +117,7 @@ const ProductosPage = () => {
                 onPress={handleOpenModal}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 size="md"
-                startContent={<AiOutlinePlus />}
+                startContent={<PlusIcon />}
               > 
                 Agregar Producto
               </Button>
@@ -101,7 +125,7 @@ const ProductosPage = () => {
                 className='flex-1 bg-green-700 hover:bg-green-800 text-white'
                 onPress={handleOpenPricesModal}
                 size="md"
-                startContent={<AiOutlineDollar />}
+                startContent={<DollarIcon />}
               >
                 Modificar Precios
               </Button>
@@ -113,14 +137,14 @@ const ProductosPage = () => {
                 <Button 
                   variant="bordered" 
                   className="w-full opacity-50 cursor-not-allowed"
-                  startContent={<AiOutlineMenu />}
+                  startContent={<MenuIcon />}
                   isDisabled
                 >
                   Más opciones
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="Acciones adicionales">
-                <DropdownItem key="upload" startContent={<AiOutlineUpload />}>
+                <DropdownItem key="upload" startContent={<UploadIcon />}>
                   Subir archivo
                 </DropdownItem>
                 <DropdownItem key="export">
