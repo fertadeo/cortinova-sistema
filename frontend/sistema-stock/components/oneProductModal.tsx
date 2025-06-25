@@ -113,10 +113,9 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       const productToSend = [{
         id: parseInt(productData.id, 10),
         Producto: productData.Producto,
-        Cantidad_stock: productData.Cantidad_stock,
+        Cantidad_stock: String(productData.Cantidad_stock),
         Descripción: productData.Descripción,
-        PrecioCosto: productData.PrecioCosto,
-        Precio: productData.Precio,
+        Precio: String(productData.Precio),
         Divisa: productData.Divisa,
         Descuento: discountEnabled ? `${productData.Descuento}%` : "0%",
         proveedor_id: parseInt(productData.proveedor_id, 10),
