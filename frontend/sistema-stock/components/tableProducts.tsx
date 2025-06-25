@@ -51,6 +51,8 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
     // { name: "Acciones", uid: "acciones" },
   ];
 
+  const [sortMode, setSortMode] = useState<'id' | 'nombre'>('nombre');
+
   const fetchProducts = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -95,13 +97,21 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
     }
   }, [searchTerm, products]);
 
+  // Ordenar productos según el modo seleccionado
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortMode === 'id') {
+      return a.id - b.id;
+    } else {
+      return a.nombreProducto.localeCompare(b.nombreProducto, 'es', { sensitivity: 'base' });
+    }
+  });
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const getCantidadStyle = (cantidad: number) => {
     if (cantidad > 5) return { color: "green" };
@@ -566,7 +576,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
   return (
     <>
       <Card className="p-4">
-        <div className="flex justify-between mb-5">
+        <div className="flex flex-col md:flex-row md:justify-between mb-5 gap-2">
           <Input
             placeholder="Buscar producto"
             value={searchTerm}
@@ -575,6 +585,18 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
               <SearchIcon className="flex-shrink-0 pointer-events-none text-default-400" />
             }
           />
+          <div className="flex items-center gap-2">
+            <label htmlFor="sortMode" className="text-sm font-medium">Ordenar por:</label>
+            <select
+              id="sortMode"
+              className="border rounded px-2 py-1"
+              value={sortMode}
+              onChange={e => setSortMode(e.target.value as 'id' | 'nombre')}
+            >
+              <option value="id">ID/SKU</option>
+              <option value="nombre">Nombre (A-Z)</option>
+            </select>
+          </div>
         </div>
 
         <Table aria-label="Tabla de productos">

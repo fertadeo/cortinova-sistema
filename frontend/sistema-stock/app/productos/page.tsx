@@ -187,6 +187,7 @@ const ProductosPage = () => {
       <PricesModal 
         isOpen={showPricesModal}
         onClose={handleClosePricesModal}
+        onRefreshProducts={() => tableRef.current?.refreshProducts()}
       />
     </div>
   );

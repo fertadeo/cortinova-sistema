@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal,ModalContent,ModalHeader,ModalFooter,Button,Input,Checkbox,Select,SelectItem,Spinner,} from "@heroui/react";
+import { Modal,ModalContent,ModalHeader,ModalFooter,Button,Input,Checkbox,Select,SelectItem,Spinner,ModalBody} from "@heroui/react";
 import Notification from "./notification";
 import { Proveedores } from "@/types/proveedores";
 
@@ -14,6 +14,7 @@ interface OneProductModalProps {
 const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onProductAdded }) => {
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [productData, setProductData] = useState({
     id: "",
     Producto: "",
@@ -39,18 +40,13 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchProveedores();
-      fetchNextProductId();
-    }
-  }, [isOpen]);
-
   const fetchProveedores = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/proveedores`);
-      if (!response.ok) throw new Error("Error al obtener proveedores");
+      if (!response.ok) {
+        throw new Error(`Error al obtener proveedores: ${response.status}`);
+      }
       const data = await response.json();
       setProveedores(data);
     } catch (error) {
@@ -62,7 +58,9 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/productos/last-id/obtener`);
-      if (!response.ok) throw new Error("Error al obtener el último ID de producto");
+      if (!response.ok) {
+        throw new Error(`Error al obtener el último ID de producto: ${response.status}`);
+      }
       const data = await response.json();
       const lastId = parseInt(data.ultimoId, 10);
       setProductData((prevState) => ({ ...prevState, id: isNaN(lastId) ? "1" : (lastId + 1).toString() }));
@@ -71,6 +69,15 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       setProductData((prevState) => ({ ...prevState, id: "1" }));
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoading(true);
+      fetchProveedores();
+      fetchNextProductId();
+      setIsLoading(false);
+    }
+  }, [isOpen]);
 
   const handleDiscountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDiscountEnabled(event.target.checked);
@@ -129,8 +136,13 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
         description: '',
         type: 'success',
       });
-      setTimeout(handleNotificationClose, 3000);
-      onProductAdded();
+      
+      setTimeout(() => {
+        handleNotificationClose();
+        onProductAdded();
+        onClose();
+      }, 2000);
+      
     } catch (error) {
       console.error("Error al enviar producto:", error);
       setNotification({
@@ -141,10 +153,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       });
       setTimeout(handleNotificationClose, 3000);
     } finally {
-      setTimeout(() => {
-        setIsSaving(false);
-        onClose();
-      }, 2000);
+      setIsSaving(false);
     }
   };
 
@@ -164,133 +173,195 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
   };
 
   return (
-    <Modal size={"2xl"} isOpen={isOpen} onClose={onClose}>
+    <Modal 
+      size="2xl" 
+      isOpen={isOpen} 
+      onClose={onClose}
+      isDismissable={!isLoading}
+      classNames={{
+        base: "max-h-[90vh] overflow-y-auto",
+        wrapper: "p-4",
+        body: "p-0",
+        header: "p-6 pb-2",
+        footer: "p-6 pt-2"
+      }}
+    >
       <ModalContent>
         {(onClose) => (
           <>
-            <ModalHeader className="flex flex-col gap-1">Cargar un producto</ModalHeader>
-            <div className="flex flex-col gap-4 m-6">
-              <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-                <Input
-                  label="ID/SKU"
-                  placeholder="ID Producto Nuevo"
-                  name="id"
-                  value={productData.id}
-                  readOnly
-                  labelPlacement="inside"
-                />
-       </div>
-       <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-                <Input
-                  label="Nombre del Producto"
-                  placeholder="Nombre del producto"
-                  name="Producto"
-                  value={productData.Producto}
-                  onChange={handleInputChange}
-                  isInvalid={!inputValidity.Producto}
-                  labelPlacement="inside"
-                />
-</div>
-<div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-                 <Input
-                  label="Descripción"
-                  placeholder="Descripción del producto"
-                  name="Descripción"
-                  value={productData.Descripción}
-                  onChange={handleInputChange}
-                  labelPlacement="inside"
-                />
-       </div>
+            <ModalHeader className="flex flex-col gap-1 text-lg md:text-xl">
+              Cargar un producto
+            </ModalHeader>
+            
+            <ModalBody>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-32">
+                  <Spinner label="Cargando..." />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4 px-6 pb-6">
+                  {/* ID/SKU - Full width en mobile, half en desktop */}
+                  <div className="w-full">
+                    <Input
+                      label="ID/SKU"
+                      placeholder="ID Producto Nuevo"
+                      name="id"
+                      value={productData.id}
+                      readOnly
+                      labelPlacement="outside"
+                      size="md"
+                      className="w-full"
+                    />
+                  </div>
 
-              <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-              <Input
-                  type="number"
-                  label="Precio de Costo/Proveedor"
-                  placeholder="0.00"
-                  name="PrecioCosto"
-                  value={productData.PrecioCosto}
-                  onChange={handleInputChange}
-                  labelPlacement="inside"
-                  startContent={
-                    <div className="flex items-center pointer-events-none">
-                      <span className="text-default-400 text-small">$</span>
+                  {/* Nombre del Producto - Full width */}
+                  <div className="w-full">
+                    <Input
+                      label="Nombre del Producto"
+                      placeholder="Nombre del producto"
+                      name="Producto"
+                      value={productData.Producto}
+                      onChange={handleInputChange}
+                      isInvalid={!inputValidity.Producto}
+                      labelPlacement="outside"
+                      size="md"
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Descripción - Full width */}
+                  <div className="w-full">
+                    <Input
+                      label="Descripción"
+                      placeholder="Descripción del producto"
+                      name="Descripción"
+                      value={productData.Descripción}
+                      onChange={handleInputChange}
+                      labelPlacement="outside"
+                      size="md"
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Precios - Stack en mobile, side by side en desktop */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      label="Precio de Costo/Proveedor"
+                      placeholder="0.00"
+                      name="PrecioCosto"
+                      value={productData.PrecioCosto}
+                      onChange={handleInputChange}
+                      labelPlacement="outside"
+                      size="md"
+                      startContent={
+                        <div className="flex items-center pointer-events-none">
+                          <span className="text-default-400 text-small">$</span>
+                        </div>
+                      }
+                    />
+
+                    <Input
+                      type="number"
+                      label="Precio de Venta"
+                      placeholder="0.00"
+                      name="Precio"
+                      value={productData.Precio}
+                      onChange={handleInputChange}
+                      isInvalid={!inputValidity.Precio}
+                      labelPlacement="outside"
+                      size="md"
+                      startContent={
+                        <div className="flex items-center pointer-events-none">
+                          <span className="text-default-400 text-small">$</span>
+                        </div>
+                      }
+                    />
+                  </div>
+
+                  {/* Stock y Proveedor - Stack en mobile, side by side en desktop */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      label="Stock Ingresante"
+                      placeholder="Cantidad"
+                      name="Cantidad_stock"
+                      value={productData.Cantidad_stock}
+                      onChange={handleInputChange}
+                      labelPlacement="outside"
+                      size="md"
+                    />
+
+                    {/* Proveedor - Full width */}
+                    <div className="w-full">
+                      <label htmlFor="proveedor" className="block text-sm font-medium mb-1">Proveedor</label>
+                      <select
+                        id="proveedor"
+                        name="proveedor_id"
+                        className="w-full border rounded px-3 py-2"
+                        value={productData.proveedor_id}
+                        onChange={e => handleProveedorChange(e.target.value)}
+                      >
+                        <option value="">Seleccione un proveedor</option>
+                        {proveedores.map(prov => (
+                          <option key={prov.id} value={prov.id}>
+                            {prov.nombreProveedores}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  }
-                />
+                  </div>
 
-                <Input
-                  type="number"
-                  label="Precio de Venta"
-                  placeholder="0.00"
-                  name="Precio"
-                  value={productData.Precio}
-                  onChange={handleInputChange}
-                  isInvalid={!inputValidity.Precio}
-                  labelPlacement="inside"
-                  startContent={
-                    <div className="flex items-center pointer-events-none">
-                      <span className="text-default-400 text-small">$</span>
+                  {/* Descuento - Stack en mobile, side by side en desktop */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div className="flex items-center h-14">
+                      <Checkbox 
+                        isSelected={discountEnabled} 
+                        onChange={handleDiscountChange}
+                        size="md"
+                      >
+                        ¿Aplicar descuento?
+                      </Checkbox>
                     </div>
-                  }
-                />
-               
-              </div>
 
-              <div className="flex flex-wrap w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-                <Input
-                  type="number"
-                  label="Stock Ingresante"
-                  placeholder="Cantidad"
-                  name="Cantidad_stock"
-                  value={productData.Cantidad_stock}
-                  onChange={handleInputChange}
-                  labelPlacement="inside"
-                />
+                    <Input
+                      type="number"
+                      label="Porcentaje de Descuento"
+                      placeholder="0"
+                      name="Descuento"
+                      value={productData.Descuento}
+                      onChange={handleInputChange}
+                      labelPlacement="outside"
+                      size="md"
+                      disabled={!discountEnabled}
+                      startContent={
+                        <div className="flex items-center pointer-events-none">
+                          <span className="text-default-400 text-small">%</span>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </ModalBody>
 
-                <Select
-                  label="Proveedor"
-                  placeholder="Seleccione un proveedor"
-                  name="proveedor_id"
-                  value={productData.proveedor_id}
-                  onChange={(e) => handleProveedorChange(e.target.value)}
-                  isInvalid={!inputValidity.proveedor_id}
-                  labelPlacement="inside"
-                >
-                  {proveedores.map((prov) => (
-                    <SelectItem key={prov.id} textValue={`${prov.id} ${prov.nombreProveedores}`}>
-                      {prov.id} {prov.nombreProveedores}
-                    </SelectItem>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="flex flex-wrap items-center w-full gap-4 mb-6 md:flex-nowrap md:mb-0">
-                <Checkbox isSelected={discountEnabled} onChange={handleDiscountChange}>
-                  ¿Aplicar descuento?
-                </Checkbox>
-
-                <Input
-                  type="number"
-                  label="Porcentaje de Descuento"
-                  placeholder="0"
-                  name="Descuento"
-                  value={productData.Descuento}
-                  onChange={handleInputChange}
-                  labelPlacement="inside"
-                  disabled={!discountEnabled}
-                  startContent={
-                    <div className="flex items-center pointer-events-none">
-                      <span className="text-default-400 text-small">%</span>
-                    </div>
-                  }
-                />
-              </div>
-            </div>
-            <ModalFooter>
-              <Button color="danger" variant="light" onPress={onClose}>
+            <ModalFooter className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                color="danger" 
+                variant="light" 
+                onPress={onClose}
+                className="w-full sm:w-auto"
+                size="md"
+              >
                 Cerrar
               </Button>
-              <Button color="primary" onPress={handleSubmit} isDisabled={isSaving}>
+              <Button 
+                color="primary" 
+                onPress={handleSubmit} 
+                isDisabled={isSaving}
+                className="w-full sm:w-auto"
+                size="md"
+              >
                 {isSaving ? <Spinner size="sm" color="default"/> : "Guardar Producto"}
               </Button>
             </ModalFooter>

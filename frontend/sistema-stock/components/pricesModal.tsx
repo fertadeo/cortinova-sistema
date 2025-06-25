@@ -1,53 +1,53 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Select, SelectItem, Input, Button, Spinner, Selection
+  Input, Button, Spinner
 } from "@heroui/react";
 import { Product } from "@/types/productos";
 import { Proveedores } from "@/types/proveedores";
+import type { Selection } from "@react-types/shared";
 
-const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ isOpen, onClose }) => {
+const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefreshProducts?: () => void }> = ({ isOpen, onClose, onRefreshProducts }) => {
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
   const [productos, setProductos] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedProveedor, setSelectedProveedor] = useState<Selection>(new Set([]));
+  const [selectedProveedor, setSelectedProveedor] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [porcentaje, setPorcentaje] = useState("");
   const [updatedProducts, setUpdatedProducts] = useState<Product[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]); 
+  const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState(false);
-
-
+  const lastKeysRef = useRef<any>(null);
 
   const handleModalClose = () => {
+    resetModal();
     onClose(); 
-    resetModal(); 
   };
 
-
   const resetModal = () => {
-    setSelectedProveedor(new Set([]));
+    setSelectedProveedor("");
     setFilteredProducts([]);
     setPorcentaje("");
     setUpdatedProducts([]);
-    setSelectedProducts([]);
+    setSelectedKeys(new Set());
     setErrorMessage(null);
     setShowAlert(false);
-    setError(null);
   };
-
 
   const fetchProveedores = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/proveedores/`);
+      if (!response.ok) {
+        throw new Error('Error al obtener proveedores');
+      }
       const data = await response.json();
       setProveedores(data);
     } catch (err) {
-      setError('btener la data de proveedores');
+      console.error('Error fetching proveedores:', err);
+      setErrorMessage('Error al obtener la data de proveedores');
     } finally {
       setIsLoading(false);
     }
@@ -56,27 +56,29 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
   const fetchProductosPorProveedor = async (proveedorId: string) => {
     try {
       setIsLoading(true);
+      setErrorMessage(null);
+      
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/proveedor/${proveedorId}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener productos del proveedor');
+      }
+      
       const data = await response.json();
   
-      if (data.productos.length === 0) {
-        // Si no hay productos, mostrar el mensaje correspondiente
+      if (data.productos && data.productos.length === 0) {
         setFilteredProducts([]);
-        setErrorMessage("No se obtuvieron productos, cierre la ventana y realice una nueva búsqueda.");
-  
-        // Resetear el estado después de 4 segundos
-        setTimeout(() => {
-          setErrorMessage(null);
-          setFilteredProducts([]);
-          setSelectedProveedor(new Set([])); // Resetear la selección del proveedor
-        }, 4000);
-      } else {
+        setErrorMessage("No se encontraron productos para este proveedor.");
+      } else if (data.productos) {
         setFilteredProducts(data.productos);
         setErrorMessage(null);
+      } else {
+        setFilteredProducts([]);
+        setErrorMessage("No se obtuvieron productos, intente nuevamente.");
       }
     } catch (err) {
-      setError("No se obtuvieron productos, cierre la ventana y realice una nueva búsqueda.");
+      console.error('Error fetching productos:', err);
       setFilteredProducts([]);
+      setErrorMessage("No se pudieron obtener los productos. Intente nuevamente.");
     } finally {
       setIsLoading(false);
     }
@@ -85,44 +87,31 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
   useEffect(() => {
     if (isOpen) {
       fetchProveedores();
-    } else {
-      // Resetear todos los estados cuando se cierra el modal
-      resetModal();
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
-
-      setSelectedProveedor(new Set([]));
+    if (isOpen && selectedProveedor && selectedProveedor !== 'all') {
+      const proveedorId = selectedProveedor;
+      if (proveedorId) {
+        setTimeout(() => {
+          fetchProductosPorProveedor(proveedorId);
+          setSelectedKeys(new Set());
+          setShowAlert(false);
+        }, 100);
+      }
+    } else if (isOpen) {
       setFilteredProducts([]);
-      setPorcentaje("");
-      setUpdatedProducts([]);
-      setSelectedProducts([]);
-      setErrorMessage(null);
+      setSelectedKeys(new Set());
       setShowAlert(false);
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    // Convert the Selection (Set) to a string
-    const proveedorId = selectedProveedor === 'all'
-      ? ''
-      : Array.from(selectedProveedor)[0] as string;
-
-    if (proveedorId) {
-      fetchProductosPorProveedor(proveedorId);
-      setSelectedProducts([]); // Limpiar selección de productos al cambiar de proveedor
-      setShowAlert(false); // Ocultar el alert al cambiar de proveedor
-    } else {
-      setFilteredProducts([]);
-    }
-  }, [selectedProveedor]);
+  }, [selectedProveedor, isOpen]);
 
   const roundPrice = (price: number) => (price < 100 ? Math.ceil(price / 10) * 10 : Math.ceil(price / 100) * 100);
 
   const updatePrices = () => {
-    if (!porcentaje) return;
+    if (!porcentaje || filteredProducts.length === 0) return;
+    
     const percentage = parseFloat(porcentaje);
   
     const updated = filteredProducts.map((product) => {
@@ -132,20 +121,14 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
 
       return {
         ...product,
-
-        // Mantener el precio original sin cambios
-        precioOriginal: product.precio, // Usar el precio original del producto
-        precio: product.precio, // Mantener el precio actual
-        precioNuevo: roundedPrice.toString() // Solo el nuevo precio se calcula
-
+        precioOriginal: product.precio,
+        precio: product.precio,
+        precioNuevo: roundedPrice.toString()
       } as unknown as Product;
-
     });
 
     setUpdatedProducts(updated);
   };
-
-
 
   useEffect(() => {
     updatePrices();
@@ -162,54 +145,46 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
   };
 
   const handleSelectionChange = (keys: Selection) => {
-    if (keys === 'all') {
-      setSelectedProducts(filteredProducts);
-      setShowAlert(true);
+    if (typeof keys === "string" && keys === "all") {
+      setSelectedKeys(new Set(filteredProducts.map(p => String(p.id))));
+      setShowAlert(filteredProducts.length > 0);
     } else {
-      // Convertir el Set a un array de strings
-      const selectedArray = Array.from(keys).map(String);
-
-      const selected = filteredProducts.filter(product =>
-        selectedArray.includes(String(product.id))
-      );
-
-      setSelectedProducts(selected);
-      setShowAlert(selectedArray.length > 0);
-
+      setSelectedKeys(keys as unknown as Set<string>);
+      setShowAlert((keys as unknown as Set<string>).size > 0);
     }
   };
   const handleSubmit = async () => {
-    if (selectedProducts.length === 0) {
+    if (typeof selectedKeys === "string") {
+      setErrorMessage("No hay productos seleccionados para actualizar.");
+      return;
+    }
+    if (selectedKeys.size === 0) {
       setErrorMessage("No hay productos seleccionados para actualizar.");
       return;
     }
 
-    // console.log("Productos seleccionados antes de enviar:", selectedProducts);
+    const selectedArray = Array.from(selectedKeys as Set<React.Key>).map(String);
+    const selectedProducts = filteredProducts.filter(product =>
+      selectedArray.includes(String(product.id))
+    );
 
-    // Asegurémonos de que estamos usando los productos con el precioNuevo
     const productosParaGuardar = selectedProducts.map((product) => {
-      // Buscar el producto correspondiente en updatedProducts
       const updatedProduct = updatedProducts.find((p) => p.id === product.id);
-
-      // Asegurarse de que el precioNuevo esté disponible
-      const precioNuevo = updatedProduct?.precioNuevo || product.precio; // Usar el precioNuevo calculado, si no, usar el precio original
+      const precioNuevo = updatedProduct?.precioNuevo || product.precio;
 
       return {
         id: product.id,
         Producto: product.nombreProducto,
-        Precio: precioNuevo, // Asegurarse de que sea un número con 2 decimales
+        Precio: precioNuevo,
       };
     });
 
-    // console.log("Enviando productos para guardar:", productosParaGuardar);
-
     try {
-      setIsLoading(true); // Mostrar spinner mientras se carga
+      setIsLoading(true);
       setErrorMessage(null);
 
-      // Realizar la solicitud PUT/POST
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/actualizar-precios/1`, {
-        method: "PUT",  // Cambia a "POST" si es necesario
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -220,22 +195,22 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
         throw new Error("Error al actualizar los precios. Intenta nuevamente.");
       }
 
-      // Confirmar éxito
       const data = await response.json();
       console.log("Respuesta del servidor:", data);
 
-      // Resetear estado tras éxito
-      setSelectedProducts([]);
+      setSelectedKeys(new Set());
       setShowAlert(false);
-      onClose(); // Cerrar el modal
+
+      if (onRefreshProducts) onRefreshProducts();
+
+      handleModalClose();
     } catch (error) {
-      setErrorMessage("Ocurrió un error al actualizar los precios.");
       console.error("Error en la solicitud:", error);
+      setErrorMessage("Ocurrió un error al actualizar los precios.");
     } finally {
-      setIsLoading(false); // Ocultar spinner al finalizar
+      setIsLoading(false);
     }
   };
-
 
   const columns = [
     { key: "nombreProducto", label: "NOMBRE" },
@@ -248,39 +223,50 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={() => {
-      handleModalClose();
-      resetModal();
-      onClose();
-    }} size="3xl" scrollBehavior="inside">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={handleModalClose}
+      isDismissable={!isLoading}
+      size="3xl" 
+      scrollBehavior="inside"
+      classNames={{
+        base: "max-h-[90vh] overflow-y-auto p-4 md:p-8",
+        wrapper: "p-0",
+        body: "p-0",
+        header: "p-0 pb-2",
+        footer: "p-0 pt-2"
+      }}
+    >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
+        <ModalHeader className="flex flex-col gap-1 text-lg md:text-xl">
           Actualizar Precios por Proveedor
         </ModalHeader>
         <ModalBody>
           <div className="flex flex-col gap-4">
-            {isLoading ? (
-              <Spinner label="Cargando..." />
-            ) : error ? (
-              <div className="text-danger">{error}</div>
+            {isLoading && !filteredProducts.length ? (
+              <div className="flex justify-center items-center h-32">
+                <Spinner label="Cargando..." />
+              </div>
             ) : (
               <>
-                <Select
-                  label="Seleccionar Proveedor"
-                  placeholder="Seleccione un proveedor"
-                  selectedKeys={selectedProveedor}
-                  onSelectionChange={(keys) => {
-                    setSelectedProveedor(new Set(keys)); // Convert to a Set if needed
-                  }}
+                {errorMessage && (
+                  <div className="text-center text-danger p-2 bg-danger-50 rounded">
+                    {errorMessage}
+                  </div>
+                )}
+                <label htmlFor="proveedor" className="block text-sm font-medium mb-1">Seleccionar Proveedor</label>
+                <select
+                  className="w-full border rounded px-3 py-2"
+                  value={selectedProveedor}
+                  onChange={e => setSelectedProveedor(e.target.value)}
                 >
-                  {proveedores.map((proveedor) => (
-                    <SelectItem
-                      key={proveedor.id}
-                    >
-                      {proveedor.nombreProveedores}
-                    </SelectItem>
+                  <option value="">Seleccione un proveedor</option>
+                  {proveedores.map(prov => (
+                    <option key={prov.id} value={prov.id}>
+                      {prov.nombreProveedores}
+                    </option>
                   ))}
-                </Select>
+                </select>
 
                 <Input
                   type="number"
@@ -289,19 +275,18 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
                   value={porcentaje}
                   onChange={handlePorcentajeChange}
                   startContent="%"
+                  size="md"
+                  className="w-full"
                 />
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-32">
-                    <Spinner label="Cargando..." />
-                  </div>
-                ) : errorMessage ? (
-                  <div className="text-center text-danger">{errorMessage}</div>
-                ) : filteredProducts.length > 0 ? (
-                  <>
+
+                {filteredProducts.length > 0 && (
+                  <div className="overflow-x-auto">
                     <Table
                       aria-label="Tabla de productos"
                       selectionMode="multiple"
+                      selectedKeys={selectedKeys}
                       onSelectionChange={handleSelectionChange}
+                      className="min-w-full"
                     >
                       <TableHeader>
                         {columns.map((column) => (
@@ -310,52 +295,55 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; }> = (
                       </TableHeader>
                       <TableBody items={updatedProducts.length ? updatedProducts : filteredProducts}>
                         {(item: Product) => (
-                          <TableRow key={item.id}>
+                          <TableRow key={String(item.id)}>
                             <TableCell>{item.nombreProducto}</TableCell>
-                            <TableCell>{item.precio}</TableCell>
-                            <TableCell>{item.precioNuevo || '-'}</TableCell>
+                            <TableCell>${item.precio}</TableCell>
+                            <TableCell>{item.precioNuevo ? `$${item.precioNuevo}` : '-'}</TableCell>
                           </TableRow>
                         )}
                       </TableBody>
                     </Table>
-                  </>
-                ) : (
-                  <div className="text-center">No hay productos disponibles.</div>
+                  </div>
+                )}
+
+                {!isLoading && filteredProducts.length === 0 && selectedProveedor !== 'all' && selectedProveedor !== "" && (
+                  <div className="text-center text-gray-500 p-4">
+                    No hay productos disponibles para este proveedor.
+                  </div>
                 )}
               </>
             )}
           </div>
         </ModalBody>
 
-        <ModalFooter className="flex flex-col gap-2 items-start">
-          {/* Alert dentro del Footer */}
+        <ModalFooter className="flex flex-col gap-2">
           {showAlert && (
-            <div
-              className="relative px-4 py-3 w-full text-teal-700 bg-teal-200 bg-opacity-30 rounded border border-teal-500 border-opacity-30"
-              role="alert"
-            >
+            <div className="relative px-4 py-3 w-full text-teal-700 bg-teal-100 rounded border border-teal-300">
               <strong className="font-bold">
-                Vas a modificar {selectedProducts.length}{" "}
-                {selectedProducts.length === 1 ? "producto" : "productos"}.
+                Vas a modificar {typeof selectedKeys === 'object' ? selectedKeys.size : selectedKeys === 'all' ? filteredProducts.length : 0}{" "}
+                {(typeof selectedKeys === 'object' ? selectedKeys.size : selectedKeys === 'all' ? filteredProducts.length : 0) === 1 ? "producto" : "productos"}.
               </strong>
             </div>
           )}
 
-          {/* Botones de acción */}
-          <div className="flex gap-2 mt-2">
-          <Button 
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
+            <Button 
               color="danger" 
-              onPress={handleModalClose} 
-              
+              variant="light"
+              onPress={handleModalClose}
+              className="w-full sm:w-auto"
+              size="md"
             >
               Cerrar
             </Button>
             <Button 
               color="primary" 
               onPress={handleSubmit} 
-              disabled={isLoading}
+              disabled={isLoading || (typeof selectedKeys === 'object' ? selectedKeys.size === 0 : selectedKeys === 'all' ? filteredProducts.length === 0 : true)}
+              className="w-full sm:w-auto"
+              size="md"
             >
-              {isLoading ? <Spinner size="sm" label="Guardando..." /> : "Guardar Cambios"}
+              {isLoading ? <Spinner size="sm" color="default"/> : "Guardar Cambios"}
             </Button>
           </div>
         </ModalFooter>
