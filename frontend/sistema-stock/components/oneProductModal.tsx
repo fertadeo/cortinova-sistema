@@ -120,6 +120,9 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
         Descuento: discountEnabled ? `${productData.Descuento}%` : "0%",
         proveedor_id: parseInt(productData.proveedor_id, 10),
       }];
+      
+      console.log("Enviando producto al backend:", productToSend);
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/productos/importar-productos`, {
         method: "POST",
