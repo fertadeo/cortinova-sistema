@@ -14,6 +14,8 @@ interface OneProductModalProps {
 const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onProductAdded }) => {
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
+  const [sistemas, setSistemas] = useState<{ id: number; nombreSistemas: string }[]>([]);
+  const [rubros, setRubros] = useState<{ id: number; nombreRubros: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [productData, setProductData] = useState({
     id: "",
@@ -23,13 +25,16 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
     PrecioCosto: "",
     Precio: "",
     Divisa: "ARS",
-    Descuento: "",
     proveedor_id: "",
+    rubro_id: "",
+    sistema_id: "",
   });
   const [inputValidity, setInputValidity] = useState({
     Producto: true,
     Precio: true,
     proveedor_id: true,
+    rubro_id: true,
+    sistema_id: true,
   });
   
   const [notification, setNotification] = useState({
@@ -54,6 +59,40 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
     }
   };
 
+  const fetchSistemas = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/sistemas`);
+      if (!response.ok) {
+        throw new Error(`Error al obtener sistemas: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Respuesta de sistemas desde el backend:", data);
+      const arraySistemas = Array.isArray(data.data) ? data.data : [];
+      setSistemas(arraySistemas);
+    } catch (error) {
+      console.error("Error fetching sistemas:", error);
+      setSistemas([]);
+    }
+  };
+
+  const fetchRubros = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/rubros`);
+      if (!response.ok) {
+        throw new Error(`Error al obtener rubros: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Respuesta de rubros desde el backend:", data);
+      const arrayRubros = Array.isArray(data.data) ? data.data : [];
+      setRubros(arrayRubros);
+    } catch (error) {
+      console.error("Error fetching rubros:", error);
+      setRubros([]);
+    }
+  };
+
   const fetchNextProductId = async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -75,6 +114,8 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       setIsLoading(true);
       fetchProveedores();
       fetchNextProductId();
+      fetchSistemas();
+      fetchRubros();
       setIsLoading(false);
     }
   }, [isOpen]);
@@ -100,6 +141,8 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       Producto: productData.Producto.trim() !== "",
       Precio: productData.Precio.trim() !== "",
       proveedor_id: productData.proveedor_id.trim() !== "",
+      rubro_id: productData.rubro_id.trim() !== "",
+      sistema_id: productData.sistema_id.trim() !== "",
     };
     setInputValidity(newValidity);
     return Object.values(newValidity).every((valid) => valid);
@@ -115,10 +158,13 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
         Producto: productData.Producto,
         Cantidad_stock: String(productData.Cantidad_stock),
         Descripción: productData.Descripción,
+        PrecioCosto: String(productData.PrecioCosto),
         Precio: String(productData.Precio),
         Divisa: productData.Divisa,
-        Descuento: discountEnabled ? `${productData.Descuento}%` : "0%",
+        Descuento: "0%",
         proveedor_id: parseInt(productData.proveedor_id, 10),
+        rubro_id: parseInt(productData.rubro_id, 10),
+        sistema_id: parseInt(productData.sistema_id, 10),
       }];
       
       console.log("Enviando producto al backend:", productToSend);
@@ -314,34 +360,44 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                     </div>
                   </div>
 
-                  {/* Descuento - Stack en mobile, side by side en desktop */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                    <div className="flex items-center h-14">
-                      <Checkbox 
-                        isSelected={discountEnabled} 
-                        onChange={handleDiscountChange}
-                        size="md"
+                  {/* Rubro y Sistema - Stack en mobile, side by side en desktop */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="w-full">
+                      <label htmlFor="rubro_id" className="block text-sm font-medium mb-1">Rubro</label>
+                      <select
+                        id="rubro_id"
+                        name="rubro_id"
+                        className="w-full border rounded px-3 py-2"
+                        value={productData.rubro_id}
+                        onChange={handleInputChange}
                       >
-                        ¿Aplicar descuento?
-                      </Checkbox>
+                        <option value="">Seleccione un rubro</option>
+                        {Array.isArray(rubros) && rubros
+                          .slice()
+                          .sort((a, b) => a.id - b.id)
+                          .map(rubro => (
+                            <option key={rubro.id} value={rubro.id}>{rubro.id} - {rubro.nombreRubros}</option>
+                          ))}
+                      </select>
                     </div>
-
-                    <Input
-                      type="number"
-                      label="Porcentaje de Descuento"
-                      placeholder="0"
-                      name="Descuento"
-                      value={productData.Descuento}
-                      onChange={handleInputChange}
-                      labelPlacement="outside"
-                      size="md"
-                      disabled={!discountEnabled}
-                      startContent={
-                        <div className="flex items-center pointer-events-none">
-                          <span className="text-default-400 text-small">%</span>
-                        </div>
-                      }
-                    />
+                    <div className="w-full">
+                      <label htmlFor="sistema_id" className="block text-sm font-medium mb-1">Sistema</label>
+                      <select
+                        id="sistema_id"
+                        name="sistema_id"
+                        className="w-full border rounded px-3 py-2"
+                        value={productData.sistema_id}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Seleccione un sistema</option>
+                        {Array.isArray(sistemas) && sistemas
+                          .slice()
+                          .sort((a, b) => a.id - b.id)
+                          .map(sis => (
+                            <option key={sis.id} value={sis.id}>{sis.id} - {sis.nombreSistemas}</option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
