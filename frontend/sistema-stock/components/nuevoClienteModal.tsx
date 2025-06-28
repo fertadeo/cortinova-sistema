@@ -46,9 +46,13 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
         throw new Error("Error al obtener el próximo ID");
       }
       const data = await response.json();
-      setIdCliente(data.nextId); // Actualiza el estado con el ID obtenido
+      console.log("Respuesta del backend:", data); // Para debug
+      
+      // Acceder correctamente a la estructura de respuesta
+      const nextId = data.data?.nextId || data.nextId;
+      setIdCliente(parseInt(nextId, 10)); // Convertir a número y actualizar el estado
     } catch (error) {
-      // console.error("Error al obtener el próximo ID de cliente:", error);
+      console.error("Error al obtener el próximo ID de cliente:", error);
       setIdCliente(null); // Reinicia el estado en caso de error
     }
   };
