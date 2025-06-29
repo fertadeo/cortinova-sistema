@@ -15,6 +15,11 @@ const Notification: React.FC<NotificationProps> = ({ message, description, isVis
   const [isTransitioning, setIsTransitioning] = useState(false); // Estado para controlar la transición
   const notificationDuration = 4000; // Duración en milisegundos de la notificación
   const timerRef = useRef<number | null>(null); // Usamos una referencia para almacenar el temporizador
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Función para iniciar el progreso de la barra
   const startProgress = () => {
@@ -49,6 +54,8 @@ const Notification: React.FC<NotificationProps> = ({ message, description, isVis
       setIsTransitioning(false); // Desactivamos la transición
     };
   }, [isVisible]);
+
+  if (!isClient) return null;
 
   // Estilo dinámico para el borde inferior según el tipo de notificación
   const progressBarStyle = {
