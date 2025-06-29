@@ -6,6 +6,8 @@ import { Button, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem 
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
 import OneProductModal from '@/components/oneProductModal';
 import PricesModal from '@/components/pricesModal';
+import Notification from '@/components/notification';
+import * as XLSX from 'xlsx';
 
 // Componentes SVG inline
 const PlusIcon = () => (
@@ -50,6 +52,19 @@ const useIsMobile = () => {
   return isMobile;
 };
 
+function parseNumber(value: any): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    // Elimina espacios, separadores de miles y convierte comas decimales a punto
+    let clean = value.replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+    // Si después de limpiar queda vacío, retorna 0
+    if (!clean) return 0;
+    const num = Number(clean);
+    return isNaN(num) ? 0 : num;
+  }
+  return 0;
+}
+
 const ProductosPage = () => {
   const tableRef = useRef<any>(null);
   const isMobile = useIsMobile();
@@ -60,6 +75,16 @@ const ProductosPage = () => {
   const [showSpinner, setShowSpinner] = useState(false);
   const [showProdModal, setShowProdModal] = useState(false)
   const [showPricesModal, setShowPricesModal] = useState(false)
+  const [importLoading, setImportLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Estado para las notificaciones
+  const [notification, setNotification] = useState({
+    isVisible: false,
+    message: '',
+    description: '',
+    type: 'success' as 'success' | 'error',
+  });
 
   const handleOpenModal = () => setShowProdModal(true);
   const handleCloseModal = () => setShowProdModal(false);
@@ -85,6 +110,103 @@ const ProductosPage = () => {
     }
   };
 
+  // Función para manejar la carga del archivo Excel
+  const handleExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImportLoading(true);
+    try {
+      // Leer el archivo Excel
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+      // Mapeo de campos para que coincidan con los del backend
+      const mappedData = jsonData.map((item: any) => ({
+        id: item.ID || item.Id || '',
+        nombreProducto: item.Producto || item.NombreProducto || '',
+        descripcion: item.Descripcion || item.Descripción || '',
+        precio: item['Precio al Publico'] || item['Precio al Público'] || item['Precio'] || 0,
+        precioCosto: item['Precio de Costo'] || item['PrecioCosto'] || 0,
+        cantidad_stock: item.Stock || item.Cantidad || 0,
+        proveedor_id: item.proveedor_id || item.Proveedor_id || item['Proveedor ID'] || '',
+        rubro_id: item.rubro_id || item.Rubro_id || '',
+        sistema_id: item.sistema_id || item.Sistema_id || '',
+        descuento: item.descuento || item.Descuento || '',
+        disponible: item.disponible || item.Disponible || '',
+        // ...otros campos necesarios
+      }));
+
+      // LOG: Detalle de los productos formateados
+      console.log("Productos formateados para importar:", mappedData);
+
+      // Enviar los datos al backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/importar-excel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productos: mappedData }),
+      });
+      if (!response.ok) throw new Error('Error al importar productos');
+      
+      // Mostrar notificación de éxito
+      setNotification({
+        isVisible: true,
+        message: '¡Importación exitosa!',
+        description: `Se importaron ${mappedData.length} productos correctamente.`,
+        type: 'success',
+      });
+      
+      tableRef.current?.refreshProducts();
+    } catch (error) {
+      console.error('Error al importar:', error);
+      // Mostrar notificación de error
+      setNotification({
+        isVisible: true,
+        message: 'Error al importar',
+        description: 'No se pudo importar el archivo. Verifica el formato y vuelve a intentar.',
+        type: 'error',
+      });
+    } finally {
+      setImportLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleNotificationClose = () => {
+    setNotification(prev => ({ ...prev, isVisible: false }));
+  };
+
+  const handleExportExcel = () => {
+    if (!tableRef.current) return;
+    const products = tableRef.current.getProducts ? tableRef.current.getProducts() : [];
+    if (!products || products.length === 0) {
+      alert("No hay productos para exportar.");
+      return;
+    }
+    // Estructura y orden exacto de columnas para exportar
+    const data = products.map((prod: any) => ({
+      'ID': prod.id,
+      'NombreProducto': prod.nombreProducto,
+      'Descripcion': prod.descripcion,
+      'Precio de Costo': prod.precioCosto,
+      'Precio al Publico': prod.precio,
+      'disponible': prod.disponible || 'SI',
+      'descuento': prod.descuento || '',
+      'Proveedor_id': prod.proveedor_id || prod.proveedor?.id || '',
+      'Rubro_id': prod.rubro_id || '',
+      'Sistema_id': prod.sistema_id || '',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+    // Generar nombre de archivo con fecha actual
+    const fecha = new Date().toISOString().split('T')[0];
+    const fileName = `productos cortinova export ${fecha}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
   return (
     <div className='flex flex-col m-2 w-full h-full'>
       <TopBar>
@@ -105,6 +227,28 @@ const ProductosPage = () => {
             >
               Modificar Precios
             </Button>
+            <Button
+              className='bg-orange-600 hover:bg-orange-700 text-white'
+              size="md"
+              onPress={() => fileInputRef.current?.click()}
+              isDisabled={importLoading}
+            >
+              {importLoading ? <Spinner size="sm" color="default"/> : 'Importar lista Excel'}
+            </Button>
+            <Button
+              className='bg-sky-600 hover:bg-sky-700 text-white'
+              size="md"
+              onPress={handleExportExcel}
+            >
+              Exportar lista Excel
+            </Button>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleExcelImport}
+            />
           </div>
         </div>
 
@@ -130,6 +274,30 @@ const ProductosPage = () => {
                 Modificar Precios
               </Button>
             </div>
+            
+            <Button
+              className='bg-orange-600 hover:bg-orange-700 text-white w-full'
+              size="md"
+              onPress={() => fileInputRef.current?.click()}
+              isDisabled={importLoading}
+              startContent={importLoading ? <Spinner size="sm" color="default"/> : undefined}
+            >
+              {importLoading ? 'Importando...' : 'Importar lista Excel'}
+            </Button>
+            <Button
+              className='bg-sky-600 hover:bg-sky-700 text-white'
+              size="md"
+              onPress={handleExportExcel}
+            >
+              Exportar lista Excel
+            </Button>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleExcelImport}
+            />
             
             {/* Dropdown para acciones adicionales si las hubiera */}
             <Dropdown isDisabled>
@@ -188,6 +356,15 @@ const ProductosPage = () => {
         isOpen={showPricesModal}
         onClose={handleClosePricesModal}
         onRefreshProducts={() => tableRef.current?.refreshProducts()}
+      />
+      
+      {/* Notificación */}
+      <Notification
+        message={notification.message}
+        description={notification.description}
+        isVisible={notification.isVisible}
+        onClose={handleNotificationClose}
+        type={notification.type}
       />
     </div>
   );

@@ -83,6 +83,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
   useImperativeHandle(ref, () => ({
     refreshProducts: fetchProducts,
+    getProducts: () => products,
   }));
 
   useEffect(() => {
