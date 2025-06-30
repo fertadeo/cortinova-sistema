@@ -362,8 +362,8 @@ export default function MedidasPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex-1 p-4 w-full max-w-full px-1 sm:px-4 md:px-6 lg:px-8 space-y-6 overflow-y-auto">
+    <div className="flex flex-col min-h-screen">
+      <div className="flex-1 p-4 w-full max-w-full px-1 sm:px-4 md:px-6 lg:px-8 space-y-6 overflow-y-auto pb-20 md:pb-6">
         {/* Alert de HeroUi solo en desktop */}
         {showHeroAlert && !isMobile && (
           <Alert
@@ -667,7 +667,7 @@ export default function MedidasPage() {
 
       {/* Footer fijo para mobile */}
       {isMobile && (
-        <div className="flex-shrink-0 p-4 bg-white border-t border-gray-200 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg z-50">
           <div className="flex gap-2">
             <Button
               color="primary"
