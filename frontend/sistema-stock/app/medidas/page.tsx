@@ -69,6 +69,17 @@ export default function MedidasPage() {
   const [showHeroAlert, setShowHeroAlert] = useState(true);
   const isMobile = useIsMobile();
 
+  // Auto-ocultar alert de éxito después de 5 segundos
+  useEffect(() => {
+    if (alert.visible && alert.type === 'success') {
+      const timer = setTimeout(() => {
+        setAlert({ ...alert, visible: false });
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [alert.visible, alert.type]);
+
   // Crear una medida por defecto al cargar el componente
   useEffect(() => {
     if (medidas.length === 0) {
@@ -363,6 +374,18 @@ export default function MedidasPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Alert flotante para éxito */}
+      {alert.visible && alert.type === 'success' && (
+        <div className="fixed top-4 left-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+          <Alert
+            title={alert.message}
+            color="success"
+            variant="solid"
+            onClose={() => setAlert({ ...alert, visible: false })}
+          />
+        </div>
+      )}
+
       <div className="flex-1 p-4 w-full max-w-full px-1 sm:px-4 md:px-6 lg:px-8 space-y-6 overflow-y-auto pb-20 md:pb-6">
         {/* Alert de HeroUi solo en desktop */}
         {showHeroAlert && !isMobile && (
@@ -375,12 +398,16 @@ export default function MedidasPage() {
             onClose={() => setShowHeroAlert(false)}
           />
         )}
-        <Alert
-          title={alert.message}
-          color={alert.type === 'success' ? 'success' : 'danger'}
-          isVisible={alert.visible}
-          onClose={() => setAlert({ ...alert, visible: false })}
-        />
+        
+        {/* Alert para errores (mantiene el comportamiento original) */}
+        {alert.visible && alert.type === 'error' && (
+          <Alert
+            title={alert.message}
+            color="danger"
+            isVisible={alert.visible}
+            onClose={() => setAlert({ ...alert, visible: false })}
+          />
+        )}
 
         <Card className="p-6 shadow-md">
           <h1 className="mb-6 text-2xl font-bold text-center">Tomar Medidas</h1>
