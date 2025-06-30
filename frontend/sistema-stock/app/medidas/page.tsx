@@ -362,306 +362,332 @@ export default function MedidasPage() {
   };
 
   return (
-    <div className="p-4 w-full max-w-full px-1 sm:px-4 md:px-6 lg:px-8 space-y-6">
-      {/* Alert de HeroUi solo en desktop */}
-      {showHeroAlert && !isMobile && (
+    <div className="flex flex-col h-screen">
+      <div className="flex-1 p-4 w-full max-w-full px-1 sm:px-4 md:px-6 lg:px-8 space-y-6 overflow-y-auto">
+        {/* Alert de HeroUi solo en desktop */}
+        {showHeroAlert && !isMobile && (
+          <Alert
+            color="success"
+            description="Recordá que también podes usar este módulo para tomar medidas desde tu teléfono"
+            isVisible={showHeroAlert}
+            title="¡Tip!"
+            variant="faded"
+            onClose={() => setShowHeroAlert(false)}
+          />
+        )}
         <Alert
-          color="success"
-          description="Recordá que también podes usar este módulo para tomar medidas desde tu teléfono"
-          isVisible={showHeroAlert}
-          title="¡Tip!"
-          variant="faded"
-          onClose={() => setShowHeroAlert(false)}
+          title={alert.message}
+          color={alert.type === 'success' ? 'success' : 'danger'}
+          isVisible={alert.visible}
+          onClose={() => setAlert({ ...alert, visible: false })}
         />
-      )}
-      <Alert
-        title={alert.message}
-        color={alert.type === 'success' ? 'success' : 'danger'}
-        isVisible={alert.visible}
-        onClose={() => setAlert({ ...alert, visible: false })}
-      />
 
-      <Card className="p-6 shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center">Tomar Medidas</h1>
+        <Card className="p-6 shadow-md">
+          <h1 className="mb-6 text-2xl font-bold text-center">Tomar Medidas</h1>
 
-        {/* Buscador de Cliente con NextUI */}
-        <div className="mb-4 w-full" ref={buscadorRef}>
-          <div className="flex flex-col md:flex-row gap-2">
-            <div className="relative flex-grow">
-              <Input
-                id="cliente-busqueda"
-                type="text"
-                placeholder="Nombre o teléfono del cliente..."
-                onChange={(e) => {
-                  setBusquedaCliente(e.target.value);
-                  setMostrarResultados(true);
-                }}
-                isDisabled={loading}
-                className="w-full"
-                variant="bordered"
-                size="md"
-                startContent={
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                  </svg>
-                }
-              />
-              
-              {/* Resultados de búsqueda con estilo NextUI */}
-              {mostrarResultados && busquedaCliente.trim() !== "" && clientesFiltrados.length > 0 && (
-                <div className="overflow-y-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-lg border shadow-lg">
-                  {clientesFiltrados.map((cliente) => (
-                    <div 
-                      key={cliente.id} 
-                      className={`px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${selectedCliente.includes(cliente.id) ? 'bg-blue-50' : ''}`}
-                      onClick={() => {
-                        setSelectedCliente([cliente.id]);
-                        setBusquedaCliente(cliente.nombre);
-                        setMostrarResultados(false);
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+          {/* Buscador de Cliente con NextUI */}
+          <div className="mb-4 w-full" ref={buscadorRef}>
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="relative flex-grow">
+                <Input
+                  id="cliente-busqueda"
+                  type="text"
+                  placeholder="Nombre o teléfono del cliente..."
+                  onChange={(e) => {
+                    setBusquedaCliente(e.target.value);
+                    setMostrarResultados(true);
+                  }}
+                  isDisabled={loading}
+                  className="w-full"
+                  variant="bordered"
+                  size="md"
+                  startContent={
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                  }
+                />
+                
+                {/* Resultados de búsqueda con estilo NextUI */}
+                {mostrarResultados && busquedaCliente.trim() !== "" && clientesFiltrados.length > 0 && (
+                  <div className="overflow-y-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-lg border shadow-lg">
+                    {clientesFiltrados.map((cliente) => (
+                      <div 
+                        key={cliente.id} 
+                        className={`px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${selectedCliente.includes(cliente.id) ? 'bg-blue-50' : ''}`}
+                        onClick={() => {
                           setSelectedCliente([cliente.id]);
                           setBusquedaCliente(cliente.nombre);
                           setMostrarResultados(false);
-                        }
-                      }}
-                    >
-                      <div className="font-medium">{cliente.nombre}</div>
-                      <div className="text-sm text-gray-600">{cliente.telefono}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setSelectedCliente([cliente.id]);
+                            setBusquedaCliente(cliente.nombre);
+                            setMostrarResultados(false);
+                          }
+                        }}
+                      >
+                        <div className="font-medium">{cliente.nombre}</div>
+                        <div className="text-sm text-gray-600">{cliente.telefono}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                color="primary"
+                onClick={() => setShowNuevoClienteModal(true)}
+                isDisabled={loading}
+                className="w-full md:w-auto"
+              >
+                Nuevo Cliente
+              </Button>
             </div>
             
-            <Button 
+            {/* Muestra el cliente seleccionado */}
+            {selectedCliente.length > 0 && (
+              <div className="p-3 mt-2 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="font-medium">
+                  Cliente seleccionado: {clientes.find(c => c.id === selectedCliente[0])?.nombre}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Teléfono: {clientes.find(c => c.id === selectedCliente[0])?.telefono}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Modal para nuevo cliente */}
+          <Modal 
+            isOpen={showNuevoClienteModal} 
+            onClose={() => setShowNuevoClienteModal(false)}
+            placement="center"
+          >
+            <ModalContent>
+              <ModalHeader className="flex flex-col gap-1">Agregar Nuevo Cliente</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <Input
+                    label="Nombre"
+                    placeholder="Nombre completo"
+                     
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
+                    isRequired
+                  />
+                  <Input
+                    label="Teléfono"
+                    placeholder="Número de teléfono"
+                    
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, telefono: e.target.value})}
+                    isRequired
+                  />
+                  <Input
+                    label="Email"
+                    placeholder="Correo electrónico (opcional)"
+                    type="email"
+                    
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, email: e.target.value})}
+                  />
+                  <Input
+                    label="Dirección"
+                    placeholder="Dirección completa (opcional)"
+                    
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, direccion: e.target.value})}
+                  />
+                  <Input
+                    label="CUIL/CUIT"
+                    placeholder="CUIL/CUIT (opcional)"
+                   
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, cuil: e.target.value})}
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button 
+                  color="danger" 
+                  variant="light" 
+                  onPress={() => setShowNuevoClienteModal(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  color="primary" 
+                  onPress={handleGuardarNuevoCliente}
+                  isLoading={loading}
+                >
+                  Guardar Cliente
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+
+          {/* Lista de Medidas */}
+          <div className="mt-6 space-y-4">
+            {medidas.map((medida, index) => (
+              <Card key={medida.id} className="p-2 md:p-4 shadow-sm rounded-md">
+                <div className="space-y-2 md:space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <h3 className="text-base md:text-lg font-semibold">Medida {index + 1}</h3>
+                    <div className="w-full md:w-auto flex justify-end">
+                      <Button
+                        color="danger"
+                        variant="flat"
+                        size="sm"
+                        onClick={() => handleDeleteMedida(medida.id)}
+                        className="mt-2 md:mt-0"
+                        startContent={isMobile ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                          </svg>
+                        ) : undefined}
+                      >
+                        {isMobile ? "" : "Eliminar"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 items-start">
+                    {/* Campo elemento que ocupa todo el espacio */}
+                    <div className="w-full">
+                      <Input
+                        label="Elemento"
+                        placeholder="Ej: Ventana comedor, Puerta principal"
+                        
+                        onChange={(e) => handleUpdateMedida(medida.id, "elemento", e.target.value)}
+                        className="max-w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Selector de Ubicación */}
+                  <Select
+                    label="Ubicación"
+                    placeholder="Seleccione ubicación"
+                    className="max-w-full"
+                    selectedKeys={medida.ubicacion ? new Set([medida.ubicacion]) : new Set([])}
+                    onSelectionChange={(keys) => {
+                      const selectedValues = Array.from(keys) as string[];
+                      if (selectedValues.length > 0) {
+                        handleUpdateMedida(medida.id, "ubicacion", selectedValues[0]);
+                      }
+                    }}
+                  >
+                    {UBICACIONES.map((ubicacion) => (
+                      <SelectItem key={ubicacion} >
+                        {ubicacion}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  {/* Campo adicional para cuando se selecciona "Otro" */}
+                  {medida.ubicacion === "Otro" && (
+                    <Input
+                      label="Especifique ubicación"
+                      placeholder="Ej: Balcón, Estudio"
+                      key={medida.ubicacionPersonalizada || ""}
+                      onChange={(e) => handleUpdateMedida(medida.id, "ubicacionPersonalizada", e.target.value)}
+                      className="max-w-full"
+                    />
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
+                    {/* Campo cantidad a la izquierda */}
+                    <div>
+                      <Input
+                        label="Cantidad"
+                        type="number"
+                        size="sm"
+                        min="1"
+                        value={medida.cantidad.toString()}
+                        onChange={(e) => handleUpdateMedida(medida.id, "cantidad", parseInt(e.target.value) || 1)}
+                        className="max-w-full"
+                      />
+                    </div>
+                    <Input
+                      label="Ancho (cm)"
+                      type="number"
+                      value={medida.ancho.toString()}
+                      onChange={(e) => handleUpdateMedida(medida.id, "ancho", parseFloat(e.target.value) || 0)}
+                      className="max-w-full"
+                    />
+                    <Input
+                      label="Alto (cm)"
+                      type="number"
+                      value={medida.alto.toString()}
+                      onChange={(e) => handleUpdateMedida(medida.id, "alto", parseFloat(e.target.value) || 0)}
+                      className="max-w-full"
+                    />
+                  </div>
+
+                  <Input
+                    label="Detalles/Observaciones"
+                    placeholder="Detalles adicionales..."
+                    value={medida.detalles}
+                    onChange={(e) => handleUpdateMedida(medida.id, "detalles", e.target.value)}
+                    className="max-w-full"
+                  />
+
+                  <Input
+                    label="Medido Por"
+                    placeholder="Nombre de la persona que tomó las medidas"
+                    value={medida.medidoPor}
+                    onChange={(e) => handleUpdateMedida(medida.id, "medidoPor", e.target.value)}
+                    className="max-w-full"
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Botones de Acción - Solo en desktop */}
+          <div className="hidden md:flex flex-col md:flex-row gap-2 md:gap-4 mt-6">
+            <Button
               color="primary"
-              onClick={() => setShowNuevoClienteModal(true)}
-              isDisabled={loading}
-              className="w-full md:w-auto"
+              variant="flat"
+              fullWidth
+              onClick={handleAddMedida}
             >
-              Nuevo Cliente
+              Agregar Medida +
+            </Button>
+            <Button
+              color="success"
+              fullWidth
+              onClick={handleSubmit}
+              isLoading={loading}
+            >
+              Guardar Medidas
             </Button>
           </div>
-          
-          {/* Muestra el cliente seleccionado */}
-          {selectedCliente.length > 0 && (
-            <div className="p-3 mt-2 bg-blue-50 rounded-lg border border-blue-100">
-              <div className="font-medium">
-                Cliente seleccionado: {clientes.find(c => c.id === selectedCliente[0])?.nombre}
-              </div>
-              <div className="text-sm text-gray-600">
-                Teléfono: {clientes.find(c => c.id === selectedCliente[0])?.telefono}
-              </div>
-            </div>
-          )}
+        </Card>
+      </div>
+
+      {/* Footer fijo para mobile */}
+      {isMobile && (
+        <div className="flex-shrink-0 p-4 bg-white border-t border-gray-200 shadow-lg">
+          <div className="flex gap-2">
+            <Button
+              color="primary"
+              variant="flat"
+              fullWidth
+              onClick={handleAddMedida}
+            >
+              Agregar Medida +
+            </Button>
+            <Button
+              color="success"
+              fullWidth
+              onClick={handleSubmit}
+              isLoading={loading}
+            >
+              Guardar Medidas
+            </Button>
+          </div>
         </div>
-
-        {/* Modal para nuevo cliente */}
-        <Modal 
-          isOpen={showNuevoClienteModal} 
-          onClose={() => setShowNuevoClienteModal(false)}
-          placement="center"
-        >
-          <ModalContent>
-            <ModalHeader className="flex flex-col gap-1">Agregar Nuevo Cliente</ModalHeader>
-            <ModalBody>
-              <div className="space-y-4">
-                <Input
-                  label="Nombre"
-                  placeholder="Nombre completo"
-                   
-                  onChange={(e) => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
-                  isRequired
-                />
-                <Input
-                  label="Teléfono"
-                  placeholder="Número de teléfono"
-                  
-                  onChange={(e) => setNuevoCliente({...nuevoCliente, telefono: e.target.value})}
-                  isRequired
-                />
-                <Input
-                  label="Email"
-                  placeholder="Correo electrónico (opcional)"
-                  type="email"
-                  
-                  onChange={(e) => setNuevoCliente({...nuevoCliente, email: e.target.value})}
-                />
-                <Input
-                  label="Dirección"
-                  placeholder="Dirección completa (opcional)"
-                  
-                  onChange={(e) => setNuevoCliente({...nuevoCliente, direccion: e.target.value})}
-                />
-                <Input
-                  label="CUIL/CUIT"
-                  placeholder="CUIL/CUIT (opcional)"
-                 
-                  onChange={(e) => setNuevoCliente({...nuevoCliente, cuil: e.target.value})}
-                />
-              </div>
-            </ModalBody>
-            <ModalFooter>
-              <Button 
-                color="danger" 
-                variant="light" 
-                onPress={() => setShowNuevoClienteModal(false)}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                color="primary" 
-                onPress={handleGuardarNuevoCliente}
-                isLoading={loading}
-              >
-                Guardar Cliente
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-
-        {/* Lista de Medidas */}
-        <div className="mt-6 space-y-4">
-          {medidas.map((medida, index) => (
-            <Card key={medida.id} className="p-2 md:p-4 shadow-sm rounded-md">
-              <div className="space-y-2 md:space-y-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                  <h3 className="text-base md:text-lg font-semibold">Medida {index + 1}</h3>
-                  <div className="w-full md:w-auto flex justify-end">
-                    <Button
-                      color="danger"
-                      variant="flat"
-                      size="sm"
-                      onClick={() => handleDeleteMedida(medida.id)}
-                      className="mt-2 md:mt-0"
-                      startContent={isMobile ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                        </svg>
-                      ) : undefined}
-                    >
-                      {isMobile ? "" : "Eliminar"}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start">
-                  {/* Campo elemento que ocupa todo el espacio */}
-                  <div className="w-full">
-                    <Input
-                      label="Elemento"
-                      placeholder="Ej: Ventana comedor, Puerta principal"
-                      
-                      onChange={(e) => handleUpdateMedida(medida.id, "elemento", e.target.value)}
-                      className="max-w-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Selector de Ubicación */}
-                <Select
-                  label="Ubicación"
-                  placeholder="Seleccione ubicación"
-                  className="max-w-full"
-                  selectedKeys={medida.ubicacion ? new Set([medida.ubicacion]) : new Set([])}
-                  onSelectionChange={(keys) => {
-                    const selectedValues = Array.from(keys) as string[];
-                    if (selectedValues.length > 0) {
-                      handleUpdateMedida(medida.id, "ubicacion", selectedValues[0]);
-                    }
-                  }}
-                >
-                  {UBICACIONES.map((ubicacion) => (
-                    <SelectItem key={ubicacion} >
-                      {ubicacion}
-                    </SelectItem>
-                  ))}
-                </Select>
-
-                {/* Campo adicional para cuando se selecciona "Otro" */}
-                {medida.ubicacion === "Otro" && (
-                  <Input
-                    label="Especifique ubicación"
-                    placeholder="Ej: Balcón, Estudio"
-                    key={medida.ubicacionPersonalizada || ""}
-                    onChange={(e) => handleUpdateMedida(medida.id, "ubicacionPersonalizada", e.target.value)}
-                    className="max-w-full"
-                  />
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
-                  {/* Campo cantidad a la izquierda */}
-                  <div>
-                    <Input
-                      label="Cantidad"
-                      type="number"
-                      size="sm"
-                      min="1"
-                      value={medida.cantidad.toString()}
-                      onChange={(e) => handleUpdateMedida(medida.id, "cantidad", parseInt(e.target.value) || 1)}
-                      className="max-w-full"
-                    />
-                  </div>
-                  <Input
-                    label="Ancho (cm)"
-                    type="number"
-                    value={medida.ancho.toString()}
-                    onChange={(e) => handleUpdateMedida(medida.id, "ancho", parseFloat(e.target.value) || 0)}
-                    className="max-w-full"
-                  />
-                  <Input
-                    label="Alto (cm)"
-                    type="number"
-                    value={medida.alto.toString()}
-                    onChange={(e) => handleUpdateMedida(medida.id, "alto", parseFloat(e.target.value) || 0)}
-                    className="max-w-full"
-                  />
-                </div>
-
-                <Input
-                  label="Detalles/Observaciones"
-                  placeholder="Detalles adicionales..."
-                  value={medida.detalles}
-                  onChange={(e) => handleUpdateMedida(medida.id, "detalles", e.target.value)}
-                  className="max-w-full"
-                />
-
-                <Input
-                  label="Medido Por"
-                  placeholder="Nombre de la persona que tomó las medidas"
-                  value={medida.medidoPor}
-                  onChange={(e) => handleUpdateMedida(medida.id, "medidoPor", e.target.value)}
-                  className="max-w-full"
-                />
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Botones de Acción */}
-        <div className="flex flex-col md:flex-row gap-2 md:gap-4 mt-6">
-          <Button
-            color="primary"
-            variant="light"
-            fullWidth
-            onClick={handleAddMedida}
-          >
-            Agregar Medida
-          </Button>
-          <Button
-            color="primary"
-            fullWidth
-            onClick={handleSubmit}
-            isLoading={loading}
-          >
-            Guardar Medidas
-          </Button>
-        </div>
-      </Card>
+      )}
     </div>
   );
 } 

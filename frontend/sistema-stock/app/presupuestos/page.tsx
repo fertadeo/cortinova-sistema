@@ -12,7 +12,7 @@ export default function Page() {
                 <Alert
                     color="primary"
                     description="Este módulo se encuentra en desarrollo, ¡ya falta poco!"
-                    title="Módulo en Desarrollo"
+                    title="¡Estamos en eso!"
                     variant="faded"
                 />
             </div>
