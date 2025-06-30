@@ -629,8 +629,22 @@ export default function MedidasPage() {
                         type="number"
                         size="sm"
                         min="1"
-                        value={medida.cantidad.toString()}
-                        onChange={(e) => handleUpdateMedida(medida.id, "cantidad", parseInt(e.target.value) || 1)}
+                        placeholder="1"
+                        value={medida.cantidad === 0 ? '' : medida.cantidad.toString()}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            handleUpdateMedida(medida.id, "cantidad", 0);
+                          } else {
+                            const num = parseInt(val);
+                            handleUpdateMedida(medida.id, "cantidad", isNaN(num) || num < 1 ? 1 : num);
+                          }
+                        }}
+                        onBlur={() => {
+                          if (medida.cantidad === 0 || isNaN(medida.cantidad)) {
+                            handleUpdateMedida(medida.id, "cantidad", 1);
+                          }
+                        }}
                         className="max-w-full"
                       />
                     </div>
@@ -694,7 +708,7 @@ export default function MedidasPage() {
 
       {/* Footer fijo para mobile */}
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg z-30">
           <div className="flex gap-2">
             <Button
               color="primary"
