@@ -1,7 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from "react";
-import { Button, Input, Select, SelectItem, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Selection, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { Alert } from "@/components/shared/alert";
+import { Button, Input, Select, SelectItem, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Selection, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Alert } from "@heroui/react";
 
 interface Cliente {
   id: string;
@@ -27,6 +26,18 @@ interface Medida {
 
 // Opciones de ubicación predefinidas
 const UBICACIONES = ["Comedor", "Cocina", "Dormitorio", "Otro"];
+
+// Hook para detectar si es mobile
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  return isMobile;
+}
 
 export default function MedidasPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -55,6 +66,8 @@ export default function MedidasPage() {
 
   const [mostrarResultados, setMostrarResultados] = useState<boolean>(false);
   const buscadorRef = useRef<HTMLDivElement>(null);
+  const [showHeroAlert, setShowHeroAlert] = useState(true);
+  const isMobile = useIsMobile();
 
   // Crear una medida por defecto al cargar el componente
   useEffect(() => {
@@ -349,12 +362,23 @@ export default function MedidasPage() {
   };
 
   return (
-    <div className="p-4 mx-auto space-y-6 max-w-3xl">
+    <div className="p-4 w-full max-w-full px-1 sm:px-4 md:max-w-3xl md:mx-auto space-y-6">
+      {/* Alert de HeroUi solo en desktop */}
+      {showHeroAlert && !isMobile && (
+        <Alert
+          color="success"
+          description="Recordá que también podes usar este módulo para tomar medidas desde tu teléfono"
+          isVisible={showHeroAlert}
+          title="¡Tip!"
+          variant="faded"
+          onClose={() => setShowHeroAlert(false)}
+        />
+      )}
       <Alert
-        message={alert.message}
-        variant={alert.type as "success" | "error"}
+        title={alert.message}
+        color={alert.type === 'success' ? 'success' : 'danger'}
+        isVisible={alert.visible}
         onClose={() => setAlert({ ...alert, visible: false })}
-        className={alert.visible ? "block" : "hidden"}
       />
 
       <Card className="p-6 shadow-md">
@@ -362,10 +386,7 @@ export default function MedidasPage() {
 
         {/* Buscador de Cliente con NextUI */}
         <div className="mb-4 w-full" ref={buscadorRef}>
-          <div className="flex flex-col mb-2">
-            <label htmlFor="cliente-busqueda" className="mb-1 text-sm font-medium">Buscar Cliente</label>
-          </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col md:flex-row gap-2">
             <div className="relative flex-grow">
               <Input
                 id="cliente-busqueda"
@@ -375,7 +396,6 @@ export default function MedidasPage() {
                   setBusquedaCliente(e.target.value);
                   setMostrarResultados(true);
                 }}
-                onFocus={() => setMostrarResultados(true)}
                 isDisabled={loading}
                 className="w-full"
                 variant="bordered"
@@ -421,6 +441,7 @@ export default function MedidasPage() {
               color="primary"
               onClick={() => setShowNuevoClienteModal(true)}
               isDisabled={loading}
+              className="w-full md:w-auto"
             >
               Nuevo Cliente
             </Button>
@@ -506,15 +527,16 @@ export default function MedidasPage() {
         {/* Lista de Medidas */}
         <div className="mt-6 space-y-4">
           {medidas.map((medida, index) => (
-            <Card key={medida.id} className="p-4">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Medida {index + 1}</h3>
+            <Card key={medida.id} className="p-2 md:p-4 shadow-sm rounded-md">
+              <div className="space-y-2 md:space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                  <h3 className="text-base md:text-lg font-semibold">Medida {index + 1}</h3>
                   <Button
                     color="danger"
                     variant="light"
                     size="sm"
                     onClick={() => handleDeleteMedida(medida.id)}
+                    className="mt-2 md:mt-0"
                   >
                     Eliminar
                   </Button>
@@ -564,7 +586,7 @@ export default function MedidasPage() {
                   />
                 )}
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
                   {/* Campo cantidad a la izquierda */}
                   <div>
                     <Input
@@ -614,7 +636,7 @@ export default function MedidasPage() {
         </div>
 
         {/* Botones de Acción */}
-        <div className="flex gap-4 mt-6">
+        <div className="flex flex-col md:flex-row gap-2 md:gap-4 mt-6">
           <Button
             color="primary"
             variant="light"
