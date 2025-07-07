@@ -20,6 +20,7 @@ export const TelasSearch = ({
   const [telas, setTelas] = useState<Tela[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filteredTelas, setFilteredTelas] = useState<Tela[]>([]);
+  const [selectedTela, setSelectedTela] = useState<Tela | null>(null);
 
   // Opción "Sin tela" estática
   const sinTelaOption: Tela = {
@@ -34,6 +35,13 @@ export const TelasSearch = ({
     console.log('Componente montado, cargando telas...');
     fetchTelas();
   }, []);
+
+  useEffect(() => {
+    // Si el valor del input es vacío, limpiar la selección interna
+    if (searchTela === "" || searchTela == null) {
+      setSelectedTela(null);
+    }
+  }, [searchTela]);
 
   const fetchTelas = async () => {
     try {
@@ -74,6 +82,11 @@ export const TelasSearch = ({
   const handleSearchChange = (value: string) => {
     onSearchChange(value);
     
+    // Si el usuario está escribiendo, limpiar la tela seleccionada
+    if (value !== searchTela) {
+      setSelectedTela(null);
+    }
+    
     if (value === '*') {
       // Mostrar todas las telas, incluyendo "Sin tela"
       setFilteredTelas([sinTelaOption, ...telas.slice(1)]);
@@ -93,13 +106,39 @@ export const TelasSearch = ({
     }
   };
 
+  const handleTelaSelect = (tela: Tela) => {
+    console.log('Tela seleccionada:', tela);
+    setSelectedTela(tela);
+    
+    // Formatear el texto del input para mostrar nombre y precio
+    let displayText = tela.nombre;
+    if (tela.id !== 0 && tela.precio && Number(tela.precio) > 0) {
+      displayText += ` - $${Number(tela.precio).toFixed(2)}`;
+    }
+    
+    onSearchChange(displayText);
+    onTelaSelect(tela);
+  };
+
+  // Función para obtener el texto a mostrar en el input
+  const getInputDisplayValue = () => {
+    if (selectedTela) {
+      let displayText = selectedTela.nombre;
+      if (selectedTela.id !== 0 && selectedTela.precio && Number(selectedTela.precio) > 0) {
+        displayText += ` - $${Number(selectedTela.precio).toFixed(2)}`;
+      }
+      return displayText;
+    }
+    return searchTela;
+  };
+
   return (
     <div className="pt-4 mt-4 border-t">
       <div className="relative">
         <Input
           label="Buscar Tela"
           placeholder="Escribe para buscar telas o * para ver todas..."
-          value={searchTela}
+          value={getInputDisplayValue()}
           onValueChange={handleSearchChange}
           variant="bordered"
           className="mb-2"
@@ -113,10 +152,7 @@ export const TelasSearch = ({
                 <button
                   key={tela.id}
                   className="p-3 w-full text-left border-b hover:bg-gray-50 last:border-b-0"
-                  onClick={() => {
-                    console.log('Tela seleccionada:', tela);
-                    onTelaSelect(tela);
-                  }}
+                  onClick={() => handleTelaSelect(tela)}
                   tabIndex={0}
                 >
                   <div className="font-medium">{tela.nombre}</div>

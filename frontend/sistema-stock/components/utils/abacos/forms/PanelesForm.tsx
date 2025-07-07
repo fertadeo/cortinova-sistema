@@ -58,22 +58,6 @@ export default function PanelesForm(props: PanelesFormProps) {
           <SelectItem key="izquierda" >Izquierda</SelectItem>
         </Select>
       </div>
-
-      {/* Segunda fila */}
-      <div className="grid grid-cols-1 gap-4">
-        {/* Tipo de Tela */}
-        <Select 
-          label="Tipo de Tela" 
-          value={formData.tipoTela}
-          onChange={(e) => handleChange('tipoTela', e.target.value)}
-        >
-          <SelectItem key="black_out" >BLACK OUT POLIESTER</SelectItem>
-          <SelectItem key="dubai" >DUBAI PARA ROLLER</SelectItem>
-          <SelectItem key="poliester" >POLIESTER</SelectItem>
-          <SelectItem key="screen" >SCREEN</SelectItem>
-          <SelectItem key="sin_tela" >SIN TELA</SelectItem>
-        </Select>
-      </div>
     </div>
   )
 }

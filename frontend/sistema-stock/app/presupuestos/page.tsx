@@ -10,9 +10,9 @@ export default function Page() {
         <div>
             <div className="mb-4">
                 <Alert
-                    color="primary"
-                    description="Este módulo se encuentra en desarrollo, ¡ya falta poco!"
-                    title="¡Estamos en eso!"
+                    color="success"
+                    title="Ya se encuentran disponibles los sistemas de"
+                    description="Bandas Verticales, Roller, Dubai, Paneles, Venecianas."
                     variant="faded"
                 />
             </div>

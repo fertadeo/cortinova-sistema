@@ -186,6 +186,7 @@ export const BudgetGenerator = () => {
                 tipoTela: pedido.detalles?.tela?.nombre || pedido.tela?.nombre || "",
                 soporteIntermedio: pedido.detalles?.soporteIntermedio || false,
                 soporteDoble: pedido.detalles?.soporteDoble || false,
+                accesorios: pedido.detalles?.accesorios || [],
                 medidaId: pedido.medidaId,
                 ancho: pedido.detalles?.ancho,
                 alto: pedido.detalles?.alto,
@@ -220,7 +221,12 @@ export const BudgetGenerator = () => {
           ladoComando: pedido.detalles?.ladoComando || "",
           tipoTela: pedido.detalles?.tela?.nombre || pedido.tela?.nombre || "",
           soporteIntermedio: pedido.detalles?.soporteIntermedio || false,
-          soporteDoble: pedido.detalles?.soporteDoble || false
+          soporteDoble: pedido.detalles?.soporteDoble || false,
+          accesorios: pedido.detalles?.accesorios || [],
+          medidaId: pedido.medidaId,
+          ancho: pedido.detalles?.ancho,
+          alto: pedido.detalles?.alto,
+          ubicacion: pedido.detalles?.ubicacion
         }
       };
       setTableData(prev => [...prev, newTableItem]);
@@ -347,6 +353,15 @@ export const BudgetGenerator = () => {
     }
   };
 
+  // Nueva función para actualizar el precio de un producto en la tabla por medidaId
+  const actualizarPrecioPorMedidaId = (medidaId: number, nuevoPrecio: number) => {
+    setTableData(prevData => prevData.map(item =>
+      item.detalles && 'medidaId' in item.detalles && item.detalles.medidaId === medidaId
+        ? { ...item, price: nuevoPrecio, total: nuevoPrecio * Number(item.quantity) }
+        : item
+    ));
+  };
+
   return (
     <Card className="p-8">
       <h1 style={{ fontSize: "200" }}>Generar Presupuesto</h1>
@@ -428,15 +443,9 @@ export const BudgetGenerator = () => {
         onOpenChange={setShowPedidoModal}
         selectedClient={selectedClient}
         productos={tableData}
-        total={calculateTotals(tableData, applyDiscount).finalTotal}
+        total={calculateTotals(tableData, applyDiscount, discountType === "percentage" ? Number(discountValue) : undefined, discountType === "amount" ? Number(discountValue) : undefined, shouldRound).finalTotal}
         onPedidoCreated={handleAddPedido}
-        medidasPrecargadas={tableData.length > 0 && tableData[0].detalles && tableData[0].detalles.ancho && tableData[0].detalles.alto && tableData[0].detalles.ubicacion && tableData[0].detalles.medidaId ? {
-          ancho: tableData[0].detalles.ancho,
-          alto: tableData[0].detalles.alto,
-          cantidad: tableData[0].quantity,
-          ubicacion: tableData[0].detalles.ubicacion,
-          medidaId: tableData[0].detalles.medidaId
-        } : undefined}
+        medidasPrecargadas={undefined}
       />
 
       {showResume && presupuestoGenerado && (

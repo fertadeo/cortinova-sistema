@@ -27,6 +27,7 @@ interface RollerFormProps {
   soporteIntermedioTipo?: any;
   soportesIntermedios?: any[];
   onSoporteIntermedioTipoChange?: (item: any) => void;
+  productosFiltrados?: any[];
 }
 
 export const RollerForm = ({
@@ -107,13 +108,14 @@ export const RollerForm = ({
 
       <div className="flex gap-4">
         {soportesIntermedios && soportesIntermedios.length > 0 && (
-          <div className="w-56">
-            <Select
-              label="Soporte intermedio"
-              placeholder="Seleccionar tipo"
-              selectedKeys={soporteIntermedioTipo ? new Set([String(soporteIntermedioTipo.id)]) : new Set(["none"])}
-              onSelectionChange={(keys) => {
-                const id = Array.from(keys)[0];
+          <div className="w-72">
+            <label htmlFor="soporte-intermedio-select" className="block text-sm font-medium mb-1">Soporte intermedio</label>
+            <select
+              id="soporte-intermedio-select"
+              className="w-full border rounded px-2 py-2 text-sm"
+              value={soporteIntermedioTipo ? String(soporteIntermedioTipo.id) : "none"}
+              onChange={e => {
+                const id = e.target.value;
                 if (id === "none") {
                   if (onSoporteIntermedioTipoChange) onSoporteIntermedioTipoChange(null);
                   return;
@@ -122,14 +124,13 @@ export const RollerForm = ({
                 if (found && onSoporteIntermedioTipoChange) onSoporteIntermedioTipoChange(found);
               }}
             >
-              {[<SelectItem key="none">Sin soporte intermedio</SelectItem>,
-                ...soportesIntermedios.map((s) => (
-                  <SelectItem key={String(s.id)}>
-                    {s.nombre} (${Number(s.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                  </SelectItem>
-                ))
-              ]}
-            </Select>
+              <option value="none">Sin soporte intermedio</option>
+              {soportesIntermedios.map((s) => (
+                <option key={String(s.id)} value={String(s.id)}>
+                  {s.nombre} (${Number(s.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                </option>
+              ))}
+            </select>
           </div>
         )}
         <Checkbox

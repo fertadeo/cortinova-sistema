@@ -3,6 +3,7 @@ import SimpleTable from '@/components/simpleTable';
 import BarChart from '@/components/chart';
 import PresupuestosTable from '@/components/presupuestosTable';
 import { useState, useEffect } from "react";
+import { Alert } from '@heroui/react';
 
 
 export default function Home() {
@@ -28,6 +29,14 @@ export default function Home() {
       <div className="px-4 py-2 w-full">
         {/* <Menucards /> */}
       </div>
+      <div className="mb-4">
+                <Alert
+                    color="success"
+                    title="Ya se encuentran disponibles los sistemas de"
+                    description="Bandas Verticales, Roller, Dubai, Paneles, Venecianas."
+                    variant="faded"
+                />
+            </div>
       
       {/* Añadimos un margen adicional debajo de Menucards */}
       <div className="mt-4" />

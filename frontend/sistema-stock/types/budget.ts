@@ -19,6 +19,7 @@ export interface TableItem {
     ancho?: number;
     alto?: number;
     ubicacion?: string;
+    accesorios?: any[];
   };
 }
 

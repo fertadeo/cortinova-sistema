@@ -12,6 +12,7 @@ interface BarcelonaFormProps {
   onDetalleChange?: (value: string) => void;
   onLadoComandoChange?: (value: string) => void;
   onColorChange?: (value: string) => void;
+  productosFiltrados?: any[];
 }
 
 export default function BarcelonaForm({

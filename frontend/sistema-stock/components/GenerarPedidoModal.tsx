@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox, Popover, PopoverTrigger, PopoverContent} from "@heroui/react";
+import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox, Popover, PopoverTrigger, PopoverContent, Alert} from "@heroui/react";
 import { RollerForm } from "./utils/abacos/forms/RollerForm";
 import DubaiForm from "./utils/abacos/forms/DubaiForm";
 import DunesForm from "./utils/abacos/forms/DunesForm";
@@ -93,12 +93,12 @@ const normalizarNombreSistema = (tipo: string): string => {
   };
 
   const tipoNormalizado = tipo.toUpperCase().trim();
-  console.log('Tipo original:', tipo);
-  console.log('Tipo normalizado:', tipoNormalizado);
+  // console.log('Tipo original:', tipo);
+  // console.log('Tipo normalizado:', tipoNormalizado);
   
   const tipoMapeado = sistemasMap[tipoNormalizado] || tipoNormalizado;
-  console.log('Tipo mapeado:', tipoMapeado);
-  console.log('Sistemas disponibles en abacoData:', Object.keys(abacoData));
+  // console.log('Tipo mapeado:', tipoMapeado);
+  // console.log('Sistemas disponibles en abacoData:', Object.keys(abacoData));
 
   return tipoMapeado;
 };
@@ -240,6 +240,18 @@ const procesarSistemasUnicos = (sistemas: Sistema[]) => {
   return Array.from(sistemasMap.values());
 };
 
+// Mapeo de parámetros para cada sistema
+const sistemaToApiParams: Record<string, { sistemaId: number; rubroId: number; proveedorId: number }> = {
+  "bandas verticales": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
+  "barcelona - bandas verticales": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
+  "barcelona": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
+  "roller": { sistemaId: 1, rubroId: 9, proveedorId: 2 },
+  "dubai": { sistemaId: 6, rubroId: 9, proveedorId: 2 },
+  "venecianas": { sistemaId: 4, rubroId: 9, proveedorId: 2 },
+  "paneles": { sistemaId: 2, rubroId: 9, proveedorId: 2 },
+  // Agrega aquí otros sistemas según corresponda
+};
+
 export default function GenerarPedidoModal({
   isOpen,
   onOpenChange,
@@ -277,6 +289,7 @@ export default function GenerarPedidoModal({
   const [selectedRielBarral, setSelectedRielBarral] = useState<any>(null);
   const [searchRielBarral, setSearchRielBarral] = useState("");
   const [isLoadingRielesBarrales, setIsLoadingRielesBarrales] = useState(false);
+  const [showRielesBarralesList, setShowRielesBarralesList] = useState(false);
 
   // Estados específicos de Roller
   const [detalle, setDetalle] = useState("");
@@ -322,8 +335,7 @@ export default function GenerarPedidoModal({
   // Agregar nuevo estado para el precio de colocación
   const [precioColocacion, setPrecioColocacion] = useState<number>(0);
 
-  // Agregar nuevo estado para manejar el input manual
-  const [showManualPrecioInput, setShowManualPrecioInput] = useState(false);
+
 
   // Inicializar los estados con las medidas precargadas si existen
   const [ancho, setAncho] = useState(medidasPrecargadas?.ancho?.toString() || '');
@@ -396,6 +408,10 @@ export default function GenerarPedidoModal({
     setTelasFiltradas([]);
     setSelectedTela(null);
     setShowTelasList(false);
+    setSearchRielBarral("");
+    setRielesBarrales([]);
+    setSelectedRielBarral(null);
+    setShowRielesBarralesList(false);
   };
 
   // Actualizar la función canProceedToNextStep
@@ -405,14 +421,29 @@ export default function GenerarPedidoModal({
     if (!ancho || Number(ancho) <= 0) return false;
     if (!alto || Number(alto) <= 0) return false;
 
+    // Para todos los sistemas, requerimos artículo
+    if (!selectedArticulo) return false;
+
+    // Para todos los sistemas, requerimos un producto específico seleccionado
+    if (!selectedRielBarral || !selectedRielBarral.precio) return false;
+
+    // Para todos los sistemas excepto Venecianas, requerimos tela
+    if (!selectedSistema.toLowerCase().includes('veneciana') && !selectedTela) return false;
+
     // Verificar si hay sistema disponible para las medidas
     const anchoMetros = Number(ancho) / 100;
     const altoMetros = Number(alto) / 100;
     const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.sistemas;
 
-    return sistemasDisponibles?.some(
+    // Si no hay sistemas disponibles en el ábaco, permitir continuar (validación mínima)
+    if (!sistemasDisponibles || sistemasDisponibles.length === 0) {
+      return true;
+    }
+
+    // Si hay sistemas en el ábaco, verificar que las medidas sean válidas
+    return sistemasDisponibles.some(
       (sistema: { ancho: number; alto: number }) => sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
-    ) ?? false;
+    );
   };
 
   const handleClose = () => {
@@ -505,15 +536,59 @@ export default function GenerarPedidoModal({
     // setTelasFiltradas(filtered);
   };
 
-  // Actualizar calcularPrecioTotal para no usar MOCK_TELAS
+  // Buscar el producto correspondiente al sistema seleccionado
+  const productoSistema = sistemas.find(s => String(s.nombreSistemas) === selectedSistema);
+
+  // Calcular precio del sistema
+  const calcularPrecioSistema = () => {
+    if (!ancho || !alto) return 0;
+    
+    const anchoMetros = Number(ancho) / 100;
+    const altoMetros = Number(alto) / 100;
+    
+    // Solo calcular precio si hay un producto específico seleccionado
+    if (!selectedRielBarral || !selectedRielBarral.precio) {
+      console.log('⚠️ No hay producto seleccionado, no se puede calcular precio del sistema');
+      return 0;
+    }
+    
+    const precioBase = Number(selectedRielBarral.precio);
+    console.log('🎯 Usando precio del producto seleccionado:', precioBase);
+    
+    // Para Roller y Veneciana, calcular por área (ancho × alto)
+    if (selectedSistema?.toLowerCase().includes('roller') || selectedSistema?.toLowerCase().includes('veneciana')) {
+      const precioCalculado = precioBase * anchoMetros * altoMetros;
+      console.log('🏗️ Cálculo por m² (Roller/Veneciana):', {
+        sistema: selectedSistema,
+        precioBase: precioBase,
+        anchoMetros: anchoMetros,
+        altoMetros: altoMetros,
+        area: anchoMetros * altoMetros,
+        precioCalculado: precioCalculado
+      });
+      return precioCalculado;
+    }
+    
+    // Para otros sistemas, calcular por metro lineal (ancho)
+    const precioCalculado = precioBase * anchoMetros;
+    console.log('📏 Cálculo por metro lineal:', {
+      sistema: selectedSistema,
+      precioBase: precioBase,
+      anchoMetros: anchoMetros,
+      precioCalculado: precioCalculado
+    });
+    return precioCalculado;
+  };
+
+  const nuevoPrecioSistema = calcularPrecioSistema();
+
+  // Calcular precio total
   const calcularPrecioTotal = () => {
     if (!ancho || !alto || !cantidad || !selectedTela) return 0;
 
     const anchoMetros = Number(ancho) / 100;
-    const precioSistemaPorMetro = 12000;
-    
-    // Calcular precio del sistema
-    const nuevoPrecioSistema = precioSistemaPorMetro * anchoMetros;
+    // Usar el precio del producto correspondiente
+    const nuevoPrecioSistema = calcularPrecioSistema();
 
     // Calcular precio de la tela
     const nuevoPrecioTela = calcularPrecioTela(
@@ -588,70 +663,107 @@ export default function GenerarPedidoModal({
         // Validar que el producto sea el correcto
         const nombreProducto = data.nombreProducto?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         if (!nombreProducto?.includes('colocacion')) {
-          // console.error('El producto no corresponde a colocación');
-          setShowManualPrecioInput(true);
+          console.error('El producto no corresponde a colocación');
           return;
         }
 
         const precio = Number(data.precio);
-        if (isNaN(precio)) {
-          setShowManualPrecioInput(true);
-          return;
+        if (!isNaN(precio)) {
+          setPrecioColocacion(precio);
         }
 
-        setPrecioColocacion(precio);
-        setShowManualPrecioInput(false);
-
       } catch (error) {
-        // console.error('Error al obtener precio de colocación:', error);
-        setShowManualPrecioInput(true);
+        console.error('Error al obtener precio de colocación:', error);
       }
     };
 
     fetchPrecioColocacion();
   }, []);
 
-  // Agregar useEffect para cargar rieles y barrales
+  // useEffect para recalcular precio del sistema cuando cambien ancho o alto
   useEffect(() => {
-    const fetchRielesBarrales = async () => {
-      if (!selectedSistema) return;
+    if (selectedSistema && ancho && alto) {
+      console.log('🔄 Recalculando precio del sistema:', {
+        sistema: selectedSistema,
+        ancho: ancho,
+        alto: alto,
+        esVeneciana: selectedSistema.toLowerCase().includes('veneciana')
+      });
       
-      setIsLoadingRielesBarrales(true);
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/rieles-barrales`);
-        if (!response.ok) throw new Error('Error al cargar rieles y barrales');
-        const data = await response.json();
-        console.log('Respuesta de rieles y barrales:', data);
-        setRielesBarrales(data.productos);
-      } catch (error) {
-        console.error('Error:', error);
-        setRielesBarrales([]);
-      } finally {
-        setIsLoadingRielesBarrales(false);
+      const nuevoPrecioSistema = calcularPrecioSistema();
+      console.log('💰 Nuevo precio del sistema:', nuevoPrecioSistema);
+      setPrecioSistema(nuevoPrecioSistema);
+      
+      // Si hay tela seleccionada y no es Veneciana, recalcular precio de tela también
+      if (selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) {
+        const nuevoPrecioTela = calcularPrecioTela(
+          Number(ancho),
+          Number(alto),
+          selectedTela?.precio ? Number(selectedTela.precio) : 0,
+          selectedTela?.nombre === 'ROLLER'
+        );
+        setPrecioTela(nuevoPrecioTela);
       }
-    };
+    }
+  }, [ancho, alto, selectedSistema, selectedTela]);
 
-    fetchRielesBarrales();
-  }, [selectedSistema]);
+  // Limpia todos los campos menos ancho y alto
+  const resetCamposSistema = () => {
+    setSelectedArticulo("");
+    setSelectedRielBarral(null);
+    setSearchRielBarral("");
+    setShowRielesBarralesList(false);
+    setRielesBarrales([]);
+    setSelectedTela(null);
+    setSearchTela("");
+    setTelasFiltradas([]);
+    setShowTelasList(false);
+    setDetalle("");
+    setCaidaPorDelante(false);
+    setColorSistema("");
+    setLadoComando("");
+    setTipoTela("");
+    setSoporteIntermedio(false);
+    setSoporteDoble(false);
+    setSelectedSoporteIntermedio(null);
+    setSistemaRecomendado("");
+    setPedidoJSON("");
+    setError("");
+    // Puedes agregar aquí cualquier otro estado que deba limpiarse
+  };
 
   const handleSubmit = () => {
     // Calcular el precio unitario según la lógica del resumen
     let precioUnitario = 0;
-    if (selectedRielBarral) {
-      precioUnitario = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
+    if (selectedRielBarral && selectedRielBarral.precio) {
+      console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
+      if (selectedSistema?.toLowerCase().includes('veneciana')) {
+        if (Number(ancho) > 0 && Number(alto) > 0) {
+          console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
+          precioUnitario = (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio);
+        } else {
+          precioUnitario = 0;
+        }
+      } else {
+        precioUnitario = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
+      }
     } else {
-      precioUnitario = (Number(ancho) / 100) * 12000;
+      console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
+      precioUnitario = 0;
     }
-    // Sumar tela y colocación al total
-    const precioTelaTotal = selectedTela ? calcularPrecioTela(
+    // Sumar tela, soporte intermedio y colocación al total (no incluir tela para Veneciana)
+    const precioTelaTotal = (selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) ? calcularPrecioTela(
       Number(ancho),
       Number(alto),
       selectedTela?.precio ? Number(selectedTela.precio) : 0,
       selectedTela?.nombre === 'ROLLER'
     ) : 0;
+    const soporteIntermedioTotal = selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0;
     const colocacionTotal = incluirColocacion ? precioColocacion : 0;
     const cantidadNum = Number(cantidad) || 1;
-    const precioTotal = (precioUnitario + precioTelaTotal + colocacionTotal) * cantidadNum;
+    // El precio unitario debe incluir todos los extras
+    const precioUnitarioCompleto = precioUnitario + precioTelaTotal + soporteIntermedioTotal + colocacionTotal;
+    const precioTotal = precioUnitarioCompleto * cantidadNum;
 
     const pedido = {
       sistema: selectedSistema,
@@ -661,7 +773,7 @@ export default function GenerarPedidoModal({
         alto: Number(alto),
         sistemaRecomendado,
         articuloSeleccionado: selectedArticulo,
-        tela: selectedTela,
+        tela: selectedSistema.toLowerCase().includes('veneciana') ? null : selectedTela,
         caidaPorDelante,
         colorSistema,
         ladoComando,
@@ -670,10 +782,18 @@ export default function GenerarPedidoModal({
         soporteDoble,
         detalle,
         incluirColocacion,
+        precioColocacion: incluirColocacion ? precioColocacion : 0,
         soporteIntermedioTipo: selectedSoporteIntermedio,
+        accesorios: [
+          selectedSoporteIntermedio ? {
+            nombre: selectedSoporteIntermedio.nombre,
+            precio: selectedSoporteIntermedio.precio
+          } : null
+          // Aquí puedes agregar otros accesorios según el sistema
+        ].filter(Boolean)
       },
       fecha: new Date().toISOString(),
-      precioUnitario: precioUnitario + precioTelaTotal + colocacionTotal,
+      precioUnitario: precioUnitarioCompleto,
       precioTotal: precioTotal,
       medidaId: medidasPrecargadas?.medidaId,
       incluirColocacion,
@@ -682,6 +802,92 @@ export default function GenerarPedidoModal({
     onPedidoCreated(pedido);
     onOpenChange(false);
   };
+
+  const [productosFiltrados, setProductosFiltrados] = useState<any[]>([]);
+  const [loadingProductosFiltrados, setLoadingProductosFiltrados] = useState(false);
+
+  // Consultar productos filtrados cuando cambia el sistema
+  useEffect(() => {
+    const fetchProductosFiltrados = async () => {
+      const sistemaKey = selectedSistema?.toLowerCase();
+      if (sistemaKey && sistemaToApiParams[sistemaKey]) {
+        setLoadingProductosFiltrados(true);
+        const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}`);
+          const data = await res.json();
+          console.log('Respuesta productos-filtrados:', data);
+          setProductosFiltrados(data);
+        } catch (e) {
+          setProductosFiltrados([]);
+        } finally {
+          setLoadingProductosFiltrados(false);
+        }
+      } else {
+        setProductosFiltrados([]);
+        console.log('[DEBUG] No se ejecuta fetch: selectedSistema=', selectedSistema, 'key usado:', sistemaKey);
+      }
+    };
+    fetchProductosFiltrados();
+  }, [selectedSistema]);
+
+  const handleBuscarProducto = async (value: string) => {
+    console.log('[DEBUG] handleBuscarProducto called with:', value, selectedSistema);
+    setSearchRielBarral(value);
+    setShowRielesBarralesList(true);
+    const sistemaKey = selectedSistema?.toLowerCase();
+    if (!sistemaKey || !sistemaToApiParams[sistemaKey] || !value.trim()) {
+      console.log('[DEBUG] No sistema seleccionado o no hay mapeo o valor vacío', selectedSistema, 'key usado:', sistemaKey, value);
+      setRielesBarrales([]);
+      setShowRielesBarralesList(false);
+      return;
+    }
+    const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${encodeURIComponent(value)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    console.log(`[Busqueda Sistema] Input: "${value}" | Ruta: ${url} | Respuesta:`, data);
+    console.log('[PRODUCTOS OBTENIDOS] Productos encontrados:', data);
+    setRielesBarrales(Array.isArray(data.data) ? data.data : []);
+    setShowTelasList(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowRielesBarralesList(false);
+    }
+  };
+
+  // Justo después de los useState existentes
+  const [showCambioSistema, setShowCambioSistema] = useState(false);
+  const [nombreSistemaCambio, setNombreSistemaCambio] = useState("");
+
+  // Justo antes del return principal de GenerarPedidoModal
+  const sugerenciasFiltradas = rielesBarrales.filter(item =>
+    item.nombreProducto.toLowerCase().includes(searchRielBarral.toLowerCase()) ||
+    (item.descripcion && item.descripcion.toLowerCase().includes(searchRielBarral.toLowerCase()))
+  );
+
+  useEffect(() => {
+    if (selectedRielBarral) {
+      setSoporteDoble(selectedRielBarral.detalles?.soporteDoble || false);
+      
+      // Recalcular precio del sistema cuando se selecciona un producto
+      if (selectedSistema && ancho && alto) {
+        console.log('🎯 Producto seleccionado:', {
+          producto: selectedRielBarral.nombreProducto,
+          precio: selectedRielBarral.precio,
+          sistema: selectedSistema,
+          ancho: ancho,
+          alto: alto
+        });
+        
+        const nuevoPrecioSistema = calcularPrecioSistema();
+        setPrecioSistema(nuevoPrecioSistema);
+      }
+    }
+  }, [selectedRielBarral, selectedSistema, ancho, alto]);
+
 
   return (
     <Modal
@@ -693,7 +899,7 @@ export default function GenerarPedidoModal({
       isDismissable={false}
       shouldBlockScroll={true}
     >
-      <ModalContent className="max-h-[90vh] rounded-lg">
+      <ModalContent className="max-h-[90vh] rounded-lg h-98">
         {(onClose) => {
           return (
             <>
@@ -714,6 +920,13 @@ export default function GenerarPedidoModal({
                           onSelectionChange={(keys) => {
                             const sistemaSeleccionado = Array.from(keys)[0] as string;
                             setSelectedSistema(sistemaSeleccionado);
+                            resetCamposSistema();
+                            setSelectedTela(null);
+                            setSearchTela("");
+                            setShowTelasList(false);
+                            setNombreSistemaCambio(sistemaSeleccionado);
+                            setShowCambioSistema(true);
+                            setTimeout(() => setShowCambioSistema(false), 2500);
                             console.log("Sistema seleccionado:", sistemaSeleccionado);
                           }}
                           disallowEmptySelection={false}
@@ -727,6 +940,7 @@ export default function GenerarPedidoModal({
                           {sistemas?.map((sistema) => (
                             <SelectItem 
                               key={String(sistema.nombreSistemas)}
+                              textValue={String(sistema.nombreSistemas)}
                             >
                               {sistema.nombreSistemas} 
                             </SelectItem>
@@ -814,400 +1028,404 @@ export default function GenerarPedidoModal({
                       </div>
                     </div>
 
-                    <Select
-                      label="Artículo"
-                      placeholder="Artículo Recomendado"
-                      selectedKeys={selectedArticulo ? [selectedArticulo] : new Set()}
-                      onSelectionChange={(keys) => {
-                        const articulo = Array.from(keys)[0] as string;
-                        setSelectedArticulo(articulo || "");
-                      }}
-                    >
-                      {selectedSistema && abacoData[normalizarNombreSistema(selectedSistema)]?.sistemas ? (
-                        procesarSistemasUnicos(abacoData[normalizarNombreSistema(selectedSistema)].sistemas)
-                          .filter(sistema => sistema !== "NINGUNO") // Filtrar "NINGUNO" si no quieres mostrarlo
-                          .map((sistemaNombre) => (
-                            <SelectItem key={sistemaNombre} >
-                              {sistemaNombre}
-                            </SelectItem>
-                          ))
-                      ) : (
-                        <SelectItem key="empty" >
-                          Seleccione un sistema primero
-                        </SelectItem>
-                      )}
-                    </Select>
-                  </div>
-
-                  {/* Input de rieles y barrales debajo del select de artículo */}
-                  <div className="mt-4">
-                    <Input
-                      label="Agregar Sistema"
-                      placeholder="Buscar por nombre o ID..."
-                      value={searchRielBarral}
-                      onValueChange={setSearchRielBarral}
-                      size="sm"
-                      startContent={
-                        <div className="flex items-center pointer-events-none">
-                          <span className="text-default-400 text-small">🔍</span>
-                        </div>
-                      }
-                      endContent={
-                        selectedRielBarral && (
-                          <button
-                            type="button"
-                            className="px-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
-                            aria-label="Quitar riel/barral"
-                            onClick={() => {
-                              setSelectedRielBarral(null);
-                              setSearchRielBarral("");
-                            }}
-                          >
-                            ×
-                          </button>
-                        )
-                      }
-                    />
-                    {searchRielBarral && rielesBarrales.length > 0 && (
-                      <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border">
-                        {rielesBarrales
-                          .filter(item => 
-                            item.nombreProducto.toLowerCase().includes(searchRielBarral.toLowerCase())
-                          )
-                          .map(item => (
-                            <button
-                              key={item.id}
-                              className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-100 last:border-b-0"
-                              onClick={() => {
-                                setSelectedRielBarral(item);
-                                setSearchRielBarral(item.nombreProducto);
-                              }}
-                              role="option"
-                              aria-selected={selectedRielBarral === item}
-                            >
-                              <div className="font-medium">{item.nombreProducto}</div>
-                              <div className="text-sm text-gray-600">
-                                Precio: ${item.precio}
-                              </div>
-                            </button>
-                          ))}
-                      </div>
+                    {selectedArticulo && (
+                      <Alert color="primary" className="my-2 flex items-center">
+                        <span>Artículo recomendado: <b className="ml-1">{selectedArticulo}</b></span>
+                      </Alert>
                     )}
-                  </div>
 
-                  {/* PARTE 2: Formulario específico del sistema */}
-                  {selectedSistema && (
-                    <div className="pt-4 mt-4 border-t">
-                      {(() => {
-                        const sistemaNormalizado = selectedSistema
-                          .split('-')[0]
-                          .trim()
-                          .toLowerCase();
-                        
-                        switch (sistemaNormalizado) {
-                          case "roller":
-                            return (
-                              <RollerForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                detalle={detalle}
-                                caidaPorDelante={caidaPorDelante}
-                                colorSistema={colorSistema}
-                                ladoComando={ladoComando}
-                                tipoTela={tipoTela}
-                                soporteIntermedio={soporteIntermedio}
-                                soporteDoble={soporteDoble}
-                                onDetalleChange={setDetalle}
-                                onCaidaChange={setCaidaPorDelante}
-                                onColorChange={setColorSistema}
-                                onLadoComandoChange={setLadoComando}
-                                onTipoTelaChange={setTipoTela}
-                                onSoporteIntermedioChange={setSoporteIntermedio}
-                                onSoporteDobleChange={setSoporteDoble}
-                                onPedidoDetailsChange={setSistemaPedidoDetalles}
-                                soporteIntermedioTipo={selectedSoporteIntermedio}
-                                soportesIntermedios={soportesIntermedios}
-                                onSoporteIntermedioTipoChange={setSelectedSoporteIntermedio}
-                              />
-                            );
-                          case "dubai":
-                            return (
-                              <DubaiForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                detalle={detalle}
-                                onDetalleChange={setDetalle}
-                                onPedidoDetailsChange={setSistemaPedidoDetalles}
-                              />
-                            );
-                          case "dunes":
-                          case "dunes - cortina tradicional":
-                            return (
-                              <DunesForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                detalle={detalle}
-                                onDetalleChange={setDetalle}
-                                onPedidoDetailsChange={setSistemaPedidoDetalles}
-                              />
-                            );
-                          case "fit":
-                            return (
-                              <FitForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                detalle={detalle}
-                                onDetalleChange={setDetalle}
-                                onPedidoDetailsChange={setSistemaPedidoDetalles}
-                              />
-                            );
-                          case "paneles":
-                            return (
-                              <PanelesForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                onPedidoDetailsChange={setSistemaPedidoDetalles}
-                              />
-                            );
-                          case "venecianas":
-                            return (
-                              <VenecianasForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                detalle={detalle}
-                                onDetalleChange={setDetalle}
-                                onPedidoDetailsChange={setSistemaPedidoDetalles}
-                              />
-                            );
-                          case "barcelona":
-                            return (
-                              <BarcelonaForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                detalle={detalle}
-                                ladoComando={ladoComando}
-                                colorSistema={colorSistema}
-                                onDetalleChange={setDetalle}
-                                onLadoComandoChange={setLadoComando}
-                                onColorChange={setColorSistema}
-                              />
-                            );
-                          case "romanas":
-                            return (
-                              <RomanasForm
-                                ancho={ancho}
-                                alto={alto}
-                                cantidad={cantidad}
-                                selectedArticulo={selectedArticulo}
-                                detalle={detalle}
-                                onDetalleChange={setDetalle}
-                                onPedidoDetailsChange={setSistemaPedidoDetalles}
-                              />
-                            );
-                          default:
-                            // console.log('Sistema no coincide:', selectedSistema);
-                            return (
-                              <div className="p-4 text-center text-gray-500">
-                                Formulario para {selectedSistema} en desarrollo...
-                              </div>
-                            );
+                    {/* Input de rieles y barrales debajo del select de artículo */}
+                    <div className="mt-4">
+                      <Input
+                        label="Agregar Producto"
+                        placeholder="Buscar por nombre o ID..."
+                        value={searchRielBarral}
+                        onValueChange={handleBuscarProducto}
+                        onKeyDown={handleKeyDown}
+                        size="sm"
+                        startContent={
+                          <div className="flex items-center pointer-events-none">
+                            <span className="text-default-400 text-small">🔍</span>
+                          </div>
                         }
-                      })()}
-                    </div>
-                  )}
-
-                  {/* PARTE 3: Buscador de telas (siempre visible) */}
-                  {selectedSistema && (
-                    <TelasSearch
-                      searchTela={searchTela}
-                      onSearchChange={handleTelaSearch}
-                      telasFiltradas={telasFiltradas as unknown as Tela[]}
-                      showTelasList={showTelasList}
-                      onTelaSelect={(tela: Tela) => {
-                        setSelectedTela(tela);
-                        setSearchTela(tela.nombre);
-                        setShowTelasList(false);
-                      }}
-                    />
-                  )}
-
-                  {/* Cuarto paso - Resumen de precios */}
-                  {canProceedToNextStep() && selectedSistema === "Roller" && (
-                    <div className="pt-4 mt-4 border-t">
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold">Resumen de Precios</h3>
-                        {selectedTela && ancho && alto && cantidad && (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span>Metros cuadrados:</span>
-                              <span>{((Number(ancho) / 100) * (Number(alto) / 100)).toFixed(2)} m²</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Precio sistema:</span>
-                              <span>${precioSistema.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Precio tela:</span>
-                              <span>${calcularPrecioTela(
-                                Number(ancho),
-                                Number(alto),
-                                selectedTela?.precio ? Number(selectedTela.precio) : 0,
-                                selectedTela?.nombre === 'ROLLER'
-                              ).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Cantidad:</span>
-                              <span>{cantidad}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-lg font-bold">
-                              <span>Total:</span>
-                              <span>${calcularPrecioTotal().toLocaleString()}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {selectedSistema && ancho && alto && (
-                    <div className="sticky bottom-0 z-30 p-4 mt-4 bg-white rounded-t-lg border-t shadow">
-                      <h3 className="mb-3 text-lg font-semibold">Resumen de Precios</h3>
-                      <div className="space-y-2">
-                        {selectedRielBarral ? (
-                          <div className="flex justify-between items-center">
-                            <span className="flex gap-2 items-center">
-                              {selectedRielBarral.nombreProducto} ({ancho}cm)
+                        endContent={
+                          selectedRielBarral && (
+                            <button
+                              type="button"
+                              className="px-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                              aria-label="Quitar producto"
+                              onClick={() => {
+                                setSelectedRielBarral(null);
+                                setSearchRielBarral("");
+                                setShowRielesBarralesList(false);
+                              }}
+                            >
+                              ×
+                            </button>
+                          )
+                        }
+                      />
+                      {showRielesBarralesList && searchRielBarral.length > 1 && (
+                        sugerenciasFiltradas.length > 0 ? (
+                          <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative">
+                            {sugerenciasFiltradas.map(item => (
                               <button
-                                type="button"
-                                className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
-                                aria-label="Quitar riel/barral"
+                                key={item.id}
+                                className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-200 last:border-b-0"
                                 onClick={() => {
-                                  setSelectedRielBarral(null);
-                                  setSearchRielBarral("");
+                                  setSelectedRielBarral(item);
+                                  setShowRielesBarralesList(false);
+                                  setSearchRielBarral(item.nombreProducto);
+                                  console.log('[PRODUCTO SELECCIONADO]', item);
+                                  setShowTelasList(false);
                                 }}
+                                role="option"
+                                aria-selected={selectedRielBarral?.id === item.id}
                               >
-                                ×
+                                <div className="font-medium">{item.nombreProducto}</div>
+                                <div className="text-sm text-gray-600">
+                                  {item.descripcion && <span className="text-gray-500">{item.descripcion}</span>}
+                                  {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
+                                </div>
                               </button>
-                            </span>
-                            <span className="font-medium">
-                              ${((Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)).toLocaleString()}
-                            </span>
+                            ))}
                           </div>
                         ) : (
-                          <div className="flex justify-between items-center">
-                            <span>Sistema ({ancho}cm):</span>
-                            <span className="font-medium">
-                              ${(Number(ancho) / 100 * 12000).toLocaleString()}
-                            </span>
+                          <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative flex items-center justify-center p-4 text-gray-500">
+                            Sin resultados
                           </div>
-                        )}
+                        )
+                      )}
+                    </div>
 
-                        {selectedTela && (
-                          <div className="flex justify-between items-center">
-                            <span>
-                              Tela ({calcularAreaTela(Number(ancho), Number(alto), selectedTela?.nombre === 'ROLLER').toFixed(2)}m²):
-                              {selectedTela?.nombre !== 'ROLLER' && (
-                                <span className="ml-1 text-xs text-gray-500">(Patrón direccional)</span>
-                              )}
-                            </span>
-                            <span className="font-medium">
-                              ${calcularPrecioTela(
-                                Number(ancho),
-                                Number(alto),
-                                selectedTela?.precio ? Number(selectedTela.precio) : 0,
-                                selectedTela?.nombre === 'ROLLER'
-                              ).toLocaleString()}
-                            </span>
-                          </div>
-                        )}
-
-                        {soporteIntermedio && selectedSoporteIntermedio && (
-                          <div className="flex justify-between items-center">
-                            <span>Soporte Intermedio ({selectedSoporteIntermedio.nombre}):</span>
-                            <span className="font-medium">${Number(selectedSoporteIntermedio?.precio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </div>
-                        )}
-
-                        <div className="flex justify-between items-center pt-2">
-                          <div className="flex gap-2 items-center">
-                            <Checkbox
-                              isSelected={incluirColocacion}
-                              onValueChange={setIncluirColocacion}
-                            >
-                              Incluir colocación
-                            </Checkbox>
-                            {showManualPrecioInput ? (
-                              <div className="flex gap-2 items-center">
-                                <Input
-                                  type="number"
-                                  placeholder="Ingrese precio"
-                                  size="sm"
-                                  className="w-32"
-                                  value={precioColocacion.toString()}
-                                  onValueChange={(value) => setPrecioColocacion(Number(value))}
-                                  startContent={
-                                    <div className="flex items-center pointer-events-none">
-                                      <span className="text-default-400 text-small">$</span>
-                                    </div>
-                                  }
+                    {/* PARTE 2: Formulario específico del sistema */}
+                    {selectedSistema && (
+                      <div className="pt-4 mt-4 border-t">
+                        {(() => {
+                          const sistemaNormalizado = selectedSistema
+                            .split('-')[0]
+                            .trim()
+                            .toLowerCase();
+                          
+                          switch (sistemaNormalizado) {
+                            case "roller":
+                              return (
+                                <RollerForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  caidaPorDelante={caidaPorDelante}
+                                  colorSistema={colorSistema}
+                                  ladoComando={ladoComando}
+                                  tipoTela={tipoTela}
+                                  soporteIntermedio={soporteIntermedio}
+                                  soporteDoble={soporteDoble}
+                                  onDetalleChange={setDetalle}
+                                  onCaidaChange={setCaidaPorDelante}
+                                  onColorChange={setColorSistema}
+                                  onLadoComandoChange={setLadoComando}
+                                  onTipoTelaChange={setTipoTela}
+                                  onSoporteIntermedioChange={setSoporteIntermedio}
+                                  onSoporteDobleChange={setSoporteDoble}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                  soporteIntermedioTipo={selectedSoporteIntermedio}
+                                  soportesIntermedios={soportesIntermedios}
+                                  onSoporteIntermedioTipoChange={setSelectedSoporteIntermedio}
+                                  productosFiltrados={productosFiltrados}
                                 />
-                                <span className="w-36 text-xs font-bold text-red-500">
-                                  No se encontró el precio de colocación, por favor ingrese el precio manualmente
-                                </span>
+                              );
+                            case "dubai":
+                              return (
+                                <DubaiForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  onDetalleChange={setDetalle}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                />
+                              );
+                            case "dunes":
+                            case "dunes - cortina tradicional":
+                              return (
+                                <DunesForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  onDetalleChange={setDetalle}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                />
+                              );
+                            case "fit":
+                              return (
+                                <FitForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  onDetalleChange={setDetalle}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                />
+                              );
+                            case "paneles":
+                              return (
+                                <PanelesForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                />
+                              );
+                            case "venecianas":
+                              return (
+                                <VenecianasForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  onDetalleChange={setDetalle}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                />
+                              );
+                            case "barcelona":
+                              return (
+                                <BarcelonaForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  ladoComando={ladoComando}
+                                  colorSistema={colorSistema}
+                                  onDetalleChange={setDetalle}
+                                  onLadoComandoChange={setLadoComando}
+                                  onColorChange={setColorSistema}
+                                  productosFiltrados={productosFiltrados}
+                                />
+                              );
+                            case "romanas":
+                              return (
+                                <RomanasForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  onDetalleChange={setDetalle}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                />
+                              );
+                            default:
+                              // console.log('Sistema no coincide:', selectedSistema);
+                              return (
+                                <div className="p-4 text-center text-gray-500">
+                                  Formulario para {selectedSistema} en desarrollo...
+                                </div>
+                              );
+                          }
+                        })()}
+                      </div>
+                    )}
+
+                    {/* PARTE 3: Buscador de telas (no visible para Veneciana) */}
+                    {selectedSistema && !selectedSistema.toLowerCase().includes('veneciana') && (
+                      <TelasSearch
+                        searchTela={searchTela}
+                        onSearchChange={handleTelaSearch}
+                        telasFiltradas={telasFiltradas as unknown as Tela[]}
+                        showTelasList={showTelasList}
+                        onTelaSelect={(tela: Tela) => {
+                          setSelectedTela(tela);
+                          setSearchTela(tela.nombre);
+                          setShowTelasList(false);
+                        }}
+                      />
+                    )}
+
+                    {/* Cuarto paso - Resumen de precios */}
+                    {canProceedToNextStep() && selectedSistema === "Roller" && (
+                      <div className="pt-4 mt-4 border-t">
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold">Resumen de Precios</h3>
+                          {selectedTela && ancho && alto && cantidad && (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <span>Metros cuadrados:</span>
+                                <span>{((Number(ancho) / 100) * (Number(alto) / 100)).toFixed(2)} m²</span>
                               </div>
-                            ) : (
-                              <span className="text-sm text-gray-600">
-                                (${precioColocacion.toLocaleString()})
-                              </span>
-                            )}
-                          </div>
-                          {incluirColocacion && (
-                            <span className="font-medium">${precioColocacion.toLocaleString()}</span>
+                              <div className="flex justify-between items-center">
+                                <span>Precio sistema:</span>
+                                <span>${precioSistema.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span>Precio tela:</span>
+                                <span>{selectedTela ? `${selectedTela.nombre} - $${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span>Cantidad:</span>
+                                <span>{cantidad}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-lg font-bold">
+                                <span>Total:</span>
+                                <span>${calcularPrecioTotal().toLocaleString()}</span>
+                              </div>
+                            </>
                           )}
                         </div>
+                      </div>
+                    )}
+                    {selectedSistema && ancho && alto && (
+                      <div className="sticky bottom-0 z-30 p-4 mt-4 bg-white rounded-t-lg border-t shadow">
+                        <h3 className="mb-3 text-lg font-semibold">Resumen de Precios</h3>
+                        <div className="space-y-2">
+                          {selectedSistema.toLowerCase().includes('veneciana') ? (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <span className="flex gap-2 items-center">
+                                  {selectedRielBarral?.nombreProducto || selectedSistema.toUpperCase()} ({ancho}cm x {alto}cm)
+                                </span>
+                                <span className="font-medium">
+                                  ${((calcularPrecioSistema() || 0) * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs text-gray-500">
+                                <span>Fórmula: (ancho/100) × (alto/100) × precio base × cantidad</span>
+                                <span>
+                                  ({Number(ancho)/100} × {Number(alto)/100} × {selectedRielBarral?.precio || 0} × {cantidad})
+                                </span>
+                              </div>
+                            </>
+                          ) : selectedRielBarral ? (
+                            <div className="flex justify-between items-center">
+                              <span className="flex gap-2 items-center">
+                                {selectedRielBarral.nombreProducto} ({ancho}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                <button
+                                  type="button"
+                                  className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                  aria-label="Quitar riel/barral"
+                                  onClick={() => {
+                                    setSelectedRielBarral(null);
+                                    setSearchRielBarral("");
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                              <span className="font-medium">
+                                ${((Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)).toLocaleString()}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between items-center">
+                              <span>
+                                {selectedSistema.toLowerCase().includes('veneciana')
+                                  ? `Sistema (${ancho}cm × ${alto}cm):`
+                                  : `Sistema (${ancho}cm):`}
+                              </span>
+                              <span className="font-medium text-gray-500">
+                                Seleccione un producto para ver el precio
+                              </span>
+                            </div>
+                          )}
 
-                        <div className="flex justify-between items-center pt-3 mt-2 border-t">
-                          <span className="font-bold">Total:</span>
-                          <span className="font-bold">
-                            ${(
-                              (selectedRielBarral
-                                ? (Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)
-                                : (Number(ancho) / 100 * 12000)
-                              ) +
-                              (selectedTela ? calcularPrecioTela(
-                                Number(ancho),
-                                Number(alto),
-                                selectedTela?.precio ? Number(selectedTela.precio) : 0,
-                                selectedTela?.nombre === 'ROLLER'
-                              ) : 0) +
-                              (soporteIntermedio && selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0) +
-                              (incluirColocacion ? precioColocacion : 0)
-                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
+                          {selectedTela && !selectedSistema.toLowerCase().includes('veneciana') && (
+                            <div className="flex justify-between items-center">
+                              <span>
+                                {selectedTela.nombre} - ${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({ancho}cm x {alto}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                              </span>
+                              <span className="font-medium">
+                                ${(
+                                  calcularPrecioTela(
+                                    Number(ancho),
+                                    Number(alto),
+                                    selectedTela?.precio ? Number(selectedTela.precio) : 0,
+                                    selectedTela?.nombre === 'ROLLER'
+                                  ) * Number(cantidad || 1)
+                                ).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+
+                          {selectedSoporteIntermedio && (
+                            <div className="flex justify-between items-center">
+                              <span>Soporte Intermedio ({selectedSoporteIntermedio.nombre}):</span>
+                              <span className="font-medium">
+                                ${Number(selectedSoporteIntermedio?.precio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center pt-2">
+                            <div className="flex gap-2 items-center">
+                              <Checkbox
+                                isSelected={incluirColocacion}
+                                onValueChange={setIncluirColocacion}
+                              >
+                                Incluir colocación
+                              </Checkbox>
+                              {incluirColocacion && (
+                                <div className="flex gap-2 items-center">
+                                  <Input
+                                    type="number"
+                                    placeholder="Precio de colocación"
+                                    size="sm"
+                                    className="w-32"
+                                    value={precioColocacion.toString()}
+                                    onValueChange={(value) => setPrecioColocacion(Number(value) || 0)}
+                                    startContent={
+                                      <div className="flex items-center pointer-events-none">
+                                        <span className="text-default-400 text-small">$</span>
+                                      </div>
+                                    }
+                                  />
+                                 
+                                </div>
+                              )}
+                            </div>
+                            {incluirColocacion && (
+                              <span className="font-medium">${precioColocacion.toLocaleString()}</span>
+                            )}
+                          </div>
+                          <div className="flex justify-between items-center pt-3 mt-2 border-t">
+                            <span className="font-bold">Total:</span>
+                            <span className="font-bold">
+                              ${(
+                                selectedSistema.toLowerCase().includes('veneciana')
+                                  ? (selectedRielBarral ? (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio) * Number(cantidad) : 0) + (incluirColocacion ? precioColocacion : 0)
+                                  : (selectedRielBarral
+                                      ? (Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)
+                                      : 0
+                                    ) +
+                                    ((selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) ? calcularPrecioTela(
+                                      Number(ancho),
+                                      Number(alto),
+                                      selectedTela?.precio ? Number(selectedTela.precio) : 0,
+                                      selectedTela?.nombre === 'ROLLER'
+                                    ) : 0) +
+                                    (selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0) +
+                                    (incluirColocacion ? precioColocacion : 0)
+                              ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {error && (
-                    <div className="mt-2 text-sm text-red-500">
-                      {error}
-                    </div>
-                  )}
+                    {error && (
+                      <div className="mt-2 text-sm text-red-500">
+                        {error}
+                      </div>
+                    )}
 
+                  </div>
                 </div>
               </ModalBody>
               <ModalFooter className="sticky bottom-0 z-20 bg-white rounded-b-lg border-t">
@@ -1217,7 +1435,7 @@ export default function GenerarPedidoModal({
                 <Button
                   color="primary"
                   onPress={handleSubmit}
-                  isDisabled={!selectedSistema || !cantidad || !ancho || !alto || !selectedArticulo}
+                  isDisabled={!canProceedToNextStep()}
                 >
                   Generar Pedido
                 </Button>
@@ -1226,6 +1444,37 @@ export default function GenerarPedidoModal({
           );
         }}
       </ModalContent>
+      {/* Overlay de cambio de sistema */}
+      {showCambioSistema && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(255,255,255,0.7)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '1rem',
+            padding: '2rem 3rem',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.15)',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '1rem',
+            fontSize: '1.3rem',
+            fontWeight: 500,
+          }}>
+            <svg className="animate-spin" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="#888" strokeWidth="4" opacity="0.2"/><path d="M22 12a10 10 0 0 1-10 10" stroke="#1976d2" strokeWidth="4" strokeLinecap="round"/></svg>
+            Cambiando a sistema <span style={{color:'#1976d2'}}>{nombreSistemaCambio}</span>...
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }
