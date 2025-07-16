@@ -17,10 +17,8 @@ export const TelasSearch = ({
   showTelasList,
   onTelaSelect
 }: TelasSearchProps) => {
-  const [telas, setTelas] = useState<Tela[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [filteredTelas, setFilteredTelas] = useState<Tela[]>([]);
   const [selectedTela, setSelectedTela] = useState<Tela | null>(null);
+  const [localFilteredTelas, setLocalFilteredTelas] = useState<Tela[]>([]);
 
   // Opción "Sin tela" estática
   const sinTelaOption: Tela = {
@@ -32,9 +30,14 @@ export const TelasSearch = ({
   };
 
   useEffect(() => {
-    console.log('Componente montado, cargando telas...');
-    fetchTelas();
-  }, []);
+    console.log('🔍 [TELASSEARCH] Telas filtradas recibidas:', telasFiltradas);
+    console.log('🔍 [TELASSEARCH] Cantidad de telas:', telasFiltradas.length);
+    
+    // Solo aplicar filtro local si no hay término de búsqueda activo
+    if (!searchTela || searchTela.trim() === '') {
+      setLocalFilteredTelas([sinTelaOption, ...telasFiltradas]);
+    }
+  }, [telasFiltradas]);
 
   useEffect(() => {
     // Si el valor del input es vacío, limpiar la selección interna
@@ -43,67 +46,38 @@ export const TelasSearch = ({
     }
   }, [searchTela]);
 
-  const fetchTelas = async () => {
-    try {
-      setIsLoading(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${baseUrl}/productos/telas/`);
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar las telas');
-      }
-      
-      const data: TelaResponse = await response.json();
-      
-      if (data.productos && Array.isArray(data.productos)) {
-        const telasFormateadas = data.productos.map(producto => ({
-          id: producto.id,
-          descripcion: producto.descripcion,
-          nombre: producto.nombreProducto,
-          tipo: producto.descripcion || '',
-          color: '',
-          precio: Number(producto.precio) || 0
-        }));
-        // Agregar "Sin tela" como primera opción
-        const telasConPrecioString = telasFormateadas.map(tela => ({
-          ...tela,
-          precio: tela.precio.toString()
-        }));
-        setTelas([sinTelaOption, ...telasConPrecioString]);
-        setFilteredTelas([sinTelaOption, ...telasConPrecioString]); 
-      }
-    } catch (error) {
-      console.error('Error al cargar telas:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   const handleSearchChange = (value: string) => {
+    console.log('🔍 [TELASSEARCH] Buscando:', value);
     onSearchChange(value);
     
     // Si el usuario está escribiendo, limpiar la tela seleccionada
     if (value !== searchTela) {
       setSelectedTela(null);
     }
-    
-    if (value === '*') {
-      // Mostrar todas las telas, incluyendo "Sin tela"
-      setFilteredTelas([sinTelaOption, ...telas.slice(1)]);
-    } else if (value.trim() !== '') {
-      const searchTerm = value.toLowerCase().trim();
-      // Filtrar telas pero mantener "Sin tela" como primera opción
-      const filtered = telas
-        .slice(1) // Excluir "Sin tela" de la búsqueda
-        .filter(tela => 
-          tela.nombre.toLowerCase().includes(searchTerm) ||
-          (tela.tipo && tela.tipo.toLowerCase().includes(searchTerm))
-        );
-      setFilteredTelas([sinTelaOption, ...filtered]);
-    } else {
-      // Cuando no hay búsqueda, mostrar todas las telas con "Sin tela" primero
-      setFilteredTelas([sinTelaOption, ...telas.slice(1)]);
+
+    // Aplicar filtro local inmediatamente mientras escribes
+    if (!value || value.trim() === '') {
+      // Si no hay término de búsqueda, mostrar todas las telas
+      setLocalFilteredTelas([sinTelaOption, ...telasFiltradas]);
+      return;
     }
+
+    const searchTerm = value.toLowerCase().trim();
+    console.log('🔍 [TELASSEARCH] Filtro en tiempo real con término:', searchTerm);
+
+    // Filtrar las telas que vienen del backend
+    const filtered = telasFiltradas.filter(tela => {
+      const nombreMatch = tela.nombre.toLowerCase().includes(searchTerm);
+      const tipoMatch = tela.tipo && tela.tipo.toLowerCase().includes(searchTerm);
+      const colorMatch = tela.color && tela.color.toLowerCase().includes(searchTerm);
+      
+      return nombreMatch || tipoMatch || colorMatch;
+    });
+
+    console.log('🔍 [TELASSEARCH] Telas filtradas en tiempo real:', filtered.length);
+    setLocalFilteredTelas([sinTelaOption, ...filtered]);
   };
 
   const handleTelaSelect = (tela: Tela) => {
@@ -142,13 +116,12 @@ export const TelasSearch = ({
           onValueChange={handleSearchChange}
           variant="bordered"
           className="mb-2"
-          endContent={isLoading && <Spinner size="sm" />}
         />
 
         {showTelasList && (
           <div className="overflow-auto absolute z-50 w-full max-h-60 bg-white rounded-lg border shadow-lg">
-            {filteredTelas.length > 0 ? (
-              filteredTelas.map((tela) => (
+            {localFilteredTelas.length > 0 ? (
+              localFilteredTelas.map((tela: Tela) => (
                 <button
                   key={tela.id}
                   className="p-3 w-full text-left border-b hover:bg-gray-50 last:border-b-0"

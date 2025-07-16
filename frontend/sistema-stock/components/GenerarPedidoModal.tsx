@@ -8,6 +8,7 @@ import FitForm from "./utils/abacos/forms/FitForm";
 import VenecianasForm from "./utils/abacos/forms/VenecianasForm";
 import BarcelonaForm from "./utils/abacos/forms/BarcelonaForm";
 import RomanasForm from "./utils/abacos/forms/RomanasForm";
+import PropiosForm from "./utils/abacos/forms/PropiosForm";
 import { TelasSearch } from "./utils/TelasSearch";
 import { type Tela } from '@/types/telas';
 import AbacoCohorteTable from "./utils/abacos/AbacoCohorteTable";
@@ -89,6 +90,9 @@ const normalizarNombreSistema = (tipo: string): string => {
     "DUNES": "Dunes",
     "DUNES - CORTINA TRADICIONAL": "Dunes",
     "ROMANAS": "Romanas",
+    "PROPIOS": "Propios",
+    "TRADICIONAL": "Propios",
+    "TRADICIONAL/ PROPIO": "Propios",
     // Añade más mappings según sea necesario
   };
 
@@ -249,6 +253,9 @@ const sistemaToApiParams: Record<string, { sistemaId: number; rubroId: number; p
   "dubai": { sistemaId: 6, rubroId: 9, proveedorId: 2 },
   "venecianas": { sistemaId: 4, rubroId: 9, proveedorId: 2 },
   "paneles": { sistemaId: 2, rubroId: 9, proveedorId: 2 },
+  "propios": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
+  "tradicional": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
+  "tradicional/ propio": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
   // Agrega aquí otros sistemas según corresponda
 };
 
@@ -518,22 +525,69 @@ export default function GenerarPedidoModal({
     }
   }, [ancho, alto, selectedSistema]);
 
-  // Actualizar la función handleTelaSearch para no usar MOCK_TELAS
+  // Actualizar la función handleTelaSearch para usar el endpoint dinámico
   const handleTelaSearch = async (value: string) => {
+    console.log('🔍 [TELAS] Iniciando búsqueda de telas...');
+    console.log('🔍 [TELAS] Valor buscado:', value);
+    console.log('🔍 [TELAS] Sistema seleccionado:', selectedSistema);
+    
     setSearchTela(value);
     setShowTelasList(true);
 
     if (!value.trim()) {
+      console.log('🔍 [TELAS] Valor vacío, limpiando resultados');
       setTelasFiltradas([]);
       setShowTelasList(false);
       return;
     }
 
-    // Aquí deberías hacer la llamada a tu API o base de datos
-    // Por ejemplo:
-    // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/telas/search?q=${value}`);
-    // const filtered = await response.json();
-    // setTelasFiltradas(filtered);
+    try {
+      // Usar el endpoint dinámico para telas según el sistema seleccionado
+      const sistemaKey = selectedSistema?.toLowerCase();
+      console.log('🔍 [TELAS] Sistema key:', sistemaKey);
+      
+      if (!sistemaKey || !sistemaToApiParams[sistemaKey]) {
+        console.log('[DEBUG] No sistema seleccionado para búsqueda de telas:', selectedSistema);
+        console.log('[DEBUG] SistemaToApiParams disponibles:', Object.keys(sistemaToApiParams));
+        setTelasFiltradas([]);
+        return;
+      }
+
+      const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
+      console.log('🔍 [TELAS] Parámetros del sistema:', { sistemaId, rubroId, proveedorId });
+      
+      // Endpoint dinámico para telas del sistema seleccionado
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${encodeURIComponent(value)}`;
+      
+      console.log('🔍 [TELAS] URL completa:', url);
+      console.log('🔍 [TELAS] Base URL:', process.env.NEXT_PUBLIC_API_URL);
+      
+      const response = await fetch(url);
+      console.log('🔍 [TELAS] Status de la respuesta:', response.status);
+      
+      if (!response.ok) {
+        throw new Error('Error al buscar telas');
+      }
+      
+      const data = await response.json();
+      console.log('🔍 [TELAS] Respuesta completa:', data);
+      console.log('🔍 [TELAS] Cantidad de resultados:', data.data?.length || 0);
+      
+      // Formatear las telas para que coincidan con la interfaz Tela
+      const telasFormateadas = Array.isArray(data.data) ? data.data.map((tela: any) => ({
+        id: tela.id,
+        nombre: tela.nombreProducto || tela.nombre,
+        tipo: tela.descripcion || tela.tipo || '',
+        color: tela.color || '',
+        precio: tela.precio ? Number(tela.precio).toString() : '0'
+      })) : [];
+      
+      console.log('🔍 [TELAS] Telas formateadas:', telasFormateadas);
+      setTelasFiltradas(telasFormateadas);
+    } catch (error) {
+      console.error('❌ [TELAS] Error al buscar telas:', error);
+      setTelasFiltradas([]);
+    }
   };
 
   // Buscar el producto correspondiente al sistema seleccionado
@@ -1214,6 +1268,20 @@ export default function GenerarPedidoModal({
                             case "romanas":
                               return (
                                 <RomanasForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  onDetalleChange={setDetalle}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                />
+                              );
+                            case "propios":
+                            case "tradicional":
+                            case "tradicional/ propio":
+                              return (
+                                <PropiosForm
                                   ancho={ancho}
                                   alto={alto}
                                   cantidad={cantidad}

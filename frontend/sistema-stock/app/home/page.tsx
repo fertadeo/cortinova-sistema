@@ -32,7 +32,7 @@ export default function Home() {
       <div className="mb-4">
                 <Alert
                     color="success"
-                    title="Ya se encuentran disponibles los sistemas de"
+                    title="Ya se encuentran disponibles los Presupuestos de:"
                     description="Bandas Verticales, Roller, Dubai, Paneles, Venecianas."
                     variant="faded"
                 />
