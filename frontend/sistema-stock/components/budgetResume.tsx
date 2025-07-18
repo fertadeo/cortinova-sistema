@@ -177,7 +177,10 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                 {presupuestoData.productos.map((producto, index) => (
                   <tr key={index} className="border-b border-gray-200">
                     <td className="px-4 py-3">{producto.nombre}</td>
-                    <td className="px-4 py-3">{producto.descripcion}</td>
+                    <td className="px-4 py-3">{
+                      // Eliminar medidas del inicio de la descripción (ej: '120cm x 120cm - ')
+                      producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '')
+                    }</td>
                     <td className="px-4 py-3">${producto.precioUnitario.toFixed(2)}</td>
                     <td className="px-4 py-3">{producto.cantidad}</td>
                     <td className="px-4 py-3">${producto.subtotal.toFixed(2)}</td>
