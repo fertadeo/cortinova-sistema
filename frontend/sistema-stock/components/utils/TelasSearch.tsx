@@ -57,6 +57,13 @@ export const TelasSearch = ({
       setSelectedTela(null);
     }
 
+    // Si se presiona "*", mostrar todas las telas
+    if (value === '*') {
+      console.log('🔍 [TELASSEARCH] Mostrando todas las telas (comando *)');
+      setLocalFilteredTelas([sinTelaOption, ...telasFiltradas]);
+      return;
+    }
+
     // Aplicar filtro local inmediatamente mientras escribes
     if (!value || value.trim() === '') {
       // Si no hay término de búsqueda, mostrar todas las telas
