@@ -256,6 +256,8 @@ const sistemaToApiParams: Record<string, { sistemaId: number; rubroId: number; p
   "propios": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
   "tradicional": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
   "tradicional/ propio": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
+  "riel": { sistemaId: 10, rubroId: 5, proveedorId: 7 },
+  "barral": { sistemaId: 10, rubroId: 6, proveedorId: 8 },
   // Agrega aquí otros sistemas según corresponda
 };
 
@@ -338,16 +340,41 @@ export default function GenerarPedidoModal({
 
   // Agregar estado para manejar errores
   const [error, setError] = useState("");
+  const [showValidationAlert, setShowValidationAlert] = useState(false);
+
+  // Estado para el modal de confirmación de cierre
+  const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
 
   // Agregar nuevo estado para el precio de colocación
   const [precioColocacion, setPrecioColocacion] = useState<number>(0);
 
+  const [accesoriosAdicionales, setAccesoriosAdicionales] = useState<any[]>([]);
 
+  // Estado para el multiplicador de tela
+  const [multiplicadorTelaLocal, setMultiplicadorTelaLocal] = useState(1);
 
   // Inicializar los estados con las medidas precargadas si existen
   const [ancho, setAncho] = useState(medidasPrecargadas?.ancho?.toString() || '');
   const [alto, setAlto] = useState(medidasPrecargadas?.alto?.toString() || '');
   const [cantidad, setCantidad] = useState(medidasPrecargadas?.cantidad?.toString() || '1');
+  
+  // Event listener para ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
   
   // Actualizar los valores cuando cambian las medidas precargadas
   useEffect(() => {
@@ -421,49 +448,114 @@ export default function GenerarPedidoModal({
     setShowRielesBarralesList(false);
   };
 
-  // Actualizar la función canProceedToNextStep
+  // Función para validar si se puede proceder al siguiente paso
   const canProceedToNextStep = () => {
-    if (!selectedSistema) return false;
-    if (!cantidad || Number(cantidad) <= 0) return false;
-    if (!ancho || Number(ancho) <= 0) return false;
-    if (!alto || Number(alto) <= 0) return false;
+    // Validaciones básicas obligatorias para todos los sistemas
+    if (!selectedSistema) {
+      console.log('❌ Validación fallida: No hay sistema seleccionado');
+      return false;
+    }
+    
+    if (!cantidad || Number(cantidad) <= 0) {
+      console.log('❌ Validación fallida: Cantidad inválida');
+      return false;
+    }
+    
+    if (!ancho || Number(ancho) <= 0) {
+      console.log('❌ Validación fallida: Ancho inválido');
+      return false;
+    }
+    
+    if (!alto || Number(alto) <= 0) {
+      console.log('❌ Validación fallida: Alto inválido');
+      return false;
+    }
 
-    // Para todos los sistemas, requerimos artículo
-    if (!selectedArticulo) return false;
+    // Validación de medidas mínimas (al menos 10cm x 10cm)
+    if (Number(ancho) < 10 || Number(alto) < 10) {
+      console.log('❌ Validación fallida: Medidas muy pequeñas');
+      return false;
+    }
 
-    // Para todos los sistemas, requerimos un producto específico seleccionado
-    if (!selectedRielBarral || !selectedRielBarral.precio) return false;
+    // Validación específica por tipo de sistema
+    const sistemaLower = selectedSistema.toLowerCase();
+    
+    // Para sistemas que requieren producto específico (no Propios/Tradicional)
+    if (!sistemaLower.includes('tradicional') && !sistemaLower.includes('propios')) {
+      if (!selectedRielBarral || !selectedRielBarral.precio) {
+        console.log('❌ Validación fallida: No hay producto seleccionado para sistema', selectedSistema);
+        return false;
+      }
+    }
+
+    // Para sistemas Propios/Tradicional, validar que haya detalles del sistema y producto
+    if (sistemaLower.includes('tradicional') || sistemaLower.includes('propios')) {
+      if (!sistemaPedidoDetalles) {
+        console.log('❌ Validación fallida: No hay detalles del sistema para Propios/Tradicional');
+        return false;
+      }
+      if (!sistemaPedidoDetalles.productoSeleccionado) {
+        console.log('❌ Validación fallida: No hay producto seleccionado para sistema Propios/Tradicional');
+        return false;
+      }
+    }
 
     // Para todos los sistemas excepto Venecianas, requerimos tela
-    if (!selectedSistema.toLowerCase().includes('veneciana') && !selectedTela) return false;
+    if (!sistemaLower.includes('veneciana') && !selectedTela) {
+      console.log('❌ Validación fallida: No hay tela seleccionada');
+      return false;
+    }
 
-    // Verificar si hay sistema disponible para las medidas
+    // Validación de medidas según ábaco (si existe)
     const anchoMetros = Number(ancho) / 100;
     const altoMetros = Number(alto) / 100;
     const sistemasDisponibles = abacoData[selectedSistema as keyof typeof abacoData]?.sistemas;
 
-    // Si no hay sistemas disponibles en el ábaco, permitir continuar (validación mínima)
-    if (!sistemasDisponibles || sistemasDisponibles.length === 0) {
-      return true;
+    if (sistemasDisponibles && sistemasDisponibles.length > 0) {
+      const medidasValidas = sistemasDisponibles.some(
+        (sistema: { ancho: number; alto: number }) => 
+          sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
+      );
+      
+      if (!medidasValidas) {
+        console.log('❌ Validación fallida: Medidas no válidas según ábaco');
+        return false;
+      }
     }
 
-    // Si hay sistemas en el ábaco, verificar que las medidas sean válidas
-    return sistemasDisponibles.some(
-      (sistema: { ancho: number; alto: number }) => sistema.ancho >= anchoMetros && sistema.alto >= altoMetros
-    );
+    // Validación de errores del sistema
+    if (error) {
+      console.log('❌ Validación fallida: Hay errores en el sistema');
+      return false;
+    }
+
+    // Validación de precio total
+    const precioTotal = calcularPrecioTotal();
+    if (precioTotal <= 0) {
+      console.log('❌ Validación fallida: Precio total inválido');
+      return false;
+    }
+
+    console.log('✅ Todas las validaciones pasaron');
+    return true;
   };
 
   const handleClose = () => {
-    if (selectedSistema || cantidad !== "1" || ancho !== "0" || alto !== "0" || selectedArticulo) {
-      setShowConfirmModal(true);
+    // Verificar si hay datos ingresados
+    if (selectedSistema || cantidad !== "1" || ancho !== "" || alto !== "" || selectedArticulo || selectedTela || selectedRielBarral) {
+      setShowCloseConfirmModal(true);
     } else {
       onOpenChange(false);
     }
   };
 
   const handleConfirmClose = () => {
-    setShowConfirmModal(false);
+    setShowCloseConfirmModal(false);
     onOpenChange(false);
+  };
+
+  const handleCancelClose = () => {
+    setShowCloseConfirmModal(false);
   };
 
   useEffect(() => {
@@ -534,7 +626,9 @@ export default function GenerarPedidoModal({
     setSearchTela(value);
     setShowTelasList(true);
 
-    if (!value.trim()) {
+    // Permitir búsqueda si es '*' (con o sin espacios) o si hay texto
+    const isAsterisk = value.trim() === '*';
+    if (!value.trim() && !isAsterisk) {
       console.log('🔍 [TELAS] Valor vacío, limpiando resultados');
       setTelasFiltradas([]);
       setShowTelasList(false);
@@ -556,8 +650,9 @@ export default function GenerarPedidoModal({
       const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
       console.log('🔍 [TELAS] Parámetros del sistema:', { sistemaId, rubroId, proveedorId });
       
-      // Endpoint dinámico para telas del sistema seleccionado
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${encodeURIComponent(value)}`;
+      // Si el valor es '*', buscar todas las telas (q=*)
+      const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
       
       console.log('🔍 [TELAS] URL completa:', url);
       console.log('🔍 [TELAS] Base URL:', process.env.NEXT_PUBLIC_API_URL);
@@ -576,7 +671,7 @@ export default function GenerarPedidoModal({
       // Formatear las telas para que coincidan con la interfaz Tela
       const telasFormateadas = Array.isArray(data.data) ? data.data.map((tela: any) => ({
         id: tela.id,
-        nombre: tela.nombreProducto || tela.nombre,
+        nombreProducto: tela.nombreProducto || tela.nombre,
         tipo: tela.descripcion || tela.tipo || '',
         color: tela.color || '',
         precio: tela.precio ? Number(tela.precio).toString() : '0'
@@ -600,13 +695,22 @@ export default function GenerarPedidoModal({
     const anchoMetros = Number(ancho) / 100;
     const altoMetros = Number(alto) / 100;
     
+    // Obtener el producto seleccionado (puede venir de selectedRielBarral o de sistemaPedidoDetalles)
+    let productoSeleccionado = selectedRielBarral;
+    
+    // Para sistemas Tradicional/Propios, verificar si hay producto en sistemaPedidoDetalles
+    if ((selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios')) && 
+        sistemaPedidoDetalles?.productoSeleccionado) {
+      productoSeleccionado = sistemaPedidoDetalles.productoSeleccionado;
+    }
+    
     // Solo calcular precio si hay un producto específico seleccionado
-    if (!selectedRielBarral || !selectedRielBarral.precio) {
+    if (!productoSeleccionado || !productoSeleccionado.precio) {
       console.log('⚠️ No hay producto seleccionado, no se puede calcular precio del sistema');
       return 0;
     }
     
-    const precioBase = Number(selectedRielBarral.precio);
+    const precioBase = Number(productoSeleccionado.precio);
     console.log('🎯 Usando precio del producto seleccionado:', precioBase);
     
     // Para Roller y Veneciana, calcular por área (ancho × alto)
@@ -649,7 +753,7 @@ export default function GenerarPedidoModal({
       Number(ancho),
       Number(alto),
       selectedTela?.precio ? Number(selectedTela.precio) : 0,
-      selectedTela?.nombre === 'ROLLER'
+      selectedTela?.nombreProducto === 'ROLLER'
     );
 
     // Incluir precio de colocación si está seleccionado
@@ -754,7 +858,7 @@ export default function GenerarPedidoModal({
           Number(ancho),
           Number(alto),
           selectedTela?.precio ? Number(selectedTela.precio) : 0,
-          selectedTela?.nombre === 'ROLLER'
+          selectedTela?.nombreProducto === 'ROLLER'
         );
         setPrecioTela(nuevoPrecioTela);
       }
@@ -810,15 +914,43 @@ export default function GenerarPedidoModal({
       Number(ancho),
       Number(alto),
       selectedTela?.precio ? Number(selectedTela.precio) : 0,
-      selectedTela?.nombre === 'ROLLER'
+      selectedTela?.nombreProducto === 'ROLLER'
     ) : 0;
     const soporteIntermedioTotal = selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0;
     const colocacionTotal = incluirColocacion ? precioColocacion : 0;
     const cantidadNum = Number(cantidad) || 1;
     // El precio unitario debe incluir todos los extras
     const precioUnitarioCompleto = precioUnitario + precioTelaTotal + soporteIntermedioTotal + colocacionTotal;
-    const precioTotal = precioUnitarioCompleto * cantidadNum;
+    const precioTotal = precioUnitarioCompleto * cantidadNum + totalAccesoriosAdicionales;
 
+    console.log('selectedSoporteIntermedio:', selectedSoporteIntermedio);
+    console.log('accesoriosAdicionales:', accesoriosAdicionales);
+    
+    // Log detallado de todos los datos del pedido para cortina tradicional
+    console.log('=== DETALLE COMPLETO DEL PEDIDO TRADICIONAL ===');
+    console.log('Sistema:', selectedSistema);
+    console.log('Medidas:', { ancho: Number(ancho), alto: Number(alto) });
+    console.log('Cantidad:', cantidad);
+    console.log('Tela seleccionada:', selectedTela);
+    console.log('Soporte intermedio:', selectedSoporteIntermedio);
+    console.log('Accesorios adicionales:', accesoriosAdicionales);
+    console.log('Colocación incluida:', incluirColocacion);
+    console.log('Precio colocación:', precioColocacion);
+    console.log('Precio unitario completo:', precioUnitarioCompleto);
+    console.log('Precio total:', precioTotal);
+    console.log('Detalles del sistema:', {
+      sistemaRecomendado,
+      articuloSeleccionado: selectedArticulo,
+      caidaPorDelante,
+      colorSistema,
+      ladoComando,
+      tipoTela,
+      soporteIntermedio,
+      soporteDoble,
+      detalle
+    });
+    console.log('=== FIN DETALLE COMPLETO ===');
+    
     const pedido = {
       sistema: selectedSistema,
       detalles: {
@@ -839,12 +971,10 @@ export default function GenerarPedidoModal({
         precioColocacion: incluirColocacion ? precioColocacion : 0,
         soporteIntermedioTipo: selectedSoporteIntermedio,
         accesorios: [
-          selectedSoporteIntermedio ? {
-            nombre: selectedSoporteIntermedio.nombre,
-            precio: selectedSoporteIntermedio.precio
-          } : null
+          selectedSoporteIntermedio ? selectedSoporteIntermedio.nombre : null
           // Aquí puedes agregar otros accesorios según el sistema
-        ].filter(Boolean)
+        ].filter(Boolean),
+        accesoriosAdicionales: accesoriosAdicionales.map(acc => acc.nombre || acc)
       },
       fecha: new Date().toISOString(),
       precioUnitario: precioUnitarioCompleto,
@@ -853,6 +983,7 @@ export default function GenerarPedidoModal({
       incluirColocacion,
       precioColocacion
     };
+    console.log('Pedido creado con accesorios:', pedido);
     onPedidoCreated(pedido);
     onOpenChange(false);
   };
@@ -942,26 +1073,101 @@ export default function GenerarPedidoModal({
     }
   }, [selectedRielBarral, selectedSistema, ancho, alto]);
 
+  // Escuchar cambios de productos desde PropiosForm
+  useEffect(() => {
+    if (sistemaPedidoDetalles?.productoSeleccionado && 
+        (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))) {
+      console.log('🎯 Producto seleccionado desde PropiosForm:', sistemaPedidoDetalles.productoSeleccionado);
+      setSelectedRielBarral(sistemaPedidoDetalles.productoSeleccionado);
+    }
+  }, [sistemaPedidoDetalles?.productoSeleccionado, selectedSistema]);
+
+  // Función para agrupar accesorios por nombre y sumar cantidades
+  const agruparAccesorios = (accesorios: any[]) => {
+    const accesoriosAgrupados = new Map();
+    
+    accesorios.forEach(acc => {
+      const nombre = acc.nombreProducto;
+      const precio = Number(acc.precio);
+      const cantidad = acc.cantidad || 1;
+      
+      if (accesoriosAgrupados.has(nombre)) {
+        // Si ya existe, sumar cantidades
+        const existente = accesoriosAgrupados.get(nombre);
+        existente.cantidad += cantidad;
+        existente.precioTotal = existente.precioUnitario * existente.cantidad;
+      } else {
+        // Si es nuevo, agregarlo
+        accesoriosAgrupados.set(nombre, {
+          nombreProducto: nombre,
+          precioUnitario: precio,
+          cantidad: cantidad,
+          precioTotal: precio * cantidad
+        });
+      }
+    });
+    
+    return Array.from(accesoriosAgrupados.values());
+  };
+
+  const totalAccesoriosAdicionales = accesoriosAdicionales.reduce(
+    (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1)),
+    0
+  );
+
+  // Usar el multiplicador local de tela
+  const multiplicadorTela = multiplicadorTelaLocal;
+
+  // Calcular la cantidad de tela multiplicada
+  const anchoTelaMultiplicado = ancho && multiplicadorTela ? (Number(ancho) * multiplicadorTela) : Number(ancho);
+
+  // Calcular el precio de la tela usando el ancho multiplicado
+  const calcularPrecioTelaMultiplicada = () => {
+    if (!selectedTela) return 0;
+    if (cantidadTelaManual && cantidadTelaManual > 0) {
+      return cantidadTelaManual * (selectedTela.precio ? Number(selectedTela.precio) : 0);
+    }
+    if (!ancho || !alto) return 0;
+    return calcularPrecioTela(
+      anchoTelaMultiplicado,
+      Number(alto),
+      selectedTela?.precio ? Number(selectedTela.precio) : 0,
+      selectedTela?.nombreProducto === 'ROLLER'
+    );
+  };
+
+  // 1. Agrega el estado en el componente principal:
+  const [cantidadTelaManual, setCantidadTelaManual] = useState<number | null>(null);
 
   return (
     <Modal
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      size="3xl"
+      onOpenChange={handleClose}
+      size="4xl"
       scrollBehavior="inside"
-      hideCloseButton={false}
+      hideCloseButton={true}
       isDismissable={false}
       shouldBlockScroll={true}
     >
-      <ModalContent className="max-h-[90vh] rounded-lg h-98">
+      <ModalContent className="max-h-[90vh] rounded-lg h-98 m-2 w-[85vw] max-w-[1400px]">
         {(onClose) => {
           return (
             <>
-              <ModalHeader className="sticky top-0 z-20 bg-white rounded-t-lg border-b">
-                Generar Pedido
+              <ModalHeader className="sticky top-0 z-20 bg-white rounded-t-lg border-b flex justify-between items-center">
+                <span>Generar Pedido</span>
+                <Button
+                  isIconOnly
+                  variant="flat"
+                  color="danger"
+                  size="sm"
+                  onPress={handleClose}
+                  aria-label="Cerrar modal"
+                >
+                  ×
+                </Button>
               </ModalHeader>
               
-              <ModalBody className="overflow-y-auto">
+              <ModalBody className="overflow-y-auto px-10 py-4">
                 <div className="space-y-6">
                   {/* PARTE 1: Inputs generales */}
                   <div className="space-y-4">
@@ -1089,68 +1295,136 @@ export default function GenerarPedidoModal({
                     )}
 
                     {/* Input de rieles y barrales debajo del select de artículo */}
-                    <div className="mt-4">
-                      <Input
-                        label="Agregar Producto"
-                        placeholder="Buscar por nombre o ID..."
-                        value={searchRielBarral}
-                        onValueChange={handleBuscarProducto}
-                        onKeyDown={handleKeyDown}
-                        size="sm"
-                        startContent={
-                          <div className="flex items-center pointer-events-none">
-                            <span className="text-default-400 text-small">🔍</span>
-                          </div>
-                        }
-                        endContent={
-                          selectedRielBarral && (
-                            <button
-                              type="button"
-                              className="px-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
-                              aria-label="Quitar producto"
-                              onClick={() => {
-                                setSelectedRielBarral(null);
-                                setSearchRielBarral("");
-                                setShowRielesBarralesList(false);
-                              }}
-                            >
-                              ×
-                            </button>
-                          )
-                        }
-                      />
-                      {showRielesBarralesList && searchRielBarral.length > 1 && (
-                        sugerenciasFiltradas.length > 0 ? (
-                          <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative">
-                            {sugerenciasFiltradas.map(item => (
+                    {selectedSistema && !selectedSistema.toLowerCase().includes('tradicional / propios') && !selectedSistema.toLowerCase().includes('riel') && (
+                      <div className="mt-4">
+                        <Input
+                          label="Agregar Producto"
+                          placeholder="Buscar por nombre o ID..."
+                          value={searchRielBarral}
+                          onValueChange={handleBuscarProducto}
+                          onKeyDown={handleKeyDown}
+                          size="sm"
+                          startContent={
+                            <div className="flex items-center pointer-events-none">
+                              <span className="text-default-400 text-small">🔍</span>
+                            </div>
+                          }
+                          endContent={
+                            selectedRielBarral && (
                               <button
-                                key={item.id}
-                                className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-200 last:border-b-0"
+                                type="button"
+                                className="px-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                aria-label="Quitar producto"
                                 onClick={() => {
-                                  setSelectedRielBarral(item);
+                                  setSelectedRielBarral(null);
+                                  setSearchRielBarral("");
                                   setShowRielesBarralesList(false);
-                                  setSearchRielBarral(item.nombreProducto);
-                                  console.log('[PRODUCTO SELECCIONADO]', item);
-                                  setShowTelasList(false);
                                 }}
-                                role="option"
-                                aria-selected={selectedRielBarral?.id === item.id}
                               >
-                                <div className="font-medium">{item.nombreProducto}</div>
-                                <div className="text-sm text-gray-600">
-                                  {item.descripcion && <span className="text-gray-500">{item.descripcion}</span>}
-                                  {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
-                                </div>
+                                ×
                               </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative flex items-center justify-center p-4 text-gray-500">
-                            Sin resultados
-                          </div>
-                        )
-                      )}
-                    </div>
+                            )
+                          }
+                        />
+                        {showRielesBarralesList && searchRielBarral.length > 1 && (
+                          sugerenciasFiltradas.length > 0 ? (
+                            <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative">
+                              {sugerenciasFiltradas.map(item => (
+                                <button
+                                  key={item.id}
+                                  className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-200 last:border-b-0"
+                                  onClick={() => {
+                                    setSelectedRielBarral(item);
+                                    setShowRielesBarralesList(false);
+                                    setSearchRielBarral(item.nombreProducto);
+                                    console.log('[PRODUCTO SELECCIONADO]', item);
+                                    setShowTelasList(false);
+                                  }}
+                                  role="option"
+                                  aria-selected={selectedRielBarral?.id === item.id}
+                                >
+                                  <div className="font-medium">{item.nombreProducto}</div>
+                                  <div className="text-sm text-gray-600">
+                                    {item.descripcion && <span className="text-gray-500">{item.descripcion}</span>}
+                                    {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative flex items-center justify-center p-4 text-gray-500">
+                              Sin resultados
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    {/* Input específico para sistema Riel */}
+                    {selectedSistema && selectedSistema.toLowerCase().includes('riel') && (
+                      <div className="mt-4">
+                        <Input
+                          label="Buscar Productos de Riel"
+                          placeholder="Buscar rieles por nombre o ID..."
+                          value={searchRielBarral}
+                          onValueChange={handleBuscarProducto}
+                          onKeyDown={handleKeyDown}
+                          size="sm"
+                          startContent={
+                            <div className="flex items-center pointer-events-none">
+                              <span className="text-default-400 text-small">🔍</span>
+                            </div>
+                          }
+                          endContent={
+                            selectedRielBarral && (
+                              <button
+                                type="button"
+                                className="px-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                aria-label="Quitar producto"
+                                onClick={() => {
+                                  setSelectedRielBarral(null);
+                                  setSearchRielBarral("");
+                                  setShowRielesBarralesList(false);
+                                }}
+                              >
+                                ×
+                              </button>
+                            )
+                          }
+                        />
+                        {showRielesBarralesList && searchRielBarral.length > 1 && (
+                          sugerenciasFiltradas.length > 0 ? (
+                            <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative">
+                              {sugerenciasFiltradas.map(item => (
+                                <button
+                                  key={item.id}
+                                  className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-200 last:border-b-0"
+                                  onClick={() => {
+                                    setSelectedRielBarral(item);
+                                    setShowRielesBarralesList(false);
+                                    setSearchRielBarral(item.nombreProducto);
+                                    console.log('[PRODUCTO SELECCIONADO]', item);
+                                    setShowTelasList(false);
+                                  }}
+                                  role="option"
+                                  aria-selected={selectedRielBarral?.id === item.id}
+                                >
+                                  <div className="font-medium">{item.nombreProducto}</div>
+                                  <div className="text-sm text-gray-600">
+                                    {item.descripcion && <span className="text-gray-500">{item.descripcion}</span>}
+                                    {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative flex items-center justify-center p-4 text-gray-500">
+                              Sin resultados
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
 
                     {/* PARTE 2: Formulario específico del sistema */}
                     {selectedSistema && (
@@ -1277,9 +1551,7 @@ export default function GenerarPedidoModal({
                                   onPedidoDetailsChange={setSistemaPedidoDetalles}
                                 />
                               );
-                            case "propios":
-                            case "tradicional":
-                            case "tradicional/ propio":
+                            case "tradicional / propios":
                               return (
                                 <PropiosForm
                                   ancho={ancho}
@@ -1289,6 +1561,22 @@ export default function GenerarPedidoModal({
                                   detalle={detalle}
                                   onDetalleChange={setDetalle}
                                   onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                  onProductoSelect={setSelectedRielBarral}
+                                  onAccesoriosAdicionalesChange={setAccesoriosAdicionales}
+                                />
+                              );
+                            case "tradicional":
+                              return (
+                                <PropiosForm
+                                  ancho={ancho}
+                                  alto={alto}
+                                  cantidad={cantidad}
+                                  selectedArticulo={selectedArticulo}
+                                  detalle={detalle}
+                                  onDetalleChange={setDetalle}
+                                  onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                  onProductoSelect={setSelectedRielBarral}
+                                  onAccesoriosAdicionalesChange={setAccesoriosAdicionales}
                                 />
                               );
                             default:
@@ -1312,9 +1600,17 @@ export default function GenerarPedidoModal({
                         showTelasList={showTelasList}
                         onTelaSelect={(tela: Tela) => {
                           setSelectedTela(tela);
-                          setSearchTela(tela.nombre);
+                          setSearchTela(tela.nombreProducto);
                           setShowTelasList(false);
                         }}
+                        multiplicadorTela={multiplicadorTelaLocal}
+                        onMultiplicadorChange={setMultiplicadorTelaLocal}
+                        cantidadTelaManual={cantidadTelaManual}
+                        onCantidadTelaManualChange={setCantidadTelaManual}
+                        selectedSistema={selectedSistema}
+                        sistemaId={sistemaToApiParams[selectedSistema?.toLowerCase() || '']?.sistemaId}
+                        rubroId={sistemaToApiParams[selectedSistema?.toLowerCase() || '']?.rubroId}
+                        proveedorId={sistemaToApiParams[selectedSistema?.toLowerCase() || '']?.proveedorId}
                       />
                     )}
 
@@ -1335,7 +1631,7 @@ export default function GenerarPedidoModal({
                               </div>
                               <div className="flex justify-between items-center">
                                 <span>Precio tela:</span>
-                                <span>{selectedTela ? `${selectedTela.nombre} - $${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}</span>
+                                <span>{selectedTela ? `${selectedTela.nombreProducto} - $${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span>Cantidad:</span>
@@ -1350,75 +1646,98 @@ export default function GenerarPedidoModal({
                         </div>
                       </div>
                     )}
-                    {selectedSistema && ancho && alto && (
-                      <div className="sticky bottom-0 z-30 p-4 mt-4 bg-white rounded-t-lg border-t shadow">
-                        <h3 className="mb-3 text-lg font-semibold">Resumen de Precios</h3>
-                        <div className="space-y-2">
-                          {selectedSistema.toLowerCase().includes('veneciana') ? (
-                            <>
-                              <div className="flex justify-between items-center">
-                                <span className="flex gap-2 items-center">
-                                  {selectedRielBarral?.nombreProducto || selectedSistema.toUpperCase()} ({ancho}cm x {alto}cm)
-                                </span>
-                                <span className="font-medium">
-                                  ${((calcularPrecioSistema() || 0) * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-gray-500">
-                                <span>Fórmula: (ancho/100) × (alto/100) × precio base × cantidad</span>
-                                <span>
-                                  ({Number(ancho)/100} × {Number(alto)/100} × {selectedRielBarral?.precio || 0} × {cantidad})
-                                </span>
-                              </div>
-                            </>
-                          ) : selectedRielBarral ? (
-                            <div className="flex justify-between items-center">
-                              <span className="flex gap-2 items-center">
-                                {selectedRielBarral.nombreProducto} ({ancho}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
-                                <button
-                                  type="button"
-                                  className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
-                                  aria-label="Quitar riel/barral"
-                                  onClick={() => {
-                                    setSelectedRielBarral(null);
-                                    setSearchRielBarral("");
-                                  }}
-                                >
-                                  ×
-                                </button>
-                              </span>
-                              <span className="font-medium">
-                                ${((Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)).toLocaleString()}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex justify-between items-center">
-                              <span>
-                                {selectedSistema.toLowerCase().includes('veneciana')
-                                  ? `Sistema (${ancho}cm × ${alto}cm):`
-                                  : `Sistema (${ancho}cm):`}
-                              </span>
-                              <span className="font-medium text-gray-500">
-                                Seleccione un producto para ver el precio
-                              </span>
-                            </div>
-                          )}
+                                              {selectedSistema && ancho && alto && (
+                            <div className="p-4 mt-4 bg-gray-50 rounded-lg border">
+                              <h3 className="mb-3 text-lg font-semibold">Resumen de Precios</h3>
+                              <div className="space-y-2">
+                                {(() => {
+                                  // Obtener el producto seleccionado (puede venir de selectedRielBarral o de sistemaPedidoDetalles)
+                                  let productoSeleccionado = selectedRielBarral;
+                                  if ((selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios')) && 
+                                      sistemaPedidoDetalles?.productoSeleccionado) {
+                                    productoSeleccionado = sistemaPedidoDetalles.productoSeleccionado;
+                                  }
+                                  
+                                  return selectedSistema.toLowerCase().includes('veneciana') ? (
+                                    <>
+                                      <div className="flex justify-between items-center">
+                                        <span className="flex gap-2 items-center">
+                                          {productoSeleccionado?.nombreProducto || selectedSistema.toUpperCase()} ({ancho}cm x {alto}cm)
+                                        </span>
+                                        <span className="font-medium">
+                                          ${((calcularPrecioSistema() || 0) * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center text-xs text-gray-500">
+                                        <span>Fórmula: (ancho/100) × (alto/100) × precio base × cantidad</span>
+                                        <span>
+                                          ({Number(ancho)/100} × {Number(alto)/100} × {productoSeleccionado?.precio || 0} × {cantidad})
+                                        </span>
+                                      </div>
+                                    </>
+                                  ) : productoSeleccionado ? (
+                                    <div className="flex justify-between items-center">
+                                      <span className="flex gap-2 items-center">
+                                        {productoSeleccionado.nombreProducto} ({ancho}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                        <button
+                                          type="button"
+                                          className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                          aria-label="Quitar riel/barral"
+                                          onClick={() => {
+                                            setSelectedRielBarral(null);
+                                            setSearchRielBarral("");
+                                          }}
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                      <span className="font-medium">
+                                        ${((Number(ancho) / 100) * Number(productoSeleccionado.precio) * Number(cantidad)).toLocaleString()}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex justify-between items-center">
+                                      <span>
+                                        {selectedSistema.toLowerCase().includes('veneciana')
+                                          ? `Sistema (${ancho}cm × ${alto}cm):`
+                                          : `Sistema (${ancho}cm):`}
+                                      </span>
+                                      <span className="font-medium text-gray-500">
+                                        Seleccione un producto para ver el precio
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
 
                           {selectedTela && !selectedSistema.toLowerCase().includes('veneciana') && (
-                            <div className="flex justify-between items-center">
-                              <span>
-                                {selectedTela.nombre} - ${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({ancho}cm x {alto}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
-                              </span>
-                              <span className="font-medium">
-                                ${(
-                                  calcularPrecioTela(
-                                    Number(ancho),
-                                    Number(alto),
-                                    selectedTela?.precio ? Number(selectedTela.precio) : 0,
-                                    selectedTela?.nombre === 'ROLLER'
-                                  ) * Number(cantidad || 1)
-                                ).toLocaleString()}
-                              </span>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex justify-between items-center">
+                                <span className="flex gap-2 items-center">
+                                  {selectedTela.nombreProducto} - ${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({ancho}cm x {alto}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                  <button
+                                    type="button"
+                                    className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                    aria-label="Quitar tela"
+                                    onClick={() => {
+                                      setSelectedTela(null);
+                                      setSearchTela("");
+                                      setShowTelasList(false);
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                                <span className="font-medium">
+                                  ${cantidadTelaManual && cantidadTelaManual > 0
+                                    ? (cantidadTelaManual * Number(selectedTela.precio)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                    : (calcularPrecioTelaMultiplicada() * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              {multiplicadorTela && multiplicadorTela !== 1 && (
+                                <div className="text-xs text-blue-700 pl-2">
+                                  Cálculo de multiplicador: {ancho} x {multiplicadorTela} = {anchoTelaMultiplicado}cm
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -1428,6 +1747,24 @@ export default function GenerarPedidoModal({
                               <span className="font-medium">
                                 ${Number(selectedSoporteIntermedio?.precio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
+                            </div>
+                          )}
+
+                          {accesoriosAdicionales.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex justify-between items-center">
+                                <span>Accesorios adicionales:</span>
+                                <span className="font-medium">
+                                  ${totalAccesoriosAdicionales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              <ul className="text-xs text-gray-600 mt-1">
+                                {agruparAccesorios(accesoriosAdicionales).map((acc, idx) => (
+                                  <li key={idx}>
+                                    {acc.nombreProducto} x{acc.cantidad} = ${acc.precioTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                           )}
 
@@ -1467,19 +1804,25 @@ export default function GenerarPedidoModal({
                             <span className="font-bold">
                               ${(
                                 selectedSistema.toLowerCase().includes('veneciana')
-                                  ? (selectedRielBarral ? (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio) * Number(cantidad) : 0) + (incluirColocacion ? precioColocacion : 0)
+                                  ? (selectedRielBarral ? (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio) * Number(cantidad) : 0) + (incluirColocacion ? precioColocacion : 0) + totalAccesoriosAdicionales
                                   : (selectedRielBarral
                                       ? (Number(ancho) / 100) * Number(selectedRielBarral.precio) * Number(cantidad)
                                       : 0
                                     ) +
-                                    ((selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) ? calcularPrecioTela(
-                                      Number(ancho),
-                                      Number(alto),
-                                      selectedTela?.precio ? Number(selectedTela.precio) : 0,
-                                      selectedTela?.nombre === 'ROLLER'
-                                    ) : 0) +
+                                    ((selectedTela && !selectedSistema.toLowerCase().includes('veneciana'))
+                                      ? (cantidadTelaManual && cantidadTelaManual > 0
+                                          ? cantidadTelaManual * Number(selectedTela.precio) * Number(cantidad || 1)
+                                          : calcularPrecioTela(
+                                              Number(ancho),
+                                              Number(alto),
+                                              selectedTela?.precio ? Number(selectedTela.precio) : 0,
+                                              selectedTela?.nombreProducto === 'ROLLER'
+                                            ) * Number(cantidad || 1)
+                                        )
+                                      : 0) +
                                     (selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0) +
-                                    (incluirColocacion ? precioColocacion : 0)
+                                    (incluirColocacion ? precioColocacion : 0) +
+                                    totalAccesoriosAdicionales
                               ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
@@ -1497,16 +1840,40 @@ export default function GenerarPedidoModal({
                 </div>
               </ModalBody>
               <ModalFooter className="sticky bottom-0 z-20 bg-white rounded-b-lg border-t">
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Cancelar
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={handleSubmit}
-                  isDisabled={!canProceedToNextStep()}
-                >
-                  Generar Pedido
-                </Button>
+                <div className="flex flex-col w-full gap-3">
+                  {/* Mensajes de validación */}
+                   {/* {validationMessages.length > 0 && ( */}
+                    {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3"> */}
+                      {/* <div className="flex items-center gap-2 mb-2"> */}
+                        {/* <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg> */}
+                         {/* <span className="text-sm font-medium text-yellow-800">
+                          Completa los siguientes campos:
+                        </span> */}
+                      {/* </div> */}
+                        {/* <ul className="text-xs text-yellow-700 space-y-1"> */}
+                         {/* {validationMessages.map((message, index) => (
+                          <li key={index}>{message}</li>
+                        ))} */}
+                      {/* </ul> */}
+                    {/* </div> */}
+                  {/* )} */}
+                  
+                  {/* Botones */}
+                  <div className="flex justify-between items-center">
+                    <Button color="danger" variant="light" onPress={onClose}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      color="primary"
+                      onPress={handleSubmit}
+                      className="min-w-[140px]"
+                    >
+                      Generar Pedido
+                    </Button>
+                  </div>
+                </div>
               </ModalFooter>
             </>
           );
@@ -1543,6 +1910,29 @@ export default function GenerarPedidoModal({
           </div>
         </div>
       )}
+
+      {/* Modal de confirmación de cierre */}
+      <Modal isOpen={showCloseConfirmModal} onOpenChange={setShowCloseConfirmModal}>
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            Confirmar cierre
+          </ModalHeader>
+          <ModalBody>
+            <p>¿Estás seguro que deseas cerrar?</p>
+            <p className="text-sm text-gray-600 mt-2">
+              Los datos ingresados se perderán.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" variant="light" onPress={handleCancelClose}>
+              Cancelar
+            </Button>
+            <Button color="primary" onPress={handleConfirmClose}>
+              Cerrar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Modal>
   );
 }

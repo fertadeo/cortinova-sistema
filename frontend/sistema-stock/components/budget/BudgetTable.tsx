@@ -59,11 +59,13 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
 
   const handleQuantityChange = (localId: string, quantity: string) => {
     try {
+      const newQuantity = parseFloat(quantity) || 0;
       const newItems = tableItems.map(item => 
         item.localId === localId 
           ? {
               ...item,
-              quantity: parseFloat(quantity) || 0
+              quantity: newQuantity,
+              total: item.price * newQuantity
             }
           : item
       );
@@ -139,7 +141,7 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
           </TableCell>
         );
       case "price":
-        return <TableCell>${item.price.toFixed(2)}</TableCell>;
+        return <TableCell>${item.price.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>;
       case "quantity":
         return (
           <TableCell>
@@ -157,7 +159,7 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
           </TableCell>
         );
       case "subtotal":
-        return <TableCell>${(item.price * item.quantity).toFixed(2)}</TableCell>;
+        return <TableCell>${item.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>;
       case "actions":
         return (
           <TableCell className="flex justify-end gap-2 pr-0.5">

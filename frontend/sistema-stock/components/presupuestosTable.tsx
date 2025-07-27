@@ -1,4 +1,4 @@
-// PresupuestosTable.tsx
+// PresupuestosTable.tsx - Updated price formatting
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -52,6 +52,17 @@ interface Item {
     detalle: string;
     colorSistema?: string;
     ladoComando?: string;
+    tipoTela?: string;
+    ancho?: number;
+    alto?: number;
+    caidaPorDelante?: string;
+    soporteIntermedio?: boolean;
+    soporteDoble?: boolean;
+    accesorios?: any[];
+    accesoriosAdicionales?: any[];
+    incluirColocacion?: boolean;
+    precioColocacion?: number;
+    [key: string]: any; // Para campos adicionales
   };
 }
 
@@ -141,6 +152,130 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     fetchData();
   }, [onDataLoaded]);
 
+  // Función para formatear el número de presupuesto
+  const formatearNumeroPresupuesto = (numero: string) => {
+    // Si el número ya tiene el formato de fecha (YYYYMMDD-HHMMSS)
+    if (/^\d{8}-\d{6}$/.test(numero)) {
+      const fecha = numero.substring(0, 8);
+      const hora = numero.substring(9, 15);
+      
+      const year = fecha.substring(0, 4);
+      const month = fecha.substring(4, 6);
+      const day = fecha.substring(6, 8);
+      const hours = hora.substring(0, 2);
+      const minutes = hora.substring(2, 4);
+      const seconds = hora.substring(4, 6);
+      
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }
+    
+    // Si es el formato anterior (PRES-YYYY-XXX), mantenerlo
+    return numero;
+  };
+
+  // Función para formatear la información detallada del producto
+  const formatearDetallesProducto = (item: Item) => {
+    console.log('formatearDetallesProducto - item completo:', item);
+    console.log('formatearDetallesProducto - detalles:', item.detalles);
+    
+    const detalles = [];
+    
+    // Información básica del producto
+    detalles.push(`${item.cantidad}x ${item.nombre}`);
+    
+    // Agregar descripción si existe
+    if (item.descripcion && item.descripcion.trim() !== '') {
+      detalles.push(`• Descripción: ${item.descripcion}`);
+    }
+    
+    // Agregar detalles del sistema si existen
+    if (item.detalles) {
+      if (item.detalles.sistema) {
+        detalles.push(`• Sistema: ${item.detalles.sistema}`);
+      }
+      if (item.detalles.detalle) {
+        detalles.push(`• Detalle: ${item.detalles.detalle}`);
+      }
+      if (item.detalles.colorSistema) {
+        detalles.push(`• Color: ${item.detalles.colorSistema}`);
+      }
+      if (item.detalles.ladoComando) {
+        detalles.push(`• Comando: ${item.detalles.ladoComando}`);
+      }
+      
+      // Buscar accesorios de manera más robusta
+      let accesoriosEncontrados = false;
+      
+      // 1. Buscar en campos específicos de accesorios
+      const accesorios = (item.detalles as any).accesorios;
+      if (accesorios && Array.isArray(accesorios) && accesorios.length > 0) {
+        detalles.push(`• Accesorios: ${accesorios.join(', ')}`);
+        accesoriosEncontrados = true;
+      } else if (accesorios && typeof accesorios === 'string' && accesorios.trim() !== '') {
+        detalles.push(`• Accesorios: ${accesorios}`);
+        accesoriosEncontrados = true;
+      }
+      
+      // 2. Buscar en accesorios adicionales
+      const accesoriosAdicionales = (item.detalles as any).accesoriosAdicionales;
+      if (!accesoriosEncontrados && accesoriosAdicionales && Array.isArray(accesoriosAdicionales) && accesoriosAdicionales.length > 0) {
+        detalles.push(`• Accesorios: ${accesoriosAdicionales.join(', ')}`);
+        accesoriosEncontrados = true;
+      } else if (!accesoriosEncontrados && accesoriosAdicionales && typeof accesoriosAdicionales === 'string' && accesoriosAdicionales.trim() !== '') {
+        detalles.push(`• Accesorios: ${accesoriosAdicionales}`);
+        accesoriosEncontrados = true;
+      }
+      
+      // 3. Buscar en cualquier campo que contenga "accesorio" en el nombre
+      if (!accesoriosEncontrados) {
+        const detallesKeys = Object.keys(item.detalles);
+        const accesoriosKeys = detallesKeys.filter(key => 
+          key.toLowerCase().includes('accesorio') || 
+          key.toLowerCase().includes('accesorios')
+        );
+        
+        accesoriosKeys.forEach(key => {
+          const valor = (item.detalles as any)[key];
+          if (valor && valor !== 'false' && valor !== false && valor !== '[]' && valor !== '') {
+            if (Array.isArray(valor)) {
+              detalles.push(`• Accesorios: ${valor.join(', ')}`);
+            } else {
+              detalles.push(`• Accesorios: ${valor}`);
+            }
+            accesoriosEncontrados = true;
+          }
+        });
+      }
+      
+      // 4. Buscar información de colocación
+      const colocacionKeys = Object.keys(item.detalles).filter(key => 
+        key.toLowerCase().includes('colocacion') || 
+        key.toLowerCase().includes('instalacion')
+      );
+      
+      colocacionKeys.forEach(key => {
+        const valor = (item.detalles as any)[key];
+        if (valor && valor !== 'false' && valor !== false) {
+          if (typeof valor === 'boolean' && valor === true) {
+            detalles.push(`• Colocación: Incluida`);
+          } else {
+            detalles.push(`• Colocación: ${valor}`);
+          }
+        }
+      });
+      
+      // 5. Mostrar información de medidas si está disponible
+      if (item.detalles.ancho && item.detalles.alto) {
+        detalles.push(`• Medidas: ${item.detalles.ancho}cm x ${item.detalles.alto}cm`);
+      }
+    }
+    
+    // Agregar precio
+    detalles.push(`• Precio: $${Number(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`);
+    
+    return detalles;
+  };
+
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case "Confirmado":
@@ -212,10 +347,16 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     try {
       setIsDuplicating(true);
       
-      // Crear nuevo número de presupuesto
-      const fechaActual = new Date().toISOString().split('T')[0].replace(/-/g, '');
-      const numeroAleatorio = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      const nuevoNumeroPresupuesto = `P${fechaActual}${numeroAleatorio}`;
+      // Crear nuevo número de presupuesto basado en fecha actual
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      
+      const nuevoNumeroPresupuesto = `${year}${month}${day}-${hours}${minutes}${seconds}`;
 
       // Crear el nuevo presupuesto duplicado
       const nuevoPrespuesto = {
@@ -298,7 +439,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       case "numero_presupuesto":
         return (
           <div className="font-medium">
-            {presupuesto.numero_presupuesto}
+            {formatearNumeroPresupuesto(presupuesto.numero_presupuesto)}
           </div>
         );
       case "fecha":
@@ -345,8 +486,8 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                           {item.detalles.ladoComando && ` - Comando: ${item.detalles.ladoComando}`}
                         </div>
                       )}
-                      <div className="mt-1 font-medium">
-                        ${item.subtotal.toLocaleString('es-AR')}
+                      <div className="mt-1 font-medium text-right">
+                        ${Number(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </div>
                     </div>
                   </div>
@@ -356,9 +497,12 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           </Popover>
         );
       case "total":
+        const totalNumber = Number(presupuesto.total);
+        const formattedTotal = totalNumber.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        console.log('Total original:', presupuesto.total, 'Como número:', totalNumber, 'Formateado:', formattedTotal);
         return (
-          <div className="font-medium">
-            ${presupuesto.total.toLocaleString('es-AR')}
+          <div className="font-medium text-right">
+            ${formattedTotal}
           </div>
         );
       case "estado":
@@ -396,19 +540,32 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                         <p className="text-default-600">¿Estás seguro de proceder?</p>
                         <div className="p-4 space-y-2 rounded-lg bg-default-50">
                           <h4 className="font-medium">Datos del pedido:</h4>
-                          <p>N° Presupuesto: {presupuestoToConfirm.numero_presupuesto}</p>
+                          <p>N° Presupuesto: {formatearNumeroPresupuesto(presupuestoToConfirm.numero_presupuesto)}</p>
                           <p>Cliente: {presupuestoToConfirm.cliente_nombre}</p>
                           <p>Teléfono: {presupuestoToConfirm.cliente_telefono}</p>
-                          <p>Total: ${presupuestoToConfirm.total.toLocaleString('es-AR')}</p>
-                          <div className="mt-2">
-                            <p className="font-medium">Productos:</p>
-                            <ul className="list-disc list-inside">
+                          {presupuestoToConfirm.cliente_email && (
+                            <p>Email: {presupuestoToConfirm.cliente_email}</p>
+                          )}
+                          <p>Total: ${Number(presupuestoToConfirm.total).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                          <div className="mt-4">
+                            <p className="font-medium mb-3">Productos:</p>
+                            <div className="space-y-3">
                               {presupuestoToConfirm.items.map((item, index) => (
-                                <li key={index} className="text-sm">
-                                  {item.cantidad}x {item.nombre} - ${item.subtotal.toLocaleString('es-AR')}
-                                </li>
+                                <div key={index} className="p-3 bg-white rounded-lg border border-gray-200">
+                                  <div className="space-y-1">
+                                    {formatearDetallesProducto(item).map((detalle, detalleIndex) => (
+                                      <div key={detalleIndex} className="text-sm">
+                                        {detalleIndex === 0 ? (
+                                          <span className="font-semibold text-blue-600">{detalle}</span>
+                                        ) : (
+                                          <span className="text-gray-600">{detalle}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               ))}
-                            </ul>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -502,12 +659,42 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   const handleConvertirAPedido = async (presupuestoId: number) => {
     try {
       setIsUpdating(true);
+      
+      // Obtener el presupuesto completo para preservar todos los datos
+      const presupuestoCompleto = presupuestos.find(p => p.id === presupuestoId);
+      
+      if (!presupuestoCompleto) {
+        throw new Error('Presupuesto no encontrado');
+      }
+      
+      // Preparar los datos completos del pedido
+      const pedidoData = {
+        estado: "Confirmado",
+        presupuesto_id: presupuestoId,
+        numeroPresupuesto: presupuestoCompleto.numero_presupuesto,
+        cliente: {
+          nombre: presupuestoCompleto.cliente_nombre,
+          telefono: presupuestoCompleto.cliente_telefono,
+          email: presupuestoCompleto.cliente_email
+        },
+        productos: presupuestoCompleto.items?.map(item => ({
+          nombre: item.nombre,
+          descripcion: item.descripcion,
+          cantidad: item.cantidad,
+          precioUnitario: item.precio_unitario,
+          subtotal: item.subtotal,
+          detalles: item.detalles || {}
+        })) || [],
+        total: presupuestoCompleto.total,
+        fecha_pedido: new Date().toISOString()
+      };
+      
+      console.log('Enviando datos completos del pedido:', pedidoData);
+      
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoId}/convertir-a-pedido`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          estado: "Confirmado"
-        })
+        body: JSON.stringify(pedidoData)
       });
 
       if (!response.ok) {

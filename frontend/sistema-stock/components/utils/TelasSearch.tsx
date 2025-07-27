@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Spinner } from "@heroui/react";
-import { Tela, TelaResponse } from '@/types/telas';
+import { Tela } from '@/types/telas';
 
 interface TelasSearchProps {
   searchTela: string;
@@ -8,6 +8,15 @@ interface TelasSearchProps {
   telasFiltradas: Tela[];
   showTelasList: boolean;
   onTelaSelect: (tela: Tela) => void;
+  multiplicadorTela?: number;
+  onMultiplicadorChange?: (multiplicador: number) => void;
+  cantidadTelaManual?: number | null;
+  onCantidadTelaManualChange?: (cantidad: number | null) => void;
+  // Nuevos props para filtros dinámicos
+  sistemaId?: number;
+  rubroId?: number;
+  proveedorId?: number;
+  selectedSistema?: string;
 }
 
 export const TelasSearch = ({
@@ -15,29 +24,87 @@ export const TelasSearch = ({
   onSearchChange,
   telasFiltradas,
   showTelasList,
-  onTelaSelect
+  onTelaSelect,
+  multiplicadorTela = 1,
+  onMultiplicadorChange,
+  cantidadTelaManual = 0,
+  onCantidadTelaManualChange,
+  sistemaId,
+  rubroId,
+  proveedorId,
+  selectedSistema
 }: TelasSearchProps) => {
   const [selectedTela, setSelectedTela] = useState<Tela | null>(null);
   const [localFilteredTelas, setLocalFilteredTelas] = useState<Tela[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Multiplicadores disponibles
+  const multiplicadores = [1.5, 2, 2.5, 3];
+
+  // Función para buscar telas usando la API de productos filtrados
+  const buscarTelas = async (searchTerm: string) => {
+    setLoading(true);
+    try {
+      let url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados`;
+      
+      // Determinar qué filtros usar basado en el sistema seleccionado
+      const isTradicional = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+      
+      if (isTradicional || !sistemaId || !rubroId || !proveedorId) {
+        // Para sistemas Tradicional/Propios o cuando no hay parámetros específicos, usar filtro fijo
+        url += '?rubroId=4';
+        console.log('🔍 [TELAS] Usando filtro fijo para sistema Tradicional/Propios');
+      } else {
+        // Para otros sistemas, usar filtros dinámicos
+        url += `?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}`;
+        console.log('🔍 [TELAS] Usando filtros dinámicos:', { sistemaId, rubroId, proveedorId });
+      }
+      
+      // Si el término de búsqueda es '*', buscar todos los productos
+      if (searchTerm.trim() === '*') {
+        url += '&q=*';
+      } else if (searchTerm.trim()) {
+        // Si hay un término de búsqueda específico
+        url += `&q=${encodeURIComponent(searchTerm)}`;
+      }
+      
+      console.log('🔍 [TELAS] Buscando telas con URL:', url);
+      console.log('🔍 [TELAS] Sistema seleccionado:', selectedSistema);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Error al buscar telas');
+      }
+      
+      const data = await response.json();
+      console.log('🔍 [TELAS] Respuesta de la API:', data);
+      
+      if (Array.isArray(data.data)) {
+        setLocalFilteredTelas([sinTelaOption, ...data.data]);
+      } else {
+        setLocalFilteredTelas([sinTelaOption]);
+      }
+    } catch (error) {
+      console.error('❌ [TELAS] Error al buscar telas:', error);
+      setLocalFilteredTelas([sinTelaOption]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Opción "Sin tela" estática
   const sinTelaOption: Tela = {
     id: 0,
-    nombre: "Sin tela",
+    nombreProducto: "Sin tela",
     tipo: "",
     color: "",
     precio: "0"
   };
 
   useEffect(() => {
-    console.log('🔍 [TELASSEARCH] Telas filtradas recibidas:', telasFiltradas);
-    console.log('🔍 [TELASSEARCH] Cantidad de telas:', telasFiltradas.length);
-    
-    // Solo aplicar filtro local si no hay término de búsqueda activo
-    if (!searchTela || searchTela.trim() === '') {
-      setLocalFilteredTelas([sinTelaOption, ...telasFiltradas]);
-    }
-  }, [telasFiltradas]);
+    // Inicializar con la opción "Sin tela"
+    setLocalFilteredTelas([sinTelaOption]);
+  }, []);
 
   useEffect(() => {
     // Si el valor del input es vacío, limpiar la selección interna
@@ -57,34 +124,20 @@ export const TelasSearch = ({
       setSelectedTela(null);
     }
 
-    // Si se presiona "*", mostrar todas las telas
-    if (value === '*') {
-      console.log('🔍 [TELASSEARCH] Mostrando todas las telas (comando *)');
-      setLocalFilteredTelas([sinTelaOption, ...telasFiltradas]);
+    // Si se presiona "*" (con o sin espacios), buscar todas las telas
+    if (value.trim() === '*') {
+      buscarTelas('*');
       return;
     }
 
-    // Aplicar filtro local inmediatamente mientras escribes
+    // Si no hay término de búsqueda, limpiar resultados
     if (!value || value.trim() === '') {
-      // Si no hay término de búsqueda, mostrar todas las telas
-      setLocalFilteredTelas([sinTelaOption, ...telasFiltradas]);
+      setLocalFilteredTelas([sinTelaOption]);
       return;
     }
 
-    const searchTerm = value.toLowerCase().trim();
-    console.log('🔍 [TELASSEARCH] Filtro en tiempo real con término:', searchTerm);
-
-    // Filtrar las telas que vienen del backend
-    const filtered = telasFiltradas.filter(tela => {
-      const nombreMatch = tela.nombre.toLowerCase().includes(searchTerm);
-      const tipoMatch = tela.tipo && tela.tipo.toLowerCase().includes(searchTerm);
-      const colorMatch = tela.color && tela.color.toLowerCase().includes(searchTerm);
-      
-      return nombreMatch || tipoMatch || colorMatch;
-    });
-
-    console.log('🔍 [TELASSEARCH] Telas filtradas en tiempo real:', filtered.length);
-    setLocalFilteredTelas([sinTelaOption, ...filtered]);
+    // Buscar telas usando la API
+    buscarTelas(value);
   };
 
   const handleTelaSelect = (tela: Tela) => {
@@ -92,7 +145,7 @@ export const TelasSearch = ({
     setSelectedTela(tela);
     
     // Formatear el texto del input para mostrar nombre y precio
-    let displayText = tela.nombre;
+    let displayText = tela.nombreProducto;
     if (tela.id !== 0 && tela.precio && Number(tela.precio) > 0) {
       displayText += ` - $${Number(tela.precio).toFixed(2)}`;
     }
@@ -104,7 +157,7 @@ export const TelasSearch = ({
   // Función para obtener el texto a mostrar en el input
   const getInputDisplayValue = () => {
     if (selectedTela) {
-      let displayText = selectedTela.nombre;
+      let displayText = selectedTela.nombreProducto;
       if (selectedTela.id !== 0 && selectedTela.precio && Number(selectedTela.precio) > 0) {
         displayText += ` - $${Number(selectedTela.precio).toFixed(2)}`;
       }
@@ -123,6 +176,7 @@ export const TelasSearch = ({
           onValueChange={handleSearchChange}
           variant="bordered"
           className="mb-2"
+          endContent={loading && <Spinner size="sm" />}
         />
 
         {showTelasList && (
@@ -135,7 +189,7 @@ export const TelasSearch = ({
                   onClick={() => handleTelaSelect(tela)}
                   tabIndex={0}
                 >
-                  <div className="font-medium">{tela.nombre}</div>
+                  <div className="font-medium">{tela.nombreProducto}</div>
                   {tela.id !== 0 && ( // Solo mostrar detalles si no es "Sin tela"
                     (<div className="text-sm text-gray-600">
                       {tela.color && <span className="mr-2">Color: {tela.color}</span>}
@@ -153,6 +207,57 @@ export const TelasSearch = ({
           </div>
         )}
       </div>
+
+      {/* Multiplicador de tela - Solo para sistema Tradicional */}
+      {(selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios')) && (
+        <div className="mt-4">
+          <label htmlFor="multiplicadorTela" className="block text-sm font-medium mb-2">Multiplicador de tela</label>
+          <div className="flex gap-4 items-center mt-2">
+            {multiplicadores.map((mult) => (
+              <label key={mult} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="radio"
+                  id={`multiplicadorTela-${mult}`}
+                  name="multiplicadorTela"
+                  value={mult}
+                  checked={multiplicadorTela === mult}
+                  onChange={() => {
+                    // Limpiar el input manual cuando se selecciona un radio button
+                    onCantidadTelaManualChange?.(null);
+                    onMultiplicadorChange?.(mult);
+                  }}
+                />
+                x{mult}
+              </label>
+            ))}
+            {/* Campo manual */}
+            <div className="flex items-center gap-1 ml-4">
+              <label htmlFor="cantidadTelaManual" className="text-sm to-blue-700">o ingrese manualmente los metros cuadrados de tela:</label>
+              <input
+                type="number"
+                id="cantidadTelaManual"
+                name="cantidadTelaManual"
+                min={0}
+                step={0.01}
+                value={cantidadTelaManual === undefined || cantidadTelaManual === null || Number.isNaN(cantidadTelaManual) ? '' : cantidadTelaManual}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || val === undefined) {
+                    onCantidadTelaManualChange?.(null);
+                  } else {
+                    // Limpiar el radio button seleccionado cuando se escribe en el input manual
+                    onMultiplicadorChange?.(1);
+                    onCantidadTelaManualChange?.(parseFloat(val));
+                  }
+                }}
+                className="w-24 border rounded px-2 py-1 text-sm"
+                placeholder="0"
+              />
+              <span className="text-xs text-gray-500">m²</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }; 

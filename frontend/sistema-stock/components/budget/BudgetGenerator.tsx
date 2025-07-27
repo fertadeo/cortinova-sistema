@@ -13,7 +13,18 @@ import { useSearchParams } from 'next/navigation';
 
 // Renombrar la declaración local
 interface LocalTableItem {
-  detalles: { sistema: string; detalle: string; caidaPorDelante: string; colorSistema: string; ladoComando: string; tipoTela: string; soporteIntermedio: boolean; soporteDoble: boolean; };
+  detalles: { 
+    sistema: string; 
+    detalle: string; 
+    caidaPorDelante: string; 
+    colorSistema: string; 
+    ladoComando: string; 
+    tipoTela: string; 
+    soporteIntermedio: boolean; 
+    soporteDoble: boolean; 
+    accesorios?: any[];
+    accesoriosAdicionales?: any[];
+  };
   id: number;
   productId: number;
   name: string;
@@ -46,10 +57,12 @@ export const BudgetGenerator = () => {
   
   // Estados de UI
   const [isLoading, setIsLoading] = useState(false);
-  const [showErrorAlert, setShowErrorAlert] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+  
+  // Estado para el toast de error
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   
   // Estados del presupuesto
   const [numeroPresupuesto, setNumeroPresupuesto] = useState<number>(0);
@@ -125,13 +138,21 @@ export const BudgetGenerator = () => {
 
       } catch (error) {
         console.error('Error detallado:', error);
-        setErrorMessage(error instanceof Error ? error.message : "Error al cargar los datos preestablecidos");
-        setShowErrorAlert(true);
+        mostrarErrorToast(error instanceof Error ? error.message : "Error al cargar los datos preestablecidos");
       }
     };
 
     loadPresetData();
   }, [searchParams]);
+
+  // Función para mostrar toast de error
+  const mostrarErrorToast = (mensaje: string) => {
+    setToastMessage(mensaje);
+    setShowErrorToast(true);
+    setTimeout(() => {
+      setShowErrorToast(false);
+    }, 5000);
+  };
 
   // Manejadores de productos
   const handleProductSelect = (newItem: TableItem) => {
@@ -143,7 +164,11 @@ export const BudgetGenerator = () => {
     if (quantity >= 0) {
       setTableData(prevData =>
         prevData.map(item =>
-          item.id === id ? { ...item, quantity } : item
+          item.id === id ? { 
+            ...item, 
+            quantity,
+            total: item.price * quantity
+          } : item
         )
       );
     }
@@ -155,6 +180,13 @@ export const BudgetGenerator = () => {
 
   // Manejador de pedido personalizado
   const handleAddPedido = (pedido: any) => {
+    console.log('=== PEDIDO RECIBIDO EN BUDGETGENERATOR ===');
+    console.log('Pedido completo:', pedido);
+    console.log('Detalles del pedido:', pedido.detalles);
+    console.log('Accesorios:', pedido.detalles?.accesorios);
+    console.log('Accesorios adicionales:', pedido.detalles?.accesoriosAdicionales);
+    console.log('=== FIN PEDIDO RECIBIDO ===');
+    
     // Usar los precios calculados y pasados desde el modal
     const precioUnitario = pedido.precioUnitario;
     const precioTotal = pedido.precioTotal;
@@ -164,18 +196,10 @@ export const BudgetGenerator = () => {
         item.detalles && 'medidaId' in item.detalles && item.detalles.medidaId === pedido.medidaId
           ? {
               ...item,
-              name: `Cortina ${item.detalles.ubicacion || pedido.detalles?.ubicacion} - ${pedido.sistema}`,
-              description: `${pedido.detalles?.ancho}cm x ${pedido.detalles?.alto}cm - ${
-                pedido.detalles?.tela?.nombre || pedido.tela?.nombre || ''
-              }${
-                pedido.detalles?.colorSistema ? ` - Color ${pedido.detalles.colorSistema}` : ''
-              }${
-                pedido.detalles?.ladoComando ? ` - Comando ${pedido.detalles.ladoComando}` : ''
-              }${
-                pedido.detalles?.detalle ? ` - ${pedido.detalles.detalle}` : ''
-              }`,
+              name: `Cortina ${pedido.sistema}`,
+              description: `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`,
               quantity: pedido.detalles?.cantidad || 1,
-              price: precioUnitario,
+              price: precioTotal / (pedido.detalles?.cantidad || 1),
               total: precioTotal,
               detalles: {
                 sistema: pedido.sistema || "",
@@ -183,10 +207,11 @@ export const BudgetGenerator = () => {
                 caidaPorDelante: pedido.detalles?.caidaPorDelante ? "Si" : "No",
                 colorSistema: pedido.detalles?.colorSistema || "",
                 ladoComando: pedido.detalles?.ladoComando || "",
-                tipoTela: pedido.detalles?.tela?.nombre || pedido.tela?.nombre || "",
+                tipoTela: pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || "",
                 soporteIntermedio: pedido.detalles?.soporteIntermedio || false,
                 soporteDoble: pedido.detalles?.soporteDoble || false,
                 accesorios: pedido.detalles?.accesorios || [],
+                accesoriosAdicionales: pedido.detalles?.accesoriosAdicionales || [],
                 medidaId: pedido.medidaId,
                 ancho: pedido.detalles?.ancho,
                 alto: pedido.detalles?.alto,
@@ -201,17 +226,9 @@ export const BudgetGenerator = () => {
         id: Date.now(),
         productId: Date.now(),
         name: `Cortina ${pedido.sistema}`,
-        description: `${pedido.detalles?.ancho}cm x ${pedido.detalles?.alto}cm - ${
-          pedido.detalles?.tela?.nombre || pedido.tela?.nombre || ''
-        }${
-          pedido.detalles?.colorSistema ? ` - Color ${pedido.detalles.colorSistema}` : ''
-        }${
-          pedido.detalles?.ladoComando ? ` - Comando ${pedido.detalles.ladoComando}` : ''
-        }${
-          pedido.detalles?.detalle ? ` - ${pedido.detalles.detalle}` : ''
-        }`,
+        description: `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`,
         quantity: pedido.detalles?.cantidad || 1,
-        price: precioUnitario,
+        price: precioTotal / (pedido.detalles?.cantidad || 1),
         total: precioTotal,
         detalles: {
           sistema: pedido.sistema || "",
@@ -219,16 +236,21 @@ export const BudgetGenerator = () => {
           caidaPorDelante: pedido.detalles?.caidaPorDelante ? "Si" : "No",
           colorSistema: pedido.detalles?.colorSistema || "",
           ladoComando: pedido.detalles?.ladoComando || "",
-          tipoTela: pedido.detalles?.tela?.nombre || pedido.tela?.nombre || "",
+          tipoTela: pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || "",
           soporteIntermedio: pedido.detalles?.soporteIntermedio || false,
           soporteDoble: pedido.detalles?.soporteDoble || false,
           accesorios: pedido.detalles?.accesorios || [],
+          accesoriosAdicionales: pedido.detalles?.accesoriosAdicionales || [],
           medidaId: pedido.medidaId,
           ancho: pedido.detalles?.ancho,
           alto: pedido.detalles?.alto,
           ubicacion: pedido.detalles?.ubicacion
-        }
+        } as any
       };
+      console.log('=== ITEM GUARDADO EN TABLEDATA ===');
+      console.log('Nuevo item:', newTableItem);
+      console.log('Detalles del item:', newTableItem.detalles);
+      console.log('=== FIN ITEM GUARDADO ===');
       setTableData(prev => [...prev, newTableItem]);
     }
   };
@@ -261,8 +283,7 @@ export const BudgetGenerator = () => {
     e.preventDefault();
     
     if (!selectedClient) {
-      setErrorMessage("Falta elegir un cliente");
-      setShowErrorAlert(true);
+      mostrarErrorToast("Falta elegir un cliente");
       return;
     }
     
@@ -270,9 +291,16 @@ export const BudgetGenerator = () => {
       setIsLoading(true);
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const year = new Date().getFullYear();
-      const newNumeroPresupuesto = numeroPresupuesto + 1;
-      const presupuestoId = `PRES-${year}-${newNumeroPresupuesto.toString().padStart(3, '0')}`;
+      // Generar ID basado en la fecha actual
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      
+      const presupuestoId = `${year}${month}${day}-${hours}${minutes}${seconds}`;
       
       const { subtotal, discount, finalTotal } = calculateTotals(
         tableData, 
@@ -287,21 +315,38 @@ export const BudgetGenerator = () => {
         estado: "Emitido",
         numeroPresupuesto: presupuestoId,
         clienteId: selectedClient.id,
-        productos: tableData.map(item => ({
-          id: item.productId || Date.now(),
-          nombre: item.name,
-          descripcion: item.description,
-          cantidad: Number(item.quantity),
-          precioUnitario: Number(item.price),
-          subtotal: Number(item.price) * Number(item.quantity),
-          detalles: item.detalles || {}
-        })),
+        productos: tableData.map(item => {
+          console.log('Item detalles antes de enviar:', item.detalles);
+          return {
+            id: item.productId || Date.now(),
+            nombre: item.name,
+            descripcion: item.description,
+            cantidad: Number(item.quantity),
+            precioUnitario: Number(item.price),
+            subtotal: Number(item.price) * Number(item.quantity),
+            detalles: item.detalles || {}
+          };
+        }),
         total: finalTotal,
         subtotal: subtotal,
         descuento: applyDiscount ? discount : 0
       };
 
+      console.log('=== ESTRUCTURA COMPLETA PARA BACKEND ===');
+      console.log('tableData antes de enviar:', tableData);
+      console.log('Productos con detalles:');
+      tableData.forEach((item, index) => {
+        console.log(`Producto ${index + 1}:`, {
+          nombre: item.name,
+          descripcion: item.description,
+          cantidad: item.quantity,
+          precio: item.price,
+          total: item.total,
+          detalles: item.detalles
+        });
+      });
       console.log('Enviando presupuesto al backend:', presupuestoData);
+      console.log('=== FIN ESTRUCTURA COMPLETA ===');
 
       // Realizar el POST al endpoint
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos`, {
@@ -328,6 +373,7 @@ export const BudgetGenerator = () => {
         productos: tableData.map(item => ({
           nombre: item.name,
           descripcion: item.description,
+          tipoTela: item.detalles?.tipoTela || '',
           precioUnitario: Number(item.price),
           cantidad: Number(item.quantity),
           subtotal: Number(item.price) * Number(item.quantity)
@@ -344,8 +390,7 @@ export const BudgetGenerator = () => {
       
     } catch (error) {
       console.error('Error al emitir presupuesto:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Error al emitir el presupuesto');
-      setShowErrorAlert(true);
+      mostrarErrorToast(error instanceof Error ? error.message : 'Error al emitir el presupuesto');
       setSubmitStatus('error');
       setIsSubmitted(true);
     } finally {
@@ -400,17 +445,6 @@ export const BudgetGenerator = () => {
       <Spacer y={6} />
       
       <form onSubmit={handleEmitirPresupuesto}>
-        {showErrorAlert && (
-          <div className="flex relative justify-between items-center px-4 py-3 mb-4 text-red-700 bg-red-200 bg-opacity-30 rounded border border-red-500 border-opacity-30">
-            <strong className="font-bold">{errorMessage}</strong>
-            <button
-              type="button"
-              onClick={() => setShowErrorAlert(false)}
-            >
-              <span className="text-xl">✕</span>
-            </button>
-          </div>
-        )}
 
         {isSubmitted && (
           <div className={`relative flex-1 px-4 py-3 rounded border ${
@@ -450,6 +484,32 @@ export const BudgetGenerator = () => {
 
       {showResume && presupuestoGenerado && (
         <BudgetResume presupuestoData={presupuestoGenerado} />
+      )}
+      
+      {/* Toast de error */}
+      {showErrorToast && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm animate-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-2">
+              <div className="flex-shrink-0">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{toastMessage}</p>
+              </div>
+              <button
+                onClick={() => setShowErrorToast(false)}
+                className="flex-shrink-0 text-white hover:text-gray-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Card>
   );

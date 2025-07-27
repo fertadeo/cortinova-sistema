@@ -13,7 +13,7 @@ export const useBudgetCalculations = () => {
     shouldRound: boolean = false
   ) => {
     const subtotal = items.reduce((acc, item) => {
-      const itemTotal = item.price * item.quantity;
+      const itemTotal = item.total;
       return acc + itemTotal;
     }, 0);
     

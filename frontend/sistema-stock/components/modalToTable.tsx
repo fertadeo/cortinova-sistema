@@ -132,6 +132,27 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
   );
 
   // Estilo para las pestañas de categoría
+  // Función para formatear el número de presupuesto
+  const formatearNumeroPresupuesto = (numero: string) => {
+    // Si el número ya tiene el formato de fecha (YYYYMMDD-HHMMSS)
+    if (/^\d{8}-\d{6}$/.test(numero)) {
+      const fecha = numero.substring(0, 8);
+      const hora = numero.substring(9, 15);
+      
+      const year = fecha.substring(0, 4);
+      const month = fecha.substring(4, 6);
+      const day = fecha.substring(6, 8);
+      const hours = hora.substring(0, 2);
+      const minutes = hora.substring(2, 4);
+      const seconds = hora.substring(4, 6);
+      
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }
+    
+    // Si es el formato anterior (PRES-YYYY-XXX), mantenerlo
+    return numero;
+  };
+
   const getTabStyle = (category: Category) => {
     return `px-4 py-2 cursor-pointer transition-all ${
       selectedCategory === category
@@ -387,7 +408,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                                         })}
                                       </span>
                                       <span className="px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
-                                        Presupuesto #{presupuesto.numero_presupuesto}
+                                        Presupuesto #{formatearNumeroPresupuesto(presupuesto.numero_presupuesto)}
                                       </span>
                                     </div>
                                   </div>

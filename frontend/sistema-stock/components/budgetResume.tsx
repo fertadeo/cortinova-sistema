@@ -17,6 +17,7 @@ interface BudgetResumeProps {
     productos: Array<{
       nombre: string;
       descripcion: string;
+      tipoTela?: string;
       precioUnitario: number;
       cantidad: number;
       subtotal: number;
@@ -62,7 +63,13 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight, undefined, 'FAST');
 
-      pdf.save(`Presupuesto-${presupuestoData.numeroPresupuesto}.pdf`);
+      // Limpiar el nombre del cliente para usar como nombre de archivo
+      const nombreCliente = presupuestoData.cliente.nombre
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Remover caracteres especiales
+        .replace(/\s+/g, '-') // Reemplazar espacios con guiones
+        .toLowerCase();
+      
+      pdf.save(`Presupuesto-${presupuestoData.numeroPresupuesto}-${nombreCliente}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Hubo un error generando el PDF. Por favor intente nuevamente.');
@@ -139,8 +146,10 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
               />
               <h1 className="text-2xl font-bold text-gray-900">
                 Presupuesto #{presupuestoData.numeroPresupuesto}
-                
               </h1>
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">
+                Cliente: {presupuestoData.cliente.nombre}
+              </h2>
               <p className="text-gray-600">{presupuestoData.fecha}</p>
             </div>
             <div className="mt-16 text-right">
@@ -178,30 +187,39 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                   <tr key={index} className="border-b border-gray-200">
                     <td className="px-4 py-3">{producto.nombre}</td>
                     <td className="px-4 py-3">{
-                      // Eliminar medidas del inicio de la descripción (ej: '120cm x 120cm - ')
-                      producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '')
+                      (() => {
+                        // Eliminar medidas del inicio de la descripción (ej: '120cm x 120cm - ')
+                        const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
+                        
+                        // Si la descripción está vacía o solo tiene espacios, mostrar el tipo de tela
+                        if (!descripcionLimpia || descripcionLimpia.trim() === '') {
+                          return producto.tipoTela || 'Sin descripción';
+                        }
+                        
+                        return descripcionLimpia;
+                      })()
                     }</td>
-                    <td className="px-4 py-3">${producto.precioUnitario.toFixed(2)}</td>
+                    <td className="px-4 py-3">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                     <td className="px-4 py-3">{producto.cantidad}</td>
-                    <td className="px-4 py-3">${producto.subtotal.toFixed(2)}</td>
+                    <td className="px-4 py-3">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                   </tr>
                 ))}
                 <tr>
                   <td colSpan={3}></td>
                   <td className="px-4 py-3 font-bold">Subtotal</td>
-                  <td className="px-4 py-3">${presupuestoData.subtotal.toFixed(2)}</td>
+                  <td className="px-4 py-3">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
                 {(presupuestoData.descuento ?? 0) > 0 && (
                   <tr>
                     <td colSpan={3}></td>
                     <td className="px-4 py-3 font-bold">Descuento</td>
-                    <td className="px-4 py-3">-${(presupuestoData.descuento ?? 0).toFixed(2)}</td>
+                    <td className="px-4 py-3">-${(presupuestoData.descuento ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                   </tr>
                 )}
                 <tr>
                   <td colSpan={3}></td>
                   <td className="px-4 py-3 font-bold">Total</td>
-                  <td className="px-4 py-3 font-bold">${presupuestoData.total.toFixed(2)}</td>
+                  <td className="px-4 py-3 font-bold">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
               </tbody>
             </table>

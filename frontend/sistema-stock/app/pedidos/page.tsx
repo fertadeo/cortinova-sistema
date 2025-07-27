@@ -48,11 +48,11 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
       isOpen={isOpen} 
       onClose={onClose} 
       size="full"
-      className="md:!max-w-2xl z-[30]"
+      className="md:!max-w-2xl z-[30] max-h-screen"
     >
-      <ModalContent>
+      <ModalContent className="max-h-screen">
         <ModalHeader className="text-lg md:text-xl">Llevar pedido a producción</ModalHeader>
-        <ModalBody>
+        <ModalBody className="overflow-y-auto max-h-[calc(100vh-120px)]">
           <div className="space-y-6">
             {/* Información General */}
             <div className="p-3 bg-gray-50 rounded-lg md:p-4">
@@ -71,7 +71,7 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
             </div>
 
             {/* Especificaciones */}
-            <div className="overflow-auto max-h-[40vh] md:max-h-[50vh]">
+            <div className="overflow-y-auto max-h-[30vh] md:max-h-[40vh]">
               <h3 className="sticky top-0 py-2 text-base font-semibold bg-white md:text-lg">
                 Especificaciones
               </h3>
@@ -84,10 +84,12 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
                         <span className="font-medium">Cantidad:</span>
                         <span className="ml-2">{producto.cantidad}</span>
                       </div>
-                      {Object.entries(producto.detalles).map(([key, value]) => (
+                      {Object.entries(formatearDetallesSegunSistema(producto.detalles)).map(([key, value]) => (
                         <div key={key} className="flex flex-wrap">
                           <span className="font-medium">{key}:</span>
-                          <span className="ml-2">{value}</span>
+                          <span className="ml-2">
+                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -188,12 +190,12 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       isOpen={isOpen} 
       onClose={onClose} 
       size="full"
-      className="md:!max-w-3xl z-[30]"
+      className="md:!max-w-3xl z-[30] max-h-screen"
     >
-      <ModalContent>
-        <ModalHeader className="text-lg md:text-xl">Detalles del Pedido</ModalHeader>
-        <ModalBody>
-          <div className="space-y-6 overflow-auto max-h-[75vh]">
+              <ModalContent className="max-h-screen">
+          <ModalHeader className="text-lg md:text-xl">Detalles del Pedido</ModalHeader>
+          <ModalBody className="overflow-y-auto max-h-[calc(100vh-120px)]">
+            <div className="space-y-6">
             {/* Información General */}
             <div className="p-3 bg-gray-50 rounded-lg md:p-4">
               <h3 className="mb-3 text-base font-semibold md:text-lg">Información General</h3>
@@ -225,9 +227,11 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
                       </div>
                       <div className="p-3 bg-gray-50 rounded">
                         <div className="mb-2 text-sm font-medium md:text-base">Especificaciones:</div>
-                        {Object.entries(producto.detalles).map(([key, value]) => (
+                        {Object.entries(formatearDetallesSegunSistema(producto.detalles)).map(([key, value]) => (
                           <div key={key} className="text-sm md:text-base">
-                            <span className="font-medium">{key}:</span> {value}
+                            <span className="font-medium">{key}:</span> {
+                              typeof value === 'object' ? JSON.stringify(value) : String(value)
+                            }
                           </div>
                         ))}
                       </div>
@@ -340,6 +344,136 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       </ModalContent>
     </Modal>
   );
+};
+
+// Función para formatear los detalles según el sistema
+const formatearDetallesSegunSistema = (detalles: any) => {
+  const sistema = detalles.sistema?.toLowerCase() || '';
+  const detallesFormateados: { [key: string]: any } = {};
+  
+
+  
+  // Información común para todos los sistemas
+  if (detalles.sistema) {
+    detallesFormateados['Sistema'] = detalles.sistema;
+  }
+  
+  // Información específica según el tipo de sistema
+  if (sistema.includes('tradicional') || sistema.includes('propios')) {
+    // Para cortinas tradicionales
+    if (detalles.tipoTela) {
+      detallesFormateados['Tela'] = detalles.tipoTela;
+    }
+    if (detalles.ancho && detalles.alto) {
+      detallesFormateados['Medidas'] = `${detalles.ancho}cm x ${detalles.alto}cm`;
+    }
+    if (detalles.caidaPorDelante) {
+      detallesFormateados['Caída por delante'] = detalles.caidaPorDelante;
+    }
+    if (detalles.detalle && detalles.detalle.trim() !== '') {
+      detallesFormateados['Detalle'] = detalles.detalle;
+    }
+    
+    // Información específica de accesorios para tradicionales
+    if (detalles.accesoriosAdicionales && Array.isArray(detalles.accesoriosAdicionales) && detalles.accesoriosAdicionales.length > 0) {
+      detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales.join(', ');
+    } else if (detalles.accesoriosAdicionales && typeof detalles.accesoriosAdicionales === 'string' && detalles.accesoriosAdicionales.trim() !== '' && detalles.accesoriosAdicionales !== '[]') {
+      detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales;
+    }
+    
+    // Verificar otros campos de accesorios específicos para tradicionales
+    const camposAccesoriosTradicionales = ['accesorios', 'accesoriosIncluidos', 'accesorio'];
+    camposAccesoriosTradicionales.forEach(campo => {
+      if (detalles[campo] && !detallesFormateados['Accesorios adicionales']) {
+        const valor = detalles[campo];
+        if (Array.isArray(valor) && valor.length > 0) {
+          detallesFormateados['Accesorios'] = valor.join(', ');
+        } else if (typeof valor === 'string' && valor.trim() !== '' && valor !== '[]' && valor !== 'false') {
+          detallesFormateados['Accesorios'] = valor;
+        }
+      }
+    });
+  } else if (sistema.includes('roller')) {
+    // Para cortinas Roller
+    if (detalles.colorSistema) {
+      detallesFormateados['Color'] = detalles.colorSistema;
+    }
+    if (detalles.ladoComando) {
+      detallesFormateados['Comando'] = detalles.ladoComando;
+    }
+    if (detalles.soporteIntermedio !== undefined) {
+      detallesFormateados['Soporte intermedio'] = detalles.soporteIntermedio ? 'Sí' : 'No';
+    }
+    if (detalles.soporteDoble !== undefined) {
+      detallesFormateados['Soporte doble'] = detalles.soporteDoble ? 'Sí' : 'No';
+    }
+    if (detalles.ancho && detalles.alto) {
+      detallesFormateados['Medidas'] = `${detalles.ancho}cm x ${detalles.alto}cm`;
+    }
+  } else {
+    // Para otros sistemas, mostrar información general
+    if (detalles.detalle && detalles.detalle.trim() !== '') {
+      detallesFormateados['Detalle'] = detalles.detalle;
+    }
+    if (detalles.colorSistema) {
+      detallesFormateados['Color'] = detalles.colorSistema;
+    }
+    if (detalles.ladoComando) {
+      detallesFormateados['Comando'] = detalles.ladoComando;
+    }
+    if (detalles.ancho && detalles.alto) {
+      detallesFormateados['Medidas'] = `${detalles.ancho}cm x ${detalles.alto}cm`;
+    }
+  }
+  
+  // Información de accesorios (común para todos)
+  if (detalles.accesorios && Array.isArray(detalles.accesorios) && detalles.accesorios.length > 0) {
+    detallesFormateados['Accesorios'] = detalles.accesorios.join(', ');
+  } else if (detalles.accesorios && typeof detalles.accesorios === 'string' && detalles.accesorios.trim() !== '') {
+    detallesFormateados['Accesorios'] = detalles.accesorios;
+  } else if (detalles.accesoriosAdicionales && Array.isArray(detalles.accesoriosAdicionales) && detalles.accesoriosAdicionales.length > 0) {
+    detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales.join(', ');
+  } else if (detalles.accesoriosAdicionales && typeof detalles.accesoriosAdicionales === 'string' && detalles.accesoriosAdicionales.trim() !== '') {
+    detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales;
+  }
+  
+  // Verificar otros campos que puedan contener información de accesorios
+  const camposAccesorios = ['accesorios', 'accesoriosAdicionales', 'accesorio', 'accesoriosIncluidos'];
+  camposAccesorios.forEach(campo => {
+    if (detalles[campo] && !detallesFormateados['Accesorios'] && !detallesFormateados['Accesorios adicionales']) {
+      const valor = detalles[campo];
+      if (Array.isArray(valor) && valor.length > 0) {
+        detallesFormateados['Accesorios'] = valor.join(', ');
+      } else if (typeof valor === 'string' && valor.trim() !== '' && valor !== '[]' && valor !== 'false') {
+        detallesFormateados['Accesorios'] = valor;
+      }
+    }
+  });
+  
+
+  
+  // Verificación adicional: buscar cualquier campo que contenga "accesorio" en el nombre
+  Object.keys(detalles).forEach(key => {
+    if (key.toLowerCase().includes('accesorio') && !detallesFormateados['Accesorios'] && !detallesFormateados['Accesorios adicionales']) {
+      const valor = detalles[key];
+      if (Array.isArray(valor) && valor.length > 0) {
+        detallesFormateados['Accesorios'] = valor.join(', ');
+      } else if (typeof valor === 'string' && valor.trim() !== '' && valor !== '[]' && valor !== 'false') {
+        detallesFormateados['Accesorios'] = valor;
+      }
+    }
+  });
+  
+  // Verificar información de colocación
+  if (detalles.incluirColocacion === true || detalles.incluirColocacion === 'true') {
+    detallesFormateados['Colocación'] = 'Incluida';
+  } else if (detalles.colocacion && detalles.colocacion !== 'false' && detalles.colocacion !== false) {
+    detallesFormateados['Colocación'] = detalles.colocacion;
+  }
+  
+
+  
+  return detallesFormateados;
 };
 
 const SearchIcon = () => (

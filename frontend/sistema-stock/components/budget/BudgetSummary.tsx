@@ -17,7 +17,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
 
   // Calcular el subtotal primero
   const subtotal = items.reduce((acc, item) => {
-    const itemTotal = Number(item.price) * Number(item.quantity);
+    const itemTotal = Number(item.total);
     return acc + (isNaN(itemTotal) ? 0 : itemTotal);
   }, 0);
 
@@ -146,7 +146,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
         <div className="pt-2 space-y-2 border-t">
           <div className="flex justify-between text-base">
             <span>Total:</span>
-            <span className="font-semibold">${subtotal.toFixed(2)}</span>
+            <span className="font-semibold">${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>
           
           {applyDiscount && (
@@ -160,11 +160,11 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
                     : `($${discountValue})`
                   }:
                 </span>
-                <span>-${discount.toFixed(2)}</span>
+                <span>-${discount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
               </div>
               <div className="flex justify-between pt-2 text-lg font-bold text-green-700 border-t">
                 <span>Total con descuento:</span>
-                <span>${total.toFixed(2)}</span>
+                <span>${total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
               </div>
             </>
           )}

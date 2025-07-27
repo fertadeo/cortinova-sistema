@@ -1,9 +1,9 @@
 export interface Tela {
   id: number;
-  nombre: string;
-  tipo: string;
-  color: string;
-  precio: string;
+  nombreProducto: string;
+  tipo?: string;
+  color?: string;
+  precio?: string;
   descripcion?: string;
 }
 
