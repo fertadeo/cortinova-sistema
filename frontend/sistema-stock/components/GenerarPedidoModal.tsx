@@ -220,11 +220,7 @@ const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = tr
   }
 };
 
-// Actualizar el cálculo del precio en el resumen
-const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean): number => {
-  const area = calcularAreaTela(ancho, alto, esRotable);
-  return area * precioTela;
-};
+// Función helper para procesar los sistemas únicos con su garantía
 
 // Función helper para procesar los sistemas únicos con su garantía
 const procesarSistemasUnicos = (sistemas: Sistema[]) => {
@@ -738,6 +734,21 @@ export default function GenerarPedidoModal({
     return precioCalculado;
   };
 
+  // Función para calcular precio de tela con lógica específica para Propios/Tradicional
+  const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean, sistema?: string): number => {
+    // Para sistemas Propios/Tradicional, calcular solo con ancho × multiplicador × precio
+    if (sistema && (sistema.toLowerCase().includes('propios') || sistema.toLowerCase().includes('tradicional'))) {
+      const anchoMetros = Number(ancho) / 100;
+      // Usar el multiplicador de tela si está disponible, sino usar 1
+      const multiplicador = multiplicadorTelaLocal || 1;
+      return anchoMetros * multiplicador * precioTela;
+    }
+    
+    // Para otros sistemas, mantener la lógica original
+    const area = calcularAreaTela(ancho, alto, esRotable);
+    return area * precioTela;
+  };
+
   const nuevoPrecioSistema = calcularPrecioSistema();
 
   // Calcular precio total
@@ -753,7 +764,8 @@ export default function GenerarPedidoModal({
       Number(ancho),
       Number(alto),
       selectedTela?.precio ? Number(selectedTela.precio) : 0,
-      selectedTela?.nombreProducto === 'ROLLER'
+      selectedTela?.nombreProducto === 'ROLLER',
+      selectedSistema
     );
 
     // Incluir precio de colocación si está seleccionado
@@ -858,7 +870,8 @@ export default function GenerarPedidoModal({
           Number(ancho),
           Number(alto),
           selectedTela?.precio ? Number(selectedTela.precio) : 0,
-          selectedTela?.nombreProducto === 'ROLLER'
+          selectedTela?.nombreProducto === 'ROLLER',
+          selectedSistema
         );
         setPrecioTela(nuevoPrecioTela);
       }
@@ -914,7 +927,8 @@ export default function GenerarPedidoModal({
       Number(ancho),
       Number(alto),
       selectedTela?.precio ? Number(selectedTela.precio) : 0,
-      selectedTela?.nombreProducto === 'ROLLER'
+      selectedTela?.nombreProducto === 'ROLLER',
+      selectedSistema
     ) : 0;
     const soporteIntermedioTotal = selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0;
     const colocacionTotal = incluirColocacion ? precioColocacion : 0;
@@ -1128,11 +1142,19 @@ export default function GenerarPedidoModal({
       return cantidadTelaManual * (selectedTela.precio ? Number(selectedTela.precio) : 0);
     }
     if (!ancho || !alto) return 0;
+    
+    // Para sistemas Propios/Tradicional, usar el ancho original (la función calcularPrecioTela ya maneja el multiplicador)
+    // Para otros sistemas, usar el ancho multiplicado
+    const anchoACalcular = (selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) 
+      ? Number(ancho) 
+      : anchoTelaMultiplicado;
+    
     return calcularPrecioTela(
-      anchoTelaMultiplicado,
+      anchoACalcular,
       Number(alto),
       selectedTela?.precio ? Number(selectedTela.precio) : 0,
-      selectedTela?.nombreProducto === 'ROLLER'
+      selectedTela?.nombreProducto === 'ROLLER',
+      selectedSistema
     );
   };
 
@@ -1713,7 +1735,17 @@ export default function GenerarPedidoModal({
                             <div className="flex flex-col gap-1">
                               <div className="flex justify-between items-center">
                                 <span className="flex gap-2 items-center">
-                                  {selectedTela.nombreProducto} - ${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({ancho}cm x {alto}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                  {selectedTela.nombreProducto} - ${Number(selectedTela.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  {(() => {
+                                    // Para sistemas Propios/Tradicional, mostrar el ancho multiplicado
+                                    if (selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) {
+                                      const anchoMultiplicado = Number(ancho) * (multiplicadorTelaLocal || 1);
+                                      return `(${ancho}cm x ${multiplicadorTelaLocal || 1} = ${anchoMultiplicado}cm)`;
+                                    } else {
+                                      return `(${ancho}cm x ${alto}cm)`;
+                                    }
+                                  })()}
+                                  {Number(cantidad) > 1 ? ` x${cantidad}` : ''}
                                   <button
                                     type="button"
                                     className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
@@ -1733,9 +1765,9 @@ export default function GenerarPedidoModal({
                                     : (calcularPrecioTelaMultiplicada() * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                               </div>
-                              {multiplicadorTela && multiplicadorTela !== 1 && (
+                              {multiplicadorTelaLocal && multiplicadorTelaLocal !== 1 && selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
                                 <div className="text-xs text-blue-700 pl-2">
-                                  Cálculo de multiplicador: {ancho} x {multiplicadorTela} = {anchoTelaMultiplicado}cm
+                                  Cálculo: {ancho}cm x {multiplicadorTelaLocal} = {Number(ancho) * multiplicadorTelaLocal}cm × ${Number(selectedTela.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTelaLocal / 100) * Number(selectedTela.precio)).toFixed(2)}
                                 </div>
                               )}
                             </div>
@@ -1816,7 +1848,8 @@ export default function GenerarPedidoModal({
                                               Number(ancho),
                                               Number(alto),
                                               selectedTela?.precio ? Number(selectedTela.precio) : 0,
-                                              selectedTela?.nombreProducto === 'ROLLER'
+                                              selectedTela?.nombreProducto === 'ROLLER',
+                                              selectedSistema
                                             ) * Number(cantidad || 1)
                                         )
                                       : 0) +
