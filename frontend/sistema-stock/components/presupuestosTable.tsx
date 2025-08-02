@@ -110,6 +110,8 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null); // Limpiar errores previos
+        
         const [presupuestosResponse, pedidosResponse] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos?include=clientes,producto`),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos`)
@@ -123,7 +125,16 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const pedidosData = await pedidosResponse.json();
 
         // Asegurarnos de acceder a la propiedad data si existe
+        const presupuestos = presupuestosData.data || presupuestosData;
         const pedidos = pedidosData.data || pedidosData;
+        
+        // Verificar que los datos sean arrays
+        if (!Array.isArray(presupuestos)) {
+          console.warn('Los presupuestos no son un array:', presupuestos);
+          setPresupuestos([]);
+          onDataLoaded?.();
+          return;
+        }
         
         // Verificar que pedidos sea un array antes de usar map
         const presupuestosConfirmados = new Set(
@@ -132,7 +143,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             : []
         );
 
-        const presupuestosActualizados = (presupuestosData.data || presupuestosData).map(
+        const presupuestosActualizados = presupuestos.map(
           (presupuesto: Presupuesto) => ({
             ...presupuesto,
             estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
@@ -735,6 +746,38 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     return (
       <div className="p-4 text-red-700 bg-red-100 rounded-lg">
         {error}
+      </div>
+    );
+  }
+
+  // Si no hay presupuestos, mostrar tabla vacía con mensaje informativo
+  if (!loading && presupuestos.length === 0) {
+    return (
+      <div>
+        <div className="p-4 mb-4 text-blue-700 bg-blue-50 rounded-lg">
+          <strong>Información:</strong> No hay presupuestos emitidos en producción.
+        </div>
+        <div className="p-4 presupuestos-table">
+          <Table 
+            className="presupuestos-table"
+            aria-label="Tabla de presupuestos"
+          >
+            <TableHeader columns={columns}>
+              {(column) => (
+                <TableColumn key={column.uid}>
+                  {column.name}
+                </TableColumn>
+              )}
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={columns.length} className="text-center text-gray-500 py-8">
+                  No hay presupuestos para mostrar
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
       </div>
     );
   }

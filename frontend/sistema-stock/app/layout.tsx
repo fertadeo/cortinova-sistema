@@ -18,7 +18,7 @@ export default function RootLayout({
         <ConditionalLayout>
           <main>{children}</main>
         </ConditionalLayout>
-        <TourGuide />
+        {/* <TourGuide /> */}
         </body>
       </html>
     )
