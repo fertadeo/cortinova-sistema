@@ -128,6 +128,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const presupuestos = presupuestosData.data || presupuestosData;
         const pedidos = pedidosData.data || pedidosData;
         
+        console.log('Presupuestos recibidos:', presupuestos);
+        console.log('Tipo de presupuestos:', typeof presupuestos);
+        console.log('Es array:', Array.isArray(presupuestos));
+        console.log('Longitud:', presupuestos?.length);
+        
         // Verificar que los datos sean arrays
         if (!Array.isArray(presupuestos)) {
           console.warn('Los presupuestos no son un array:', presupuestos);
@@ -149,6 +154,9 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
           })
         );
+
+        console.log('Presupuestos actualizados:', presupuestosActualizados);
+        console.log('Cantidad final:', presupuestosActualizados.length);
 
         setPresupuestos(presupuestosActualizados);
         onDataLoaded?.();
@@ -738,6 +746,12 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   const pages = Math.ceil(presupuestos.length / rowsPerPage);
   const items = presupuestos.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
+  console.log('Estado del componente:');
+  console.log('- loading:', loading);
+  console.log('- error:', error);
+  console.log('- presupuestos.length:', presupuestos.length);
+  console.log('- presupuestos:', presupuestos);
+
   if (loading) {
     return <div className="flex justify-center p-4">Cargando presupuestos...</div>;
   }
@@ -752,11 +766,14 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
   // Si no hay presupuestos, mostrar tabla vacía con mensaje informativo
   if (!loading && presupuestos.length === 0) {
+    console.log('Mostrando estado vacío');
     return (
       <div>
-        <div className="p-4 mb-4 text-blue-700 bg-blue-50 rounded-lg">
-          <strong>Información:</strong> No hay presupuestos emitidos en producción.
-        </div>
+        <Alert 
+          message="No hay presupuestos emitidos en producción" 
+          variant="info"
+          className="mb-4"
+        />
         <div className="p-4 presupuestos-table">
           <Table 
             className="presupuestos-table"
@@ -782,6 +799,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     );
   }
 
+  console.log('Mostrando tabla con presupuestos');
   return (
     <div>
       {notification && (
