@@ -382,43 +382,105 @@ export default function GenerarPedidoModal({
     }
   }, [medidasPrecargadas]);
 
-  // Estado para soportes intermedios
+  // Estado para soportes intermedios y soporte doble
   const [soportesIntermedios, setSoportesIntermedios] = useState<any[]>([]);
   const [selectedSoporteIntermedio, setSelectedSoporteIntermedio] = useState<any>(null);
+  const [soporteDobleProducto, setSoporteDobleProducto] = useState<any>(null);
 
-  // Buscar soportes intermedios al abrir el modal si se selecciona Roller
+  // Buscar soportes intermedios y soporte doble al abrir el modal si se selecciona Roller
   useEffect(() => {
     if (isOpen && selectedSistema?.toLowerCase().includes('roller')) {
       const fetchSoportes = async () => {
         try {
-          // Buscar ambos por id
-          const resCorto = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/148`);
-          const resLargo = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/149`);
-          const dataCorto = await resCorto.json();
-          const dataLargo = await resLargo.json();
+          // Buscar soportes intermedios por ID (236 y 237)
+          const resIntermedio1 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/236`);
+          const resIntermedio2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/237`);
+          const dataIntermedio1 = await resIntermedio1.json();
+          const dataIntermedio2 = await resIntermedio2.json();
+          
+          // Buscar soporte doble por ID (238)
+          const resSoporteDoble = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/238`);
+          const dataSoporteDoble = await resSoporteDoble.json();
+          
           setSoportesIntermedios([
-            { id: dataCorto.id, nombre: 'CORTO/INTERMEDIO', precio: dataCorto.precio },
-            { id: dataLargo.id, nombre: 'LARGO/INTERMEDIO', precio: dataLargo.precio }
+            { id: dataIntermedio1.id, nombre: dataIntermedio1.nombreProducto, precio: dataIntermedio1.precio },
+            { id: dataIntermedio2.id, nombre: dataIntermedio2.nombreProducto, precio: dataIntermedio2.precio }
           ]);
-          setSelectedSoporteIntermedio({ id: dataCorto.id, nombre: 'CORTO/INTERMEDIO', precio: dataCorto.precio });
+          
+          setSoporteDobleProducto({
+            id: dataSoporteDoble.id,
+            nombre: dataSoporteDoble.nombreProducto,
+            precio: dataSoporteDoble.precio
+          });
+          
+          // Seleccionar por defecto el primer soporte intermedio
+          setSelectedSoporteIntermedio({ 
+            id: dataIntermedio1.id, 
+            nombre: dataIntermedio1.nombreProducto, 
+            precio: dataIntermedio1.precio 
+          });
         } catch (e) {
+          console.error('Error al obtener soportes:', e);
           setSoportesIntermedios([]);
           setSelectedSoporteIntermedio(null);
+          setSoporteDobleProducto(null);
         }
       };
       fetchSoportes();
     }
   }, [isOpen, selectedSistema]);
 
-  // Cuando se tilda soporte intermedio, seleccionar por defecto el corto
-  useEffect(() => {
-    if (soporteIntermedio && soportesIntermedios.length > 0 && !selectedSoporteIntermedio) {
-      setSelectedSoporteIntermedio(soportesIntermedios[0]);
+  // Handlers personalizados para soporte intermedio y doble con validación mutuamente excluyente
+  const handleSoporteIntermedioChange = (value: boolean) => {
+    if (value && soporteDoble) {
+      // Si se activa soporte intermedio y soporte doble está activo, desactivar soporte doble
+      setSoporteDoble(false);
     }
+    setSoporteIntermedio(value);
+  };
+
+  const handleSoporteDobleChange = (value: boolean) => {
+    if (value) {
+      // Si se activa soporte doble, limpiar soporte intermedio (tanto checkbox como dropdown)
+      setSoporteIntermedio(false);
+      setSelectedSoporteIntermedio(null);
+    }
+    setSoporteDoble(value);
+  };
+
+  // Handler para cuando se selecciona un soporte intermedio del dropdown
+  const handleSoporteIntermedioTipoChange = (soporte: any) => {
+    if (soporte) {
+      // Si se selecciona un soporte intermedio, desactivar soporte doble
+      setSoporteDoble(false);
+    }
+    setSelectedSoporteIntermedio(soporte);
+  };
+
+  // Función para determinar qué soporte mostrar en el resumen de precios
+  const getSoporteResumen = () => {
+    if (soporteDoble && soporteDobleProducto) {
+      return {
+        tipo: 'doble',
+        nombre: soporteDobleProducto.nombre,
+        precio: soporteDobleProducto.precio
+      };
+    } else if (selectedSoporteIntermedio) {
+      return {
+        tipo: 'intermedio',
+        nombre: selectedSoporteIntermedio.nombre,
+        precio: selectedSoporteIntermedio.precio
+      };
+    }
+    return null;
+  };
+
+  // Cuando se desactiva soporte intermedio, limpiar la selección
+  useEffect(() => {
     if (!soporteIntermedio) {
       setSelectedSoporteIntermedio(null);
     }
-  }, [soporteIntermedio, soportesIntermedios]);
+  }, [soporteIntermedio]);
 
   const resetInputs = () => {
     setCurrentStep(1);
@@ -930,7 +992,7 @@ export default function GenerarPedidoModal({
       selectedTela?.nombreProducto === 'ROLLER',
       selectedSistema
     ) : 0;
-    const soporteIntermedioTotal = selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0;
+    const soporteIntermedioTotal = getSoporteResumen() ? Number(getSoporteResumen()?.precio || 0) : 0;
     const colocacionTotal = incluirColocacion ? precioColocacion : 0;
     const cantidadNum = Number(cantidad) || 1;
     // El precio unitario debe incluir todos los extras
@@ -984,8 +1046,9 @@ export default function GenerarPedidoModal({
         incluirColocacion,
         precioColocacion: incluirColocacion ? precioColocacion : 0,
         soporteIntermedioTipo: selectedSoporteIntermedio,
+        soporteDobleProducto: soporteDobleProducto,
         accesorios: [
-          selectedSoporteIntermedio ? selectedSoporteIntermedio.nombre : null
+          getSoporteResumen() ? getSoporteResumen()?.nombre : null
           // Aquí puedes agregar otros accesorios según el sistema
         ].filter(Boolean),
         accesoriosAdicionales: accesoriosAdicionales.map(acc => acc.nombre || acc)
@@ -1477,13 +1540,14 @@ export default function GenerarPedidoModal({
                                   onColorChange={setColorSistema}
                                   onLadoComandoChange={setLadoComando}
                                   onTipoTelaChange={setTipoTela}
-                                  onSoporteIntermedioChange={setSoporteIntermedio}
-                                  onSoporteDobleChange={setSoporteDoble}
+                                  onSoporteIntermedioChange={handleSoporteIntermedioChange}
+                                  onSoporteDobleChange={handleSoporteDobleChange}
                                   onPedidoDetailsChange={setSistemaPedidoDetalles}
                                   soporteIntermedioTipo={selectedSoporteIntermedio}
                                   soportesIntermedios={soportesIntermedios}
-                                  onSoporteIntermedioTipoChange={setSelectedSoporteIntermedio}
+                                  onSoporteIntermedioTipoChange={handleSoporteIntermedioTipoChange}
                                   productosFiltrados={productosFiltrados}
+                                  soporteDobleProducto={soporteDobleProducto}
                                 />
                               );
                             case "dubai":
@@ -1773,11 +1837,14 @@ export default function GenerarPedidoModal({
                             </div>
                           )}
 
-                          {selectedSoporteIntermedio && (
+                          {getSoporteResumen() && (
                             <div className="flex justify-between items-center">
-                              <span>Soporte Intermedio ({selectedSoporteIntermedio.nombre}):</span>
+                              <span>
+                                {getSoporteResumen()?.tipo === 'doble' ? 'Soporte Doble' : 'Soporte Intermedio'} 
+                                ({getSoporteResumen()?.nombre}):
+                              </span>
                               <span className="font-medium">
-                                ${Number(selectedSoporteIntermedio?.precio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${Number(getSoporteResumen()?.precio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
                           )}
@@ -1853,7 +1920,7 @@ export default function GenerarPedidoModal({
                                             ) * Number(cantidad || 1)
                                         )
                                       : 0) +
-                                    (selectedSoporteIntermedio ? Number(selectedSoporteIntermedio.precio) : 0) +
+                                    (getSoporteResumen() ? Number(getSoporteResumen()?.precio || 0) : 0) +
                                     (incluirColocacion ? precioColocacion : 0) +
                                     totalAccesoriosAdicionales
                               ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

@@ -28,6 +28,7 @@ interface RollerFormProps {
   soportesIntermedios?: any[];
   onSoporteIntermedioTipoChange?: (item: any) => void;
   productosFiltrados?: any[];
+  soporteDobleProducto?: any;
 }
 
 export const RollerForm = ({
@@ -52,7 +53,8 @@ export const RollerForm = ({
   onSoporteDobleChange,
   soporteIntermedioTipo,
   soportesIntermedios,
-  onSoporteIntermedioTipoChange
+  onSoporteIntermedioTipoChange,
+  soporteDobleProducto
 }: RollerFormProps) => {
   return (
     <div className="space-y-4">
@@ -108,7 +110,7 @@ export const RollerForm = ({
 
       <div className="flex gap-4">
         {soportesIntermedios && soportesIntermedios.length > 0 && (
-          <div className="w-72">
+          <div className="w-84">
             <label htmlFor="soporte-intermedio-select" className="block text-sm font-medium mb-1">Soporte intermedio</label>
             <select
               id="soporte-intermedio-select"
@@ -133,13 +135,28 @@ export const RollerForm = ({
             </select>
           </div>
         )}
-        <Checkbox
-          isSelected={soporteDoble}
-          onValueChange={onSoporteDobleChange}
-        >
-          Soporte doble
-        </Checkbox>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            isSelected={soporteDoble}
+            onValueChange={onSoporteDobleChange}
+          >
+            Soporte doble
+          </Checkbox>
+          {soporteDobleProducto && (
+            <span className="text-sm text-gray-600">
+              (${Number(soporteDobleProducto.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+            </span>
+          )}
+        </div>
       </div>
+      
+      {/* Mensaje informativo sobre la validación mutuamente excluyente */}
+      {(soporteIntermedioTipo || soporteDoble) && (
+        <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+          <strong>Nota:</strong> El soporte intermedio y el soporte doble son opciones mutuamente excluyentes. 
+          Al seleccionar uno, se desactivará automáticamente el otro.
+        </div>
+      )}
     </div>
   );
 }; 
