@@ -329,13 +329,11 @@ export const BudgetGenerator = () => {
         }),
         total: finalTotal,
         subtotal: subtotal,
+        descuento: discount, // Agregar este campo para que el backend guarde el descuento redondeado
         descuentoPorcentaje: applyDiscount && discountType === "percentage" ? Number(discountValue) : 0,
         descuentoMonto: applyDiscount && discountType === "amount" ? Number(discountValue) : 0
       };
 
-      console.log('=== ESTRUCTURA COMPLETA PARA BACKEND ===');
-      console.log('tableData antes de enviar:', tableData);
-      console.log('Productos con detalles:');
       tableData.forEach((item, index) => {
         console.log(`Producto ${index + 1}:`, {
           nombre: item.name,
@@ -346,16 +344,6 @@ export const BudgetGenerator = () => {
           detalles: item.detalles
         });
       });
-      console.log('Enviando presupuesto al backend:', presupuestoData);
-      console.log('=== DESCUENTO DEBUG ===');
-      console.log('applyDiscount:', applyDiscount);
-      console.log('discount:', discount);
-      console.log('discountType:', discountType);
-      console.log('discountValue:', discountValue);
-      console.log('descuentoPorcentaje enviado:', presupuestoData.descuentoPorcentaje);
-      console.log('descuentoMonto enviado:', presupuestoData.descuentoMonto);
-      console.log('=== FIN DESCUENTO DEBUG ===');
-      console.log('=== FIN ESTRUCTURA COMPLETA ===');
 
       // Realizar el POST al endpoint
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos`, {

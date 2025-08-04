@@ -44,13 +44,13 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
     
     if (shouldRound && applyDiscount) {
       const roundedTotal = roundToHundred(finalTotal);
-      const adjustedDiscount = roundToHundred(subtotal - roundedTotal);
+      const adjustedDiscount = subtotal - roundedTotal; // NO redondear aquí
       
       return {
         discount: adjustedDiscount,
         total: roundedTotal,
         adjustedDiscountValue: discountType === "percentage" 
-          ? ((adjustedDiscount / subtotal) * 100).toFixed(0)
+          ? ((adjustedDiscount / subtotal) * 100).toFixed(2)
           : adjustedDiscount.toFixed(0)
       };
     }

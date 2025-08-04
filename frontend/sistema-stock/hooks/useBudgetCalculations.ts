@@ -20,9 +20,18 @@ export const useBudgetCalculations = () => {
     let discount = 0;
     if (applyDiscount) {
       if (discountPercentage !== undefined) {
-        discount = shouldRound 
-          ? roundToHundred((subtotal * discountPercentage) / 100)
-          : (subtotal * discountPercentage) / 100;
+        if (shouldRound) {
+          // Calcular el descuento base
+          const baseDiscount = (subtotal * discountPercentage) / 100;
+          // Calcular el total base
+          const baseTotal = subtotal - baseDiscount;
+          // Redondear el total a centenas
+          const roundedTotal = roundToHundred(baseTotal);
+          // Calcular el descuento ajustado para lograr el total redondo
+          discount = subtotal - roundedTotal;
+        } else {
+          discount = (subtotal * discountPercentage) / 100;
+        }
       } else if (discountAmount !== undefined) {
         discount = shouldRound 
           ? roundToHundred(discountAmount)
@@ -30,9 +39,7 @@ export const useBudgetCalculations = () => {
       }
     }
     
-    const finalTotal = shouldRound 
-      ? roundToHundred(subtotal - discount)
-      : subtotal - discount;
+    const finalTotal = subtotal - discount; // NO redondear aquí
 
     return {
       subtotal: Math.round(subtotal),
