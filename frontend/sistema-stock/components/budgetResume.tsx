@@ -23,7 +23,7 @@ interface BudgetResumeProps {
       subtotal: number;
     }>;
     subtotal: number;
-    descuento?: number;
+    descuento: number;
     total: number;
   };
 }
@@ -31,7 +31,10 @@ interface BudgetResumeProps {
 const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   const invoiceRef = React.useRef(null);
 
-  console.log('Presupuesto Data:', presupuestoData); 
+  console.log('Presupuesto Data:', presupuestoData);
+  console.log('Presupuesto Data descuento:', presupuestoData.descuento);
+  console.log('Presupuesto Data total:', presupuestoData.total);
+  console.log('Presupuesto Data subtotal:', presupuestoData.subtotal); 
 
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) return;
@@ -209,11 +212,11 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                   <td className="px-4 py-3 font-bold">Subtotal</td>
                   <td className="px-4 py-3">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
-                {(presupuestoData.descuento ?? 0) > 0 && (
+                {presupuestoData.descuento && presupuestoData.descuento > 0 && (
                   <tr>
                     <td colSpan={3}></td>
                     <td className="px-4 py-3 font-bold">Descuento</td>
-                    <td className="px-4 py-3">-${(presupuestoData.descuento ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    <td className="px-4 py-3">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                   </tr>
                 )}
                 <tr>

@@ -21,7 +21,7 @@ interface BudgetPDFModalProps {
       subtotal: number;
     }>;
     subtotal: number;
-    descuento?: number;
+    descuento: number;
     total: number;
   };
 }

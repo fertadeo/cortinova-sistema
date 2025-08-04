@@ -55,6 +55,6 @@ export interface PresupuestoResumen {
     subtotal: number;
   }[];
   subtotal: number;
-  descuento?: number;
+  descuento: number;
   total: number;
 } 

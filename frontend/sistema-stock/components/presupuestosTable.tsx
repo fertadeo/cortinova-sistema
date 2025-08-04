@@ -32,6 +32,8 @@ interface Presupuesto {
   numero_presupuesto: string;
   fecha: string;
   estado:  "Confirmado" | "En Proceso" | "Entregado" | "Requiere Facturación" | "Cancelado";
+  subtotal: number; // Agregar subtotal
+  descuento: number; // Cambiar de optional a required
   total: number;
   cliente_id: number;
   cliente_nombre: string;
@@ -95,6 +97,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       subtotal: number;
     }>;
     subtotal: number;
+    descuento: number;
     total: number;
   } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -128,11 +131,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const presupuestos = presupuestosData.data || presupuestosData;
         const pedidos = pedidosData.data || pedidosData;
         
-        console.log('Presupuestos recibidos:', presupuestos);
-        console.log('Tipo de presupuestos:', typeof presupuestos);
-        console.log('Es array:', Array.isArray(presupuestos));
-        console.log('Longitud:', presupuestos?.length);
-        
         // Verificar que los datos sean arrays
         if (!Array.isArray(presupuestos)) {
           console.warn('Los presupuestos no son un array:', presupuestos);
@@ -149,14 +147,13 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         );
 
         const presupuestosActualizados = presupuestos.map(
-          (presupuesto: Presupuesto) => ({
-            ...presupuesto,
-            estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
-          })
+          (presupuesto: Presupuesto) => {
+            return {
+              ...presupuesto,
+              estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
+            };
+          }
         );
-
-        console.log('Presupuestos actualizados:', presupuestosActualizados);
-        console.log('Cantidad final:', presupuestosActualizados.length);
 
         setPresupuestos(presupuestosActualizados);
         onDataLoaded?.();
@@ -313,7 +310,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   };
 
   const handleViewPDF = (presupuesto: Presupuesto) => {
-    console.log('handleViewPDF called', presupuesto);
     if (presupuesto) {
       const formattedData = {
         numeroPresupuesto: presupuesto.numero_presupuesto,
@@ -330,29 +326,12 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           cantidad: item.cantidad,
           subtotal: Number(item.subtotal)
         })) || [],
-        subtotal: Number(presupuesto.total),
+        subtotal: Number(presupuesto.subtotal),
+        descuento: Number(presupuesto.descuento),
         total: Number(presupuesto.total)
       };
       
-      console.log('formattedData', formattedData);
-      setFormattedPresupuesto(formattedData as unknown as {
-        numeroPresupuesto: string;
-        fecha: string;
-        cliente: {
-          nombre: string;
-          telefono?: string;
-          email?: string;
-        };
-        productos: Array<{
-          nombre: string;
-          descripcion: string;
-          precioUnitario: number;
-          cantidad: number;
-          subtotal: number;
-        }>;
-        subtotal: number;
-        total: number;
-      });
+      setFormattedPresupuesto(formattedData);
       setIsPDFModalOpen(true);
     }
   };

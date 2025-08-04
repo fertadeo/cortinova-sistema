@@ -329,7 +329,8 @@ export const BudgetGenerator = () => {
         }),
         total: finalTotal,
         subtotal: subtotal,
-        descuento: applyDiscount ? discount : 0
+        descuentoPorcentaje: applyDiscount && discountType === "percentage" ? Number(discountValue) : 0,
+        descuentoMonto: applyDiscount && discountType === "amount" ? Number(discountValue) : 0
       };
 
       console.log('=== ESTRUCTURA COMPLETA PARA BACKEND ===');
@@ -346,6 +347,14 @@ export const BudgetGenerator = () => {
         });
       });
       console.log('Enviando presupuesto al backend:', presupuestoData);
+      console.log('=== DESCUENTO DEBUG ===');
+      console.log('applyDiscount:', applyDiscount);
+      console.log('discount:', discount);
+      console.log('discountType:', discountType);
+      console.log('discountValue:', discountValue);
+      console.log('descuentoPorcentaje enviado:', presupuestoData.descuentoPorcentaje);
+      console.log('descuentoMonto enviado:', presupuestoData.descuentoMonto);
+      console.log('=== FIN DESCUENTO DEBUG ===');
       console.log('=== FIN ESTRUCTURA COMPLETA ===');
 
       // Realizar el POST al endpoint
@@ -379,7 +388,7 @@ export const BudgetGenerator = () => {
           subtotal: Number(item.price) * Number(item.quantity)
         })),
         subtotal: subtotal,
-        descuento: applyDiscount ? discount : undefined,
+        descuento: discount, // Usar el descuento calculado
         total: finalTotal
       };
 
