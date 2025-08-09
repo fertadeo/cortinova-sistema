@@ -2,17 +2,25 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Input, Button, Spinner
+  Input, Button, Spinner, Tabs, Tab
 } from "@heroui/react";
 import { Product } from "@/types/productos";
 import { Proveedores } from "@/types/proveedores";
 import type { Selection } from "@react-types/shared";
 
+interface Rubro {
+  id: number;
+  nombreRubros: string;
+}
+
 const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefreshProducts?: () => void }> = ({ isOpen, onClose, onRefreshProducts }) => {
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
+  const [rubros, setRubros] = useState<Rubro[]>([]);
   const [productos, setProductos] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [filterType, setFilterType] = useState<'proveedor' | 'rubro'>('proveedor');
   const [selectedProveedor, setSelectedProveedor] = useState("");
+  const [selectedRubro, setSelectedRubro] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [porcentaje, setPorcentaje] = useState("");
   const [updatedProducts, setUpdatedProducts] = useState<Product[]>([]);
@@ -27,7 +35,9 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
   };
 
   const resetModal = () => {
+    setFilterType('proveedor');
     setSelectedProveedor("");
+    setSelectedRubro("");
     setFilteredProducts([]);
     setPorcentaje("");
     setUpdatedProducts([]);
@@ -48,6 +58,28 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
     } catch (err) {
       console.error('Error fetching proveedores:', err);
       setErrorMessage('Error al obtener la data de proveedores');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRubros = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rubros/`);
+      if (!response.ok) {
+        throw new Error('Error al obtener rubros');
+      }
+      const result = await response.json();
+      if (result.success && result.data) {
+        setRubros(result.data);
+      } else {
+        setRubros([]);
+        setErrorMessage('Error al obtener la data de rubros');
+      }
+    } catch (err) {
+      console.error('Error fetching rubros:', err);
+      setErrorMessage('Error al obtener la data de rubros');
     } finally {
       setIsLoading(false);
     }
@@ -84,18 +116,59 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
     }
   };
 
+  const fetchProductosPorRubro = async (rubroId: string) => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/rubro/${rubroId}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener productos del rubro');
+      }
+      
+      const data = await response.json();
+  
+      if (data.productos && data.productos.length === 0) {
+        setFilteredProducts([]);
+        setErrorMessage("No se encontraron productos para este rubro.");
+      } else if (data.productos) {
+        setFilteredProducts(data.productos);
+        setErrorMessage(null);
+      } else {
+        setFilteredProducts([]);
+        setErrorMessage("No se obtuvieron productos, intente nuevamente.");
+      }
+    } catch (err) {
+      console.error('Error fetching productos:', err);
+      setFilteredProducts([]);
+      setErrorMessage("No se pudieron obtener los productos. Intente nuevamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchProveedores();
+      fetchRubros();
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && selectedProveedor && selectedProveedor !== 'all') {
+    if (isOpen && filterType === 'proveedor' && selectedProveedor && selectedProveedor !== 'all') {
       const proveedorId = selectedProveedor;
       if (proveedorId) {
         setTimeout(() => {
           fetchProductosPorProveedor(proveedorId);
+          setSelectedKeys(new Set());
+          setShowAlert(false);
+        }, 100);
+      }
+    } else if (isOpen && filterType === 'rubro' && selectedRubro && selectedRubro !== 'all') {
+      const rubroId = selectedRubro;
+      if (rubroId) {
+        setTimeout(() => {
+          fetchProductosPorRubro(rubroId);
           setSelectedKeys(new Set());
           setShowAlert(false);
         }, 100);
@@ -105,7 +178,17 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
       setSelectedKeys(new Set());
       setShowAlert(false);
     }
-  }, [selectedProveedor, isOpen]);
+  }, [selectedProveedor, selectedRubro, filterType, isOpen]);
+
+  const handleFilterTypeChange = (type: 'proveedor' | 'rubro') => {
+    setFilterType(type);
+    setSelectedProveedor("");
+    setSelectedRubro("");
+    setFilteredProducts([]);
+    setSelectedKeys(new Set());
+    setShowAlert(false);
+    setErrorMessage(null);
+  };
 
   const roundPrice = (price: number) => (price < 100 ? Math.ceil(price / 10) * 10 : Math.ceil(price / 100) * 100);
 
@@ -239,7 +322,7 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1 text-lg md:text-xl">
-          Actualizar Precios por Proveedor
+          Actualizar Precios
         </ModalHeader>
         <ModalBody>
           <div className="flex flex-col gap-4">
@@ -254,19 +337,49 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
                     {errorMessage}
                   </div>
                 )}
-                <label htmlFor="proveedor" className="block text-sm font-medium mb-1">Seleccionar Proveedor</label>
-                <select
-                  className="w-full border rounded px-3 py-2"
-                  value={selectedProveedor}
-                  onChange={e => setSelectedProveedor(e.target.value)}
+                <Tabs 
+                  selectedKey={filterType} 
+                  onSelectionChange={(key) => handleFilterTypeChange(key as 'proveedor' | 'rubro')}
+                  className="w-full"
                 >
-                  <option value="">Seleccione un proveedor</option>
-                  {proveedores.map(prov => (
-                    <option key={prov.id} value={prov.id}>
-                      {prov.nombreProveedores}
-                    </option>
-                  ))}
-                </select>
+                  <Tab key="proveedor" title="Por Proveedor">
+                    <div className="pt-4">
+                      <label htmlFor="proveedor" className="block text-sm font-medium mb-1">Seleccionar Proveedor</label>
+                      <select
+                        id="proveedor"
+                        className="w-full border rounded px-3 py-2"
+                        value={selectedProveedor}
+                        onChange={e => setSelectedProveedor(e.target.value)}
+                      >
+                        <option value="">Seleccione un proveedor</option>
+                        {proveedores.map(prov => (
+                          <option key={prov.id} value={prov.id}>
+                            {prov.nombreProveedores}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Tab>
+                  
+                  <Tab key="rubro" title="Por Rubro">
+                    <div className="pt-4">
+                      <label htmlFor="rubro" className="block text-sm font-medium mb-1">Seleccionar Rubro</label>
+                      <select
+                        id="rubro"
+                        className="w-full border rounded px-3 py-2"
+                        value={selectedRubro}
+                        onChange={e => setSelectedRubro(e.target.value)}
+                      >
+                        <option value="">Seleccione un rubro</option>
+                        {rubros.map(rubro => (
+                          <option key={rubro.id} value={rubro.id}>
+                            {rubro.nombreRubros}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </Tab>
+                </Tabs>
 
                 <Input
                   type="number"
@@ -306,9 +419,11 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
                   </div>
                 )}
 
-                {!isLoading && filteredProducts.length === 0 && selectedProveedor !== 'all' && selectedProveedor !== "" && (
+                {!isLoading && filteredProducts.length === 0 && 
+                 ((filterType === 'proveedor' && selectedProveedor !== 'all' && selectedProveedor !== "") ||
+                  (filterType === 'rubro' && selectedRubro !== 'all' && selectedRubro !== "")) && (
                   <div className="text-center text-gray-500 p-4">
-                    No hay productos disponibles para este proveedor.
+                    No hay productos disponibles para este {filterType}.
                   </div>
                 )}
               </>
