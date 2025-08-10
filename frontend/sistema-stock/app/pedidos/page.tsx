@@ -173,13 +173,16 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       doc.text(`Cantidad: ${producto.cantidad}`, 30, yPos);
       yPos += 10;
       
-      // Detalles del producto
-      Object.entries(producto.detalles).forEach(([key, value]) => {
-        doc.text(`${key}: ${value}`, 30, yPos);
-        yPos += 10;
+      // Detalles del producto formateados (usando la función mejorada)
+      const detallesFormateados = formatearDetallesSegunSistema(producto.detalles);
+      Object.entries(detallesFormateados).forEach(([key, value]) => {
+        // Limpiar los iconos para el PDF (remover emojis)
+        const keyLimpio = key.replace(/[📐🏷️🧵🎨🎛️📍🔧🔨🛠️💰📝🏗️]/g, '').trim();
+        doc.text(`${keyLimpio}: ${String(value)}`, 30, yPos);
+        yPos += 8; // Espaciado más compacto para el PDF
       });
       
-      yPos += 10; // Espacio entre productos
+      yPos += 15; // Espacio entre productos
     });
     
     doc.save(`pedido-${pedido.pedido_json.numeroPresupuesto}.pdf`);
@@ -346,134 +349,165 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
   );
 };
 
-// Función para formatear los detalles según el sistema
+// Función mejorada para formatear los detalles según el sistema (optimizada para producción)
 const formatearDetallesSegunSistema = (detalles: any) => {
   const sistema = detalles.sistema?.toLowerCase() || '';
-  const detallesFormateados: { [key: string]: any } = {};
+  const info: { [key: string]: any } = {};
   
-
-  
-  // Información común para todos los sistemas
-  if (detalles.sistema) {
-    detallesFormateados['Sistema'] = detalles.sistema;
+  // 📐 MEDIDAS (Prioritario para producción)
+  if (detalles.ancho && detalles.alto) {
+    info['📐 Medidas'] = `${detalles.ancho} × ${detalles.alto} cm`;
   }
   
-  // Información específica según el tipo de sistema
-  if (sistema.includes('tradicional') || sistema.includes('propios')) {
-    // Para cortinas tradicionales
-    if (detalles.tipoTela) {
-      detallesFormateados['Tela'] = detalles.tipoTela;
-    }
-    if (detalles.ancho && detalles.alto) {
-      detallesFormateados['Medidas'] = `${detalles.ancho}cm x ${detalles.alto}cm`;
-    }
-    if (detalles.caidaPorDelante) {
-      detallesFormateados['Caída por delante'] = detalles.caidaPorDelante;
-    }
-    if (detalles.detalle && detalles.detalle.trim() !== '') {
-      detallesFormateados['Detalle'] = detalles.detalle;
-    }
-    
-    // Información específica de accesorios para tradicionales
-    if (detalles.accesoriosAdicionales && Array.isArray(detalles.accesoriosAdicionales) && detalles.accesoriosAdicionales.length > 0) {
-      detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales.join(', ');
-    } else if (detalles.accesoriosAdicionales && typeof detalles.accesoriosAdicionales === 'string' && detalles.accesoriosAdicionales.trim() !== '' && detalles.accesoriosAdicionales !== '[]') {
-      detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales;
-    }
-    
-    // Verificar otros campos de accesorios específicos para tradicionales
-    const camposAccesoriosTradicionales = ['accesorios', 'accesoriosIncluidos', 'accesorio'];
-    camposAccesoriosTradicionales.forEach(campo => {
-      if (detalles[campo] && !detallesFormateados['Accesorios adicionales']) {
-        const valor = detalles[campo];
-        if (Array.isArray(valor) && valor.length > 0) {
-          detallesFormateados['Accesorios'] = valor.join(', ');
-        } else if (typeof valor === 'string' && valor.trim() !== '' && valor !== '[]' && valor !== 'false') {
-          detallesFormateados['Accesorios'] = valor;
-        }
-      }
-    });
-  } else if (sistema.includes('roller')) {
-    // Para cortinas Roller
+  // 🏷️ SISTEMA
+  info['🏷️ Sistema'] = detalles.sistema || 'No especificado';
+  
+  // 🧵 TELA/MATERIAL
+  if (detalles.tipoTela) {
+    info['🧵 Tela'] = detalles.tipoTela;
+  }
+  
+  // ⚙️ CONFIGURACIÓN ESPECÍFICA POR SISTEMA
+  if (sistema.includes('roller')) {
+    // === CORTINA ROLLER ===
     if (detalles.colorSistema) {
-      detallesFormateados['Color'] = detalles.colorSistema;
+      info['🎨 Color sistema'] = detalles.colorSistema;
     }
     if (detalles.ladoComando) {
-      detallesFormateados['Comando'] = detalles.ladoComando;
+      info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
-    if (detalles.soporteIntermedio !== undefined) {
-      detallesFormateados['Soporte intermedio'] = detalles.soporteIntermedio ? 'Sí' : 'No';
+    if (detalles.caidaPorDelante && detalles.caidaPorDelante !== 'No') {
+      info['📍 Caída por delante'] = `✅ ${detalles.caidaPorDelante}`;
     }
-    if (detalles.soporteDoble !== undefined) {
-      detallesFormateados['Soporte doble'] = detalles.soporteDoble ? 'Sí' : 'No';
+    if (detalles.soporteIntermedio) {
+      info['🔧 Soporte intermedio'] = '✅ SÍ';
     }
-    if (detalles.ancho && detalles.alto) {
-      detallesFormateados['Medidas'] = `${detalles.ancho}cm x ${detalles.alto}cm`;
+    if (detalles.soporteDoble) {
+      info['🔧 Soporte doble'] = '✅ SÍ';
     }
+    
+  } else if (sistema.includes('tradicional') || sistema.includes('propios')) {
+    // === CORTINA TRADICIONAL ===
+    
+    // Detectar tipo de confección por los accesorios
+    if (detalles.accesoriosAdicionales?.length > 0) {
+      const tieneRiel = detalles.accesoriosAdicionales.some((acc: any) => 
+        acc.nombreProducto?.toLowerCase().includes('riel')
+      );
+      const tieneBarral = detalles.accesoriosAdicionales.some((acc: any) => 
+        acc.nombreProducto?.toLowerCase().includes('barral')
+      );
+      
+      if (tieneRiel) {
+        info['🔨 Confección'] = '🚇 CON RIEL';
+      } else if (tieneBarral) {
+        info['🔨 Confección'] = '🥢 CON BARRAL';
+      } else {
+        info['🔨 Confección'] = '📐 SIN SISTEMA';
+      }
+    }
+    
+    // Información de caída por delante
+    if (detalles.caidaPorDelante && detalles.caidaPorDelante !== 'No') {
+      info['📍 Caída por delante'] = `✅ ${detalles.caidaPorDelante}`;
+    }
+    
+  } else if (sistema.includes('barcelona') || sistema.includes('bandas')) {
+    // === BANDAS VERTICALES ===
+    if (detalles.colorSistema) {
+      info['🎨 Color sistema'] = detalles.colorSistema;
+    }
+    if (detalles.ladoComando) {
+      info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
+    }
+    
+  } else if (sistema.includes('dubai')) {
+    // === DUBAI ===
+    if (detalles.colorSistema) {
+      info['🎨 Color sistema'] = detalles.colorSistema;
+    }
+    if (detalles.ladoComando) {
+      info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
+    }
+    if (detalles.caidaPorDelante && detalles.caidaPorDelante !== 'No') {
+      info['📍 Caída por delante'] = `✅ ${detalles.caidaPorDelante}`;
+    }
+    if (detalles.soporteIntermedio) {
+      info['🔧 Soporte intermedio'] = '✅ SÍ';
+    }
+    
+  } else if (sistema.includes('dunes')) {
+    // === DUNES ===
+    if (detalles.colorSistema) {
+      info['🎨 Color sistema'] = detalles.colorSistema;
+    }
+    if (detalles.ladoComando) {
+      info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
+    }
+    
+  } else if (sistema.includes('romana')) {
+    // === ROMANA ===
+    if (detalles.ladoComando) {
+      info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
+    }
+    
   } else {
-    // Para otros sistemas, mostrar información general
-    if (detalles.detalle && detalles.detalle.trim() !== '') {
-      detallesFormateados['Detalle'] = detalles.detalle;
-    }
+    // === OTROS SISTEMAS (Fit, Venecianas, etc.) ===
     if (detalles.colorSistema) {
-      detallesFormateados['Color'] = detalles.colorSistema;
+      info['🎨 Color'] = detalles.colorSistema;
     }
     if (detalles.ladoComando) {
-      detallesFormateados['Comando'] = detalles.ladoComando;
-    }
-    if (detalles.ancho && detalles.alto) {
-      detallesFormateados['Medidas'] = `${detalles.ancho}cm x ${detalles.alto}cm`;
+      info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
   }
   
-  // Información de accesorios (común para todos)
-  if (detalles.accesorios && Array.isArray(detalles.accesorios) && detalles.accesorios.length > 0) {
-    detallesFormateados['Accesorios'] = detalles.accesorios.join(', ');
-  } else if (detalles.accesorios && typeof detalles.accesorios === 'string' && detalles.accesorios.trim() !== '') {
-    detallesFormateados['Accesorios'] = detalles.accesorios;
-  } else if (detalles.accesoriosAdicionales && Array.isArray(detalles.accesoriosAdicionales) && detalles.accesoriosAdicionales.length > 0) {
-    detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales.join(', ');
-  } else if (detalles.accesoriosAdicionales && typeof detalles.accesoriosAdicionales === 'string' && detalles.accesoriosAdicionales.trim() !== '') {
-    detallesFormateados['Accesorios adicionales'] = detalles.accesoriosAdicionales;
+  // 🛠️ ACCESORIOS INCLUIDOS
+  if (detalles.accesorios?.length > 0) {
+    info['🛠️ Accesorios incluidos'] = detalles.accesorios.join(', ');
   }
   
-  // Verificar otros campos que puedan contener información de accesorios
-  const camposAccesorios = ['accesorios', 'accesoriosAdicionales', 'accesorio', 'accesoriosIncluidos'];
-  camposAccesorios.forEach(campo => {
-    if (detalles[campo] && !detallesFormateados['Accesorios'] && !detallesFormateados['Accesorios adicionales']) {
-      const valor = detalles[campo];
-      if (Array.isArray(valor) && valor.length > 0) {
-        detallesFormateados['Accesorios'] = valor.join(', ');
-      } else if (typeof valor === 'string' && valor.trim() !== '' && valor !== '[]' && valor !== 'false') {
-        detallesFormateados['Accesorios'] = valor;
+  // 🛠️ ACCESORIOS ADICIONALES (con cantidades y precios)
+  if (detalles.accesoriosAdicionales?.length > 0) {
+    const accesoriosDetallados = detalles.accesoriosAdicionales.map((acc: any) => {
+      if (typeof acc === 'string') {
+        return acc;
       }
-    }
-  });
-  
-
-  
-  // Verificación adicional: buscar cualquier campo que contenga "accesorio" en el nombre
-  Object.keys(detalles).forEach(key => {
-    if (key.toLowerCase().includes('accesorio') && !detallesFormateados['Accesorios'] && !detallesFormateados['Accesorios adicionales']) {
-      const valor = detalles[key];
-      if (Array.isArray(valor) && valor.length > 0) {
-        detallesFormateados['Accesorios'] = valor.join(', ');
-      } else if (typeof valor === 'string' && valor.trim() !== '' && valor !== '[]' && valor !== 'false') {
-        detallesFormateados['Accesorios'] = valor;
+      
+      const cantidad = acc.cantidad || acc._cantidad || 1;
+      const precio = acc.precio ? ` ($${Number(acc.precio).toLocaleString('es-AR')})` : '';
+      
+      return `${acc.nombreProducto} (x${cantidad})${precio}`;
+    });
+    
+    info['🛠️ Accesorios adicionales'] = accesoriosDetallados.join(', ');
+    
+    // Calcular total de accesorios
+    const totalAccesorios = detalles.accesoriosAdicionales.reduce((total: number, acc: any) => {
+      if (typeof acc === 'object' && acc.precio) {
+        const cantidad = acc.cantidad || acc._cantidad || 1;
+        return total + (Number(acc.precio) * cantidad);
       }
+      return total;
+    }, 0);
+    
+    if (totalAccesorios > 0) {
+      info['💰 Total accesorios'] = `$${totalAccesorios.toLocaleString('es-AR')}`;
     }
-  });
+  }
   
-  // Verificar información de colocación
+  // 📝 DETALLES E INSTRUCCIONES ESPECIALES
+  if (detalles.detalle?.trim()) {
+    info['📝 Observaciones'] = detalles.detalle;
+  }
+  
+  // 🏗️ INFORMACIÓN DE COLOCACIÓN
   if (detalles.incluirColocacion === true || detalles.incluirColocacion === 'true') {
-    detallesFormateados['Colocación'] = 'Incluida';
+    info['🏗️ Colocación'] = '✅ Incluida';
   } else if (detalles.colocacion && detalles.colocacion !== 'false' && detalles.colocacion !== false) {
-    detallesFormateados['Colocación'] = detalles.colocacion;
+    info['🏗️ Colocación'] = detalles.colocacion;
   }
   
-
-  
-  return detallesFormateados;
+  return info;
 };
 
 const SearchIcon = () => (
@@ -524,10 +558,12 @@ export default function PedidosPage() {
 
   const filteredPedidos = pedidos.filter((pedido) => {
     const searchTerm = filterValue.toLowerCase();
+    const sistema = pedido.pedido_json.productos[0]?.detalles?.sistema;
+    
     const matchesSearch = 
       pedido.pedido_json.numeroPresupuesto.toLowerCase().includes(searchTerm) ||
       pedido.cliente.nombre.toLowerCase().includes(searchTerm) ||
-      pedido.pedido_json.productos[0]?.detalles.sistema.toLowerCase().includes(searchTerm);
+      (sistema && sistema.toLowerCase().includes(searchTerm));
     
     const matchesEstado = selectedEstado === "todos" || pedido.estado === selectedEstado;
     
