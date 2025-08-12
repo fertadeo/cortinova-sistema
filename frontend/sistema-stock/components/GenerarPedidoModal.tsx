@@ -1195,7 +1195,14 @@ export default function GenerarPedidoModal({
           productoDunes: sistemaPedidoDetalles?.producto,
           telaDunes: sistemaPedidoDetalles?.tela,
           precioSistemaDunes: precioUnitario,
-          precioTelaDunes: precioTelaTotal
+          precioTelaDunes: precioTelaTotal,
+          // Incluir todos los detalles del formulario de Dunes
+          colorSistema: sistemaPedidoDetalles?.colorSistema,
+          ladoComando: sistemaPedidoDetalles?.ladoComando,
+          ladoApertura: sistemaPedidoDetalles?.ladoApertura,
+          instalacion: sistemaPedidoDetalles?.instalacion,
+          detalle: sistemaPedidoDetalles?.detalle,
+          tipoApertura: sistemaPedidoDetalles?.tipoApertura
         })
       },
       fecha: new Date().toISOString(),

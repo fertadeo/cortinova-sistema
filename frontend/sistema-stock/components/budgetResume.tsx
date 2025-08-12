@@ -21,6 +21,12 @@ interface BudgetResumeProps {
       precioUnitario: number;
       cantidad: number;
       subtotal: number;
+      // Campos específicos para Dunes
+      tipoApertura?: string;
+      colorSistema?: string;
+      ladoComando?: string;
+      ladoApertura?: string;
+      detalle?: string;
     }>;
     subtotal: number;
     descuento: number;
@@ -186,10 +192,47 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                     <td className="px-4 py-3">{producto.nombre}</td>
                     <td className="px-4 py-3">{
                       (() => {
-                        // Eliminar medidas del inicio de la descripción (ej: '120cm x 120cm - ')
+                        // Lógica específica para Dunes
+                        if (producto.nombre?.toLowerCase().includes('dunes')) {
+                          const detalles = [];
+                          
+                          // Agregar tipo de apertura
+                          if (producto.tipoApertura) {
+                            if (producto.tipoApertura === 'cadena_cordon') {
+                              detalles.push('Apertura con Cadena y Cordón');
+                            } else if (producto.tipoApertura === 'baston') {
+                              detalles.push('Apertura con Bastón');
+                            }
+                          }
+                          
+                          // Agregar color sistema
+                          if (producto.colorSistema) {
+                            detalles.push(`Color: ${producto.colorSistema}`);
+                          }
+                          
+                          // Agregar lado comando
+                          if (producto.ladoComando) {
+                            detalles.push(`Comando: ${producto.ladoComando}`);
+                          }
+                          
+                          // Agregar lado apertura
+                          if (producto.ladoApertura) {
+                            detalles.push(`Apertura: ${producto.ladoApertura}`);
+                          }
+                          
+                        
+                          
+                          // Agregar detalles adicionales
+                          if (producto.detalle && producto.detalle.trim() !== '') {
+                            detalles.push(`Detalles: ${producto.detalle}`);
+                          }
+                          
+                          return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
+                        }
+                        
+                        // Para otros sistemas, mantener la lógica original
                         const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
                         
-                        // Si la descripción está vacía o solo tiene espacios, mostrar el tipo de tela
                         if (!descripcionLimpia || descripcionLimpia.trim() === '') {
                           return producto.tipoTela || 'Sin descripción';
                         }

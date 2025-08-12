@@ -173,6 +173,42 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       info['Sistema'] = detalles.sistema;
     }
     
+         // Tipo de apertura específico para Dunes
+     if (detalles.sistema?.toLowerCase().includes('dunes')) {
+       if (detalles.tipoApertura) {
+         if (detalles.tipoApertura === 'cadena_cordon') {
+           info['Tipo de Apertura'] = 'Apertura con Cadena y Cordón';
+         } else if (detalles.tipoApertura === 'baston') {
+           info['Tipo de Apertura'] = 'Apertura con Bastón';
+         }
+       } else if (detalles.productoDunes?.nombreProducto) {
+         if (detalles.productoDunes.nombreProducto.toLowerCase().includes('cadena')) {
+           info['Tipo de Apertura'] = 'Apertura con Cadena y Cordón';
+         } else if (detalles.productoDunes.nombreProducto.toLowerCase().includes('baston')) {
+           info['Tipo de Apertura'] = 'Apertura con Bastón';
+         }
+       }
+       
+       // Agregar campos específicos de Dunes al PDF
+       if (detalles.colorSistema) {
+         info['Color Sistema'] = detalles.colorSistema;
+       }
+       if (detalles.ladoComando) {
+         info['Lado Comando'] = detalles.ladoComando;
+       }
+       if (detalles.ladoApertura) {
+         info['Lado Apertura'] = detalles.ladoApertura;
+       }
+       
+       // Información del producto y tela específica de Dunes
+       if (detalles.productoDunes?.nombreProducto) {
+         info['Sistema'] = detalles.productoDunes.nombreProducto;
+       }
+       if (detalles.telaDunes?.nombreProducto) {
+         info['Tela'] = detalles.telaDunes.nombreProducto;
+       }
+     }
+    
     // Tela
     if (detalles.tipoTela) {
       info['Tela'] = detalles.tipoTela;
@@ -216,10 +252,15 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
        info['Accesorios adicionales'] = accesoriosDetallados;
      }
     
-    // Observaciones
-    if (detalles.detalle?.trim()) {
-      info['Observaciones'] = detalles.detalle;
-    }
+         // Observaciones
+     if (detalles.detalle?.trim()) {
+       info['Observaciones'] = detalles.detalle;
+     }
+     
+     // Información de colocación
+     if (detalles.incluirColocacion === true || detalles.incluirColocacion === 'true') {
+       info['Colocación'] = 'Incluida';
+     }
     
     return info;
   };
@@ -279,7 +320,7 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       className="md:!max-w-3xl z-[30] max-h-screen"
     >
               <ModalContent className="max-h-screen">
-          <ModalHeader className="text-lg md:text-xl">Detalles del Pedido</ModalHeader>
+          <ModalHeader className="text-lg md:text-xl">Detalles del Pedido2</ModalHeader>
           <ModalBody className="overflow-y-auto max-h-[calc(100vh-120px)]">
             <div className="space-y-6">
             {/* Información General */}
@@ -533,11 +574,32 @@ const formatearDetallesSegunSistema = (detalles: any) => {
     
   } else if (sistema.includes('dunes')) {
     // === DUNES ===
+    // Tipo de apertura (prioritario para Dunes)
+    if (detalles.tipoApertura) {
+      if (detalles.tipoApertura === 'cadena_cordon') {
+        info['🔧 Tipo de Apertura'] = 'Apertura con Cadena y Cordón';
+      } else if (detalles.tipoApertura === 'baston') {
+        info['🔧 Tipo de Apertura'] = 'Apertura con Bastón';
+      }
+    }
+    
+    // También verificar por el nombre del producto si no está el tipoApertura
+    if (detalles.productoDunes?.nombreProducto) {
+      if (detalles.productoDunes.nombreProducto.toLowerCase().includes('cadena')) {
+        info['🔧 Tipo de Apertura'] = 'Apertura con Cadena y Cordón';
+      } else if (detalles.productoDunes.nombreProducto.toLowerCase().includes('baston')) {
+        info['🔧 Tipo de Apertura'] = 'Apertura con Bastón';
+      }
+    }
+    
     if (detalles.colorSistema) {
       info['🎨 Color sistema'] = detalles.colorSistema;
     }
     if (detalles.ladoComando) {
       info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
+    }
+    if (detalles.ladoApertura) {
+      info['🎛️ Lado Apertura'] = `Lado ${detalles.ladoApertura}`;
     }
     
   } else if (sistema.includes('romana')) {

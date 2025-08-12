@@ -195,6 +195,13 @@ export const BudgetGenerator = () => {
       console.log('Precio Tela Dunes:', pedido.detalles?.precioTelaDunes);
       console.log('Precio Unitario:', pedido.precioUnitario);
       console.log('Precio Total:', pedido.precioTotal);
+      console.log('🏗️ [DUNES] Campos del formulario:');
+      console.log('Color Sistema:', pedido.detalles?.colorSistema);
+      console.log('Lado Comando:', pedido.detalles?.ladoComando);
+      console.log('Lado Apertura:', pedido.detalles?.ladoApertura);
+      console.log('Instalación:', pedido.detalles?.instalacion);
+      console.log('Tipo Apertura:', pedido.detalles?.tipoApertura);
+      console.log('Detalle:', pedido.detalles?.detalle);
     }
     
     console.log('=== FIN PEDIDO RECIBIDO ===');
@@ -247,7 +254,13 @@ export const BudgetGenerator = () => {
                   productoDunes: pedido.detalles?.productoDunes,
                   telaDunes: pedido.detalles?.telaDunes,
                   precioSistemaDunes: pedido.detalles?.precioSistemaDunes,
-                  precioTelaDunes: pedido.detalles?.precioTelaDunes
+                  precioTelaDunes: pedido.detalles?.precioTelaDunes,
+                  // Campos específicos del formulario de Dunes
+                  colorSistema: pedido.detalles?.colorSistema || "",
+                  ladoComando: pedido.detalles?.ladoComando || "",
+                  ladoApertura: pedido.detalles?.ladoApertura || "",
+                  instalacion: pedido.detalles?.instalacion || "",
+                  tipoApertura: pedido.detalles?.tipoApertura || ""
                 })
               }
             }
@@ -297,7 +310,13 @@ export const BudgetGenerator = () => {
             productoDunes: pedido.detalles?.productoDunes,
             telaDunes: pedido.detalles?.telaDunes,
             precioSistemaDunes: pedido.detalles?.precioSistemaDunes,
-            precioTelaDunes: pedido.detalles?.precioTelaDunes
+            precioTelaDunes: pedido.detalles?.precioTelaDunes,
+            // Campos específicos del formulario de Dunes
+            colorSistema: pedido.detalles?.colorSistema || "",
+            ladoComando: pedido.detalles?.ladoComando || "",
+            ladoApertura: pedido.detalles?.ladoApertura || "",
+            instalacion: pedido.detalles?.instalacion || "",
+            tipoApertura: pedido.detalles?.tipoApertura || ""
           })
         } as any
       };
@@ -397,6 +416,20 @@ export const BudgetGenerator = () => {
           total: item.total,
           detalles: item.detalles
         });
+        
+        // Logs específicos para Dunes
+        if (item.detalles?.sistema?.toLowerCase().includes('dunes')) {
+          console.log(`🏗️ [DUNES] Producto ${index + 1} - Campos específicos:`, {
+            colorSistema: (item.detalles as any).colorSistema,
+            ladoComando: (item.detalles as any).ladoComando,
+            ladoApertura: (item.detalles as any).ladoApertura,
+            instalacion: (item.detalles as any).instalacion,
+            tipoApertura: (item.detalles as any).tipoApertura,
+            detalle: item.detalles.detalle,
+            productoDunes: (item.detalles as any).productoDunes,
+            telaDunes: (item.detalles as any).telaDunes
+          });
+        }
       });
 
       // Realizar el POST al endpoint

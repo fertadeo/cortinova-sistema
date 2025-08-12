@@ -199,25 +199,76 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     // Información básica del producto
     detalles.push(`${item.cantidad}x ${item.nombre}`);
     
-    // Agregar descripción si existe
-    if (item.descripcion && item.descripcion.trim() !== '') {
-      detalles.push(`• Descripción: ${item.descripcion}`);
-    }
-    
-    // Agregar detalles del sistema si existen
-    if (item.detalles) {
-      if (item.detalles.sistema) {
-        detalles.push(`• Sistema: ${item.detalles.sistema}`);
+    // Lógica específica para Dunes
+    if (item.detalles?.sistema?.toLowerCase().includes('dunes')) {
+      // Mostrar información específica de Dunes
+      if (item.detalles.productoDunes) {
+        detalles.push(`• Sistema: ${item.detalles.productoDunes.nombreProducto}`);
+        
+        // Determinar si es cadena y cordón o bastón basado en el nombre del producto
+        if (item.detalles.productoDunes.nombreProducto.toLowerCase().includes('cadena')) {
+          detalles.push(`• Tipo de Apertura: Apertura con Cadena y Cordón`);
+        } else if (item.detalles.productoDunes.nombreProducto.toLowerCase().includes('baston')) {
+          detalles.push(`• Tipo de Apertura: Apertura con Bastón`);
+        }
       }
-      if (item.detalles.detalle) {
-        detalles.push(`• Detalle: ${item.detalles.detalle}`);
+      
+      // Mostrar información de la tela
+      if (item.detalles.telaDunes) {
+        detalles.push(`• Tela: ${item.detalles.telaDunes.nombreProducto}`);
       }
-      if (item.detalles.colorSistema) {
-        detalles.push(`• Color: ${item.detalles.colorSistema}`);
+      
+      
+      
+             // Mostrar información de medidas si está disponible
+       if (item.detalles.ancho && item.detalles.alto) {
+         detalles.push(`• Medidas: ${item.detalles.ancho}cm x ${item.detalles.alto}cm`);
+       }
+       
+               // Mostrar detalles específicos de Dunes
+        if (item.detalles.colorSistema) {
+          detalles.push(`• Color Sistema: ${item.detalles.colorSistema}`);
+        }
+        if (item.detalles.ladoComando) {
+          detalles.push(`• Lado Comando: ${item.detalles.ladoComando}`);
+        }
+        if (item.detalles.ladoApertura) {
+          detalles.push(`• Lado Apertura: ${item.detalles.ladoApertura}`);
+        }
+        if (item.detalles.instalacion) {
+          detalles.push(`• Instalación: ${item.detalles.instalacion}`);
+        }
+        if (item.detalles.detalle && item.detalles.detalle.trim() !== '') {
+          detalles.push(`• Detalles: ${item.detalles.detalle}`);
+        }
+        
+       
+       
+       // Mostrar información de colocación si está disponible
+       if (item.detalles.incluirColocacion) {
+         detalles.push(`• Colocación: Incluida`);
+       }
+    } else {
+      // Para otros sistemas, usar la lógica original
+      // Agregar descripción si existe
+      if (item.descripcion && item.descripcion.trim() !== '') {
+        detalles.push(`• Descripción: ${item.descripcion}`);
       }
-      if (item.detalles.ladoComando) {
-        detalles.push(`• Comando: ${item.detalles.ladoComando}`);
-      }
+      
+      // Agregar detalles del sistema si existen
+      if (item.detalles) {
+        if (item.detalles.sistema) {
+          detalles.push(`• Sistema: ${item.detalles.sistema}`);
+        }
+        if (item.detalles.detalle) {
+          detalles.push(`• Detalle: ${item.detalles.detalle}`);
+        }
+        if (item.detalles.colorSistema) {
+          detalles.push(`• Color: ${item.detalles.colorSistema}`);
+        }
+        if (item.detalles.ladoComando) {
+          detalles.push(`• Comando: ${item.detalles.ladoComando}`);
+        }
       
       // Buscar accesorios de manera más robusta
       let accesoriosEncontrados = false;
@@ -285,11 +336,14 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         detalles.push(`• Medidas: ${item.detalles.ancho}cm x ${item.detalles.alto}cm`);
       }
     }
-    
-    // Agregar precio
-    detalles.push(`• Precio: $${Number(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`);
-    
-    return detalles;
+  }
+  
+     // Agregar precio solo para sistemas que no sean Dunes
+   if (!item.detalles?.sistema?.toLowerCase().includes('dunes')) {
+     detalles.push(`• Precio: $${Number(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`);
+   }
+   
+   return detalles;
   };
 
   const getEstadoColor = (estado: string) => {

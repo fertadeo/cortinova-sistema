@@ -19,7 +19,6 @@ export default function DunesForm(props: DunesFormProps) {
     colorSistema: "",
     ladoComando: "",
     ladoApertura: "",
-    instalacion: "",
     detalle: ""
   });
 
@@ -71,7 +70,12 @@ export default function DunesForm(props: DunesFormProps) {
         producto: producto,
         telaId: 257,
         tela: tela,
-        telaNombre: tela?.nombreProducto || "TELA AURORA"
+        telaNombre: tela?.nombreProducto || "TELA AURORA",
+        // Incluir todos los detalles del formulario
+        colorSistema: formData.colorSistema,
+        ladoComando: formData.ladoComando,
+        ladoApertura: formData.ladoApertura,
+        detalle: formData.detalle
       });
       onDetalleChange(formData.detalle);
     };
@@ -106,8 +110,10 @@ export default function DunesForm(props: DunesFormProps) {
           value={formData.colorSistema}
           onChange={(e) => handleChange('colorSistema', e.target.value)}
         >
+           <SelectItem key="blanco" >Blanco</SelectItem>
+           <SelectItem key="negro" >Negro</SelectItem>
           <SelectItem key="beige" >Beige</SelectItem>
-          <SelectItem key="blanco" >Blanco</SelectItem>
+         
         </Select>
 
         {/* Lado Comando */}
@@ -122,7 +128,7 @@ export default function DunesForm(props: DunesFormProps) {
       </div>
 
       {/* Segunda fila */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="w-full">
         {/* Lado Apertura */}
         <Select 
           label="Lado Apertura" 
@@ -131,16 +137,6 @@ export default function DunesForm(props: DunesFormProps) {
         >
           <SelectItem key="izquierdo" >Izquierdo</SelectItem>
           <SelectItem key="derecho" >Derecho</SelectItem>
-        </Select>
-
-        {/* Instalación */}
-        <Select 
-          label="Instalación" 
-          value={formData.instalacion}
-          onChange={(e) => handleChange('instalacion', e.target.value)}
-        >
-          <SelectItem key="en_vano" >En vano</SelectItem>
-          <SelectItem key="fuera_vano" >Fuera de vano</SelectItem>
         </Select>
       </div>
 
