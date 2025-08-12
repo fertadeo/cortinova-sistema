@@ -150,6 +150,80 @@ interface DetalleModalProps {
 }
 
 const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComoEntregado }: DetalleModalProps) => {
+  // Función para formatear detalles específicamente para el PDF de confección
+  const formatearDetallesParaConfeccion = (detalles: any) => {
+    const info: { [key: string]: any } = {};
+    
+    // Cantidad (siempre presente)
+    info['Cantidad'] = detalles.cantidad || 1;
+    
+    // Medidas (prioritario para producción)
+    if (detalles.ancho && detalles.alto && detalles.ancho > 0 && detalles.alto > 0) {
+      info['Medidas'] = `${detalles.ancho} × ${detalles.alto} cm`;
+    } else if (detalles.ancho && detalles.ancho > 0) {
+      // Si solo hay ancho, mostrar solo ancho
+      info['Ancho'] = `${detalles.ancho} cm`;
+    } else if (detalles.alto && detalles.alto > 0) {
+      // Si solo hay alto, mostrar solo alto
+      info['Alto'] = `${detalles.alto} cm`;
+    }
+    
+    // Sistema
+    if (detalles.sistema) {
+      info['Sistema'] = detalles.sistema;
+    }
+    
+    // Tela
+    if (detalles.tipoTela) {
+      info['Tela'] = detalles.tipoTela;
+      
+      // Mostrar información específica de tela tradicional si está disponible
+      if (detalles.multiplicadorTela && detalles.metrosTotalesTela) {
+        info['Multiplicador de tela'] = `x${detalles.multiplicadorTela}`;
+        info['Metros totales de tela'] = `${detalles.metrosTotalesTela.toFixed(2)} metros`;
+      }
+    }
+    
+    // Confección (detectar por accesorios)
+    if (detalles.accesoriosAdicionales?.length > 0) {
+      const tieneRiel = detalles.accesoriosAdicionales.some((acc: any) => 
+        acc.nombreProducto?.toLowerCase().includes('riel')
+      );
+      const tieneBarral = detalles.accesoriosAdicionales.some((acc: any) => 
+        acc.nombreProducto?.toLowerCase().includes('barral')
+      );
+      
+      if (tieneRiel) {
+        info['Confección'] = 'CON RIEL';
+      } else if (tieneBarral) {
+        info['Confección'] = 'CON BARRAL';
+      } else {
+        info['Confección'] = 'SIN SISTEMA';
+      }
+    }
+    
+         // Accesorios adicionales (sin precios)
+     if (detalles.accesoriosAdicionales?.length > 0) {
+       const accesoriosDetallados = detalles.accesoriosAdicionales.map((acc: any) => {
+         if (typeof acc === 'string') {
+           return acc;
+         }
+         
+         const cantidad = acc.cantidad || acc._cantidad || 1;
+         return `${acc.nombreProducto} (x${cantidad})`;
+       });
+       
+       info['Accesorios adicionales'] = accesoriosDetallados;
+     }
+    
+    // Observaciones
+    if (detalles.detalle?.trim()) {
+      info['Observaciones'] = detalles.detalle;
+    }
+    
+    return info;
+  };
+
   const handlePrintPDF = () => {
     const doc = new jsPDF();
     
@@ -169,23 +243,32 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       doc.setFontSize(14);
       doc.text(`Producto ${index + 1}: ${producto.nombre}`, 20, yPos);
       yPos += 10;
-      doc.setFontSize(12);
-      doc.text(`Cantidad: ${producto.cantidad}`, 30, yPos);
-      yPos += 10;
       
-      // Detalles del producto formateados (usando la función mejorada)
-      const detallesFormateados = formatearDetallesSegunSistema(producto.detalles);
+      // Detalles del producto formateados para confección
+      const detallesFormateados = formatearDetallesParaConfeccion(producto.detalles);
       Object.entries(detallesFormateados).forEach(([key, value]) => {
-        // Limpiar los iconos para el PDF (remover emojis)
-        const keyLimpio = key.replace(/[📐🏷️🧵🎨🎛️📍🔧🔨🛠️💰📝🏗️]/g, '').trim();
-        doc.text(`${keyLimpio}: ${String(value)}`, 30, yPos);
-        yPos += 8; // Espaciado más compacto para el PDF
+        doc.setFontSize(12);
+        
+        if (key === 'Accesorios adicionales' && Array.isArray(value)) {
+          // Para accesorios adicionales, mostrar en lista
+          doc.text(`- ${key}:`, 30, yPos);
+          yPos += 6;
+          
+          value.forEach((accesorio: string) => {
+            doc.text(`  • ${accesorio}`, 40, yPos);
+            yPos += 6;
+          });
+        } else {
+          // Para otros campos, mostrar normalmente
+          doc.text(`- ${key}: ${String(value)}`, 30, yPos);
+          yPos += 8;
+        }
       });
       
       yPos += 15; // Espacio entre productos
     });
     
-    doc.save(`pedido-${pedido.pedido_json.numeroPresupuesto}.pdf`);
+    doc.save(`pedido-confeccion-${pedido.pedido_json.numeroPresupuesto}.pdf`);
   };
 
   return (
@@ -355,8 +438,14 @@ const formatearDetallesSegunSistema = (detalles: any) => {
   const info: { [key: string]: any } = {};
   
   // 📐 MEDIDAS (Prioritario para producción)
-  if (detalles.ancho && detalles.alto) {
+  if (detalles.ancho && detalles.alto && detalles.ancho > 0 && detalles.alto > 0) {
     info['📐 Medidas'] = `${detalles.ancho} × ${detalles.alto} cm`;
+  } else if (detalles.ancho && detalles.ancho > 0) {
+    // Si solo hay ancho, mostrar solo ancho
+    info['📐 Ancho'] = `${detalles.ancho} cm`;
+  } else if (detalles.alto && detalles.alto > 0) {
+    // Si solo hay alto, mostrar solo alto
+    info['📐 Alto'] = `${detalles.alto} cm`;
   }
   
   // 🏷️ SISTEMA
@@ -365,6 +454,12 @@ const formatearDetallesSegunSistema = (detalles: any) => {
   // 🧵 TELA/MATERIAL
   if (detalles.tipoTela) {
     info['🧵 Tela'] = detalles.tipoTela;
+    
+    // Mostrar información específica de tela tradicional si está disponible
+    if (detalles.multiplicadorTela && detalles.metrosTotalesTela) {
+      info['📏 Multiplicador de tela'] = `x${detalles.multiplicadorTela}`;
+      info['📐 Metros totales de tela'] = `${detalles.metrosTotalesTela.toFixed(2)} metros`;
+    }
   }
   
   // ⚙️ CONFIGURACIÓN ESPECÍFICA POR SISTEMA
@@ -466,7 +561,7 @@ const formatearDetallesSegunSistema = (detalles: any) => {
     info['🛠️ Accesorios incluidos'] = detalles.accesorios.join(', ');
   }
   
-  // 🛠️ ACCESORIOS ADICIONALES (con cantidades y precios)
+  // 🛠️ ACCESORIOS ADICIONALES (con cantidades, sin precios)
   if (detalles.accesoriosAdicionales?.length > 0) {
     const accesoriosDetallados = detalles.accesoriosAdicionales.map((acc: any) => {
       if (typeof acc === 'string') {
@@ -474,25 +569,10 @@ const formatearDetallesSegunSistema = (detalles: any) => {
       }
       
       const cantidad = acc.cantidad || acc._cantidad || 1;
-      const precio = acc.precio ? ` ($${Number(acc.precio).toLocaleString('es-AR')})` : '';
-      
-      return `${acc.nombreProducto} (x${cantidad})${precio}`;
+      return `${acc.nombreProducto} (x${cantidad})`;
     });
     
     info['🛠️ Accesorios adicionales'] = accesoriosDetallados.join(', ');
-    
-    // Calcular total de accesorios
-    const totalAccesorios = detalles.accesoriosAdicionales.reduce((total: number, acc: any) => {
-      if (typeof acc === 'object' && acc.precio) {
-        const cantidad = acc.cantidad || acc._cantidad || 1;
-        return total + (Number(acc.precio) * cantidad);
-      }
-      return total;
-    }, 0);
-    
-    if (totalAccesorios > 0) {
-      info['💰 Total accesorios'] = `$${totalAccesorios.toLocaleString('es-AR')}`;
-    }
   }
   
   // 📝 DETALLES E INSTRUCCIONES ESPECIALES

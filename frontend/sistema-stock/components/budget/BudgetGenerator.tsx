@@ -215,7 +215,10 @@ export const BudgetGenerator = () => {
                 medidaId: pedido.medidaId,
                 ancho: pedido.detalles?.ancho,
                 alto: pedido.detalles?.alto,
-                ubicacion: pedido.detalles?.ubicacion
+                ubicacion: pedido.detalles?.ubicacion,
+                // Información específica para tela tradicional
+                multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
+                metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null
               }
             }
           : item
@@ -244,7 +247,10 @@ export const BudgetGenerator = () => {
           medidaId: pedido.medidaId,
           ancho: pedido.detalles?.ancho,
           alto: pedido.detalles?.alto,
-          ubicacion: pedido.detalles?.ubicacion
+          ubicacion: pedido.detalles?.ubicacion,
+          // Información específica para tela tradicional
+          multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
+          metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null
         } as any
       };
       console.log('=== ITEM GUARDADO EN TABLEDATA ===');

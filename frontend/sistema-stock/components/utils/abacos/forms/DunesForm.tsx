@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Select, SelectItem, Input } from "@heroui/react";
+import { Select, SelectItem, Input, Tabs, Tab } from "@heroui/react";
 
 interface DunesFormProps {
   ancho: string;
@@ -15,6 +15,7 @@ export default function DunesForm(props: DunesFormProps) {
   const { onPedidoDetailsChange, onDetalleChange } = props;
 
   const [formData, setFormData] = React.useState({
+    tipoApertura: "cadena_cordon", // "cadena_cordon" o "baston"
     colorSistema: "",
     ladoComando: "",
     ladoApertura: "",
@@ -23,11 +24,59 @@ export default function DunesForm(props: DunesFormProps) {
   });
 
   useEffect(() => {
-    onPedidoDetailsChange({
-      ...formData,
-      sistema: "Dunes"
-    });
-    onDetalleChange(formData.detalle);
+    // Determinar el ID del producto según el tipo de apertura
+    const productoId = formData.tipoApertura === "cadena_cordon" ? 256 : 255;
+    
+    // Función para obtener datos del producto desde la API
+    const obtenerDatosProducto = async (id: number) => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/${id}`);
+        if (response.ok) {
+          const producto = await response.json();
+          console.log(`✅ [DUNES] Producto ${id} obtenido:`, producto);
+          return producto;
+        }
+      } catch (error) {
+        console.error(`❌ [DUNES] Error al obtener producto ${id}:`, error);
+      }
+      return null;
+    };
+
+    // Función para obtener datos de la tela Aurora
+    const obtenerDatosTela = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/257`);
+        if (response.ok) {
+          const tela = await response.json();
+          console.log('✅ [DUNES] Tela Aurora obtenida:', tela);
+          return tela;
+        }
+      } catch (error) {
+        console.error('❌ [DUNES] Error al obtener Tela Aurora:', error);
+      }
+      return null;
+    };
+
+    // Obtener datos del producto y tela
+    const obtenerDatos = async () => {
+      const [producto, tela] = await Promise.all([
+        obtenerDatosProducto(productoId),
+        obtenerDatosTela()
+      ]);
+
+      onPedidoDetailsChange({
+        ...formData,
+        sistema: "Dunes",
+        productoId: productoId,
+        producto: producto,
+        telaId: 257,
+        tela: tela,
+        telaNombre: tela?.nombreProducto || "TELA AURORA"
+      });
+      onDetalleChange(formData.detalle);
+    };
+
+    obtenerDatos();
   }, [formData, onPedidoDetailsChange, onDetalleChange]);
 
   const handleChange = (field: string, value: any) => {
@@ -39,6 +88,16 @@ export default function DunesForm(props: DunesFormProps) {
 
   return (
     <div className="space-y-4">
+      {/* Pestañas de tipo de apertura */}
+      <Tabs 
+        selectedKey={formData.tipoApertura}
+        onSelectionChange={(key) => handleChange('tipoApertura', key)}
+        className="w-full"
+      >
+        <Tab key="cadena_cordon" title="Apertura con Cadena y Cordón" />
+        <Tab key="baston" title="Apertura con Bastón" />
+      </Tabs>
+
       {/* Primera fila */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Color Sistema */}

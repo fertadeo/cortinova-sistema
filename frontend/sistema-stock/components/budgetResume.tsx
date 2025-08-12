@@ -31,11 +31,6 @@ interface BudgetResumeProps {
 const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   const invoiceRef = React.useRef(null);
 
-  console.log('Presupuesto Data:', presupuestoData);
-  console.log('Presupuesto Data descuento:', presupuestoData.descuento);
-  console.log('Presupuesto Data total:', presupuestoData.total);
-  console.log('Presupuesto Data subtotal:', presupuestoData.subtotal); 
-
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) return;
     
@@ -104,7 +99,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
         unit: 'mm'
       });
       
-      const imgWidth = 190;
+      const imgWidth = 100;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const imgData = canvas.toDataURL('image/png');
       pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
