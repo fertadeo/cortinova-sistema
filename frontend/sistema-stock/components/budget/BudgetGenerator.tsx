@@ -185,6 +185,18 @@ export const BudgetGenerator = () => {
     console.log('Detalles del pedido:', pedido.detalles);
     console.log('Accesorios:', pedido.detalles?.accesorios);
     console.log('Accesorios adicionales:', pedido.detalles?.accesoriosAdicionales);
+    
+    // Logs específicos para Dunes
+    if (pedido.sistema?.toLowerCase().includes('dunes')) {
+      console.log('🏗️ [DUNES] Información específica de Dunes:');
+      console.log('Producto Dunes:', pedido.detalles?.productoDunes);
+      console.log('Tela Dunes:', pedido.detalles?.telaDunes);
+      console.log('Precio Sistema Dunes:', pedido.detalles?.precioSistemaDunes);
+      console.log('Precio Tela Dunes:', pedido.detalles?.precioTelaDunes);
+      console.log('Precio Unitario:', pedido.precioUnitario);
+      console.log('Precio Total:', pedido.precioTotal);
+    }
+    
     console.log('=== FIN PEDIDO RECIBIDO ===');
     
     // Usar los precios calculados y pasados desde el modal
@@ -197,7 +209,18 @@ export const BudgetGenerator = () => {
           ? {
               ...item,
               name: `Cortina ${pedido.sistema}`,
-              description: `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`,
+              description: (() => {
+                // Lógica específica para Dunes
+                if (pedido.sistema?.toLowerCase().includes('dunes')) {
+                  const productoDunes = pedido.detalles?.productoDunes;
+                  const telaDunes = pedido.detalles?.telaDunes;
+                  if (productoDunes && telaDunes) {
+                    return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
+                  }
+                }
+                // Para otros sistemas, usar la lógica original
+                return `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`;
+              })(),
               quantity: pedido.detalles?.cantidad || 1,
               price: precioTotal / (pedido.detalles?.cantidad || 1),
               total: precioTotal,
@@ -218,7 +241,14 @@ export const BudgetGenerator = () => {
                 ubicacion: pedido.detalles?.ubicacion,
                 // Información específica para tela tradicional
                 multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
-                metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null
+                metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null,
+                // Información específica para Dunes
+                ...(pedido.sistema?.toLowerCase().includes('dunes') && {
+                  productoDunes: pedido.detalles?.productoDunes,
+                  telaDunes: pedido.detalles?.telaDunes,
+                  precioSistemaDunes: pedido.detalles?.precioSistemaDunes,
+                  precioTelaDunes: pedido.detalles?.precioTelaDunes
+                })
               }
             }
           : item
@@ -229,7 +259,18 @@ export const BudgetGenerator = () => {
         id: Date.now(),
         productId: Date.now(),
         name: `Cortina ${pedido.sistema}`,
-        description: `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`,
+        description: (() => {
+          // Lógica específica para Dunes
+          if (pedido.sistema?.toLowerCase().includes('dunes')) {
+            const productoDunes = pedido.detalles?.productoDunes;
+            const telaDunes = pedido.detalles?.telaDunes;
+            if (productoDunes && telaDunes) {
+              return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
+            }
+          }
+          // Para otros sistemas, usar la lógica original
+          return `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`;
+        })(),
         quantity: pedido.detalles?.cantidad || 1,
         price: precioTotal / (pedido.detalles?.cantidad || 1),
         total: precioTotal,
@@ -250,7 +291,14 @@ export const BudgetGenerator = () => {
           ubicacion: pedido.detalles?.ubicacion,
           // Información específica para tela tradicional
           multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
-          metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null
+          metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null,
+          // Información específica para Dunes
+          ...(pedido.sistema?.toLowerCase().includes('dunes') && {
+            productoDunes: pedido.detalles?.productoDunes,
+            telaDunes: pedido.detalles?.telaDunes,
+            precioSistemaDunes: pedido.detalles?.precioSistemaDunes,
+            precioTelaDunes: pedido.detalles?.precioTelaDunes
+          })
         } as any
       };
       console.log('=== ITEM GUARDADO EN TABLEDATA ===');

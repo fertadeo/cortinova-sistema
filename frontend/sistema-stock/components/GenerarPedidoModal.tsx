@@ -1058,33 +1058,63 @@ export default function GenerarPedidoModal({
   const handleSubmit = () => {
     // Calcular el precio unitario según la lógica del resumen
     let precioUnitario = 0;
-    if (selectedRielBarral && selectedRielBarral.precio) {
-      console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
-      if (selectedSistema?.toLowerCase().includes('veneciana')) {
-        if (Number(ancho) > 0 && Number(alto) > 0) {
-          console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
-          precioUnitario = (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio);
+    let precioTelaTotal = 0;
+    let soporteIntermedioTotal = 0;
+    let colocacionTotal = incluirColocacion ? precioColocacion : 0;
+    const cantidadNum = Number(cantidad) || 1;
+
+    // Lógica específica para Dunes
+    if (selectedSistema?.toLowerCase().includes('dunes')) {
+      console.log('🏗️ [DUNES] Calculando precio para sistema Dunes');
+      
+      // Usar la función calcularPrecioSistema que ya maneja Dunes correctamente
+      precioUnitario = calcularPrecioSistema();
+      
+      // Usar la función calcularPrecioTela que ya maneja Dunes correctamente
+      precioTelaTotal = calcularPrecioTela(
+        Number(ancho),
+        Number(alto),
+        0, // No usar selectedTela.precio para Dunes
+        false,
+        selectedSistema
+      );
+      
+      console.log('💰 [DUNES] Precios calculados:', {
+        precioSistema: precioUnitario,
+        precioTela: precioTelaTotal,
+        precioColocacion: colocacionTotal,
+        cantidad: cantidadNum
+      });
+    } else {
+      // Lógica para otros sistemas (mantener la original)
+      if (selectedRielBarral && selectedRielBarral.precio) {
+        console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
+        if (selectedSistema?.toLowerCase().includes('veneciana')) {
+          if (Number(ancho) > 0 && Number(alto) > 0) {
+            console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
+            precioUnitario = (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio);
+          } else {
+            precioUnitario = 0;
+          }
         } else {
-          precioUnitario = 0;
+          precioUnitario = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
         }
       } else {
-        precioUnitario = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
+        console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
+        precioUnitario = 0;
       }
-    } else {
-      console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
-      precioUnitario = 0;
+      
+      // Sumar tela, soporte intermedio y colocación al total (no incluir tela para Veneciana)
+      precioTelaTotal = (selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) ? calcularPrecioTela(
+        Number(ancho),
+        Number(alto),
+        selectedTela?.precio ? Number(selectedTela.precio) : 0,
+        selectedTela?.nombreProducto === 'ROLLER',
+        selectedSistema
+      ) : 0;
+      soporteIntermedioTotal = getSoporteResumen() ? Number(getSoporteResumen()?.precio || 0) : 0;
     }
-    // Sumar tela, soporte intermedio y colocación al total (no incluir tela para Veneciana)
-    const precioTelaTotal = (selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) ? calcularPrecioTela(
-      Number(ancho),
-      Number(alto),
-      selectedTela?.precio ? Number(selectedTela.precio) : 0,
-      selectedTela?.nombreProducto === 'ROLLER',
-      selectedSistema
-    ) : 0;
-    const soporteIntermedioTotal = getSoporteResumen() ? Number(getSoporteResumen()?.precio || 0) : 0;
-    const colocacionTotal = incluirColocacion ? precioColocacion : 0;
-    const cantidadNum = Number(cantidad) || 1;
+
     // El precio unitario debe incluir todos los extras
     const precioUnitarioCompleto = precioUnitario + precioTelaTotal + soporteIntermedioTotal + colocacionTotal;
     const precioTotal = precioUnitarioCompleto * cantidadNum + totalAccesoriosAdicionales;
@@ -1159,7 +1189,14 @@ export default function GenerarPedidoModal({
         accesoriosAdicionales: accesoriosAdicionales.map(acc => acc.nombre || acc),
         // Información específica para tela tradicional
         multiplicadorTela: multiplicadorTelaInfo,
-        metrosTotalesTela: metrosTotalesTela
+        metrosTotalesTela: metrosTotalesTela,
+        // Información específica para Dunes
+        ...(selectedSistema?.toLowerCase().includes('dunes') && {
+          productoDunes: sistemaPedidoDetalles?.producto,
+          telaDunes: sistemaPedidoDetalles?.tela,
+          precioSistemaDunes: precioUnitario,
+          precioTelaDunes: precioTelaTotal
+        })
       },
       fecha: new Date().toISOString(),
       precioUnitario: precioUnitarioCompleto,
@@ -1169,6 +1206,17 @@ export default function GenerarPedidoModal({
       precioColocacion
     };
     console.log('Pedido creado con accesorios:', pedido);
+    
+    // Log específico para Dunes
+    if (selectedSistema?.toLowerCase().includes('dunes')) {
+      console.log('🏗️ [DUNES] Pedido final creado:');
+      console.log('Precio Unitario Completo:', precioUnitarioCompleto);
+      console.log('Precio Total:', precioTotal);
+      console.log('Cantidad:', cantidadNum);
+      console.log('Producto Dunes:', sistemaPedidoDetalles?.producto);
+      console.log('Tela Dunes:', sistemaPedidoDetalles?.tela);
+    }
+    
     onPedidoCreated(pedido);
     onOpenChange(false);
   };
