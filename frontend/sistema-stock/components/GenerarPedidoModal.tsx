@@ -857,46 +857,60 @@ export default function GenerarPedidoModal({
 
   const nuevoPrecioSistema = calcularPrecioSistema();
 
-  // Calcular precio total
+  // Calcular precio total basado en los items del resumen
   const calcularPrecioTotal = () => {
     if (!ancho || !alto || !cantidad) return 0;
 
-    // Para Dunes, no necesitamos selectedTela porque usa tela fija
-    if (!selectedSistema?.toLowerCase().includes('dunes') && !selectedTela) return 0;
+    const cantidadNum = Number(cantidad) || 1;
+    let total = 0;
 
-    const anchoMetros = Number(ancho) / 100;
-    // Usar el precio del producto correspondiente
-    const nuevoPrecioSistema = calcularPrecioSistema();
-
-    // Calcular precio de la tela
-    let nuevoPrecioTela = 0;
+    // 1. Sistema - calcular según el tipo de sistema
+    let precioSistema = 0;
     if (selectedSistema?.toLowerCase().includes('dunes')) {
-      // Para Dunes, usar la tela desde sistemaPedidoDetalles
-      nuevoPrecioTela = calcularPrecioTela(
-        Number(ancho),
-        Number(alto),
-        0, // No usar selectedTela.precio para Dunes
-        false,
-        selectedSistema
-      );
+      precioSistema = calcularPrecioSistema();
+    } else if (selectedSistema?.toLowerCase().includes('veneciana')) {
+      precioSistema = calcularPrecioSistema();
     } else {
-      // Para otros sistemas, usar selectedTela
-      nuevoPrecioTela = calcularPrecioTela(
+      // Para otros sistemas (tradicional, propios, etc.)
+      if (selectedRielBarral && selectedRielBarral.precio) {
+        precioSistema = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
+      }
+    }
+
+    // 2. Tela - solo para sistemas que no sean Veneciana
+    let precioTela = 0;
+    if (selectedTela && !selectedSistema?.toLowerCase().includes('veneciana') && !selectedSistema?.toLowerCase().includes('dunes')) {
+      precioTela = calcularPrecioTelaMultiplicada();
+    } else if (selectedSistema?.toLowerCase().includes('dunes')) {
+      precioTela = calcularPrecioTela(
         Number(ancho),
         Number(alto),
-        selectedTela?.precio ? Number(selectedTela.precio) : 0,
-        selectedTela?.nombreProducto === 'ROLLER',
+        0,
+        false,
         selectedSistema
       );
     }
 
-    // Incluir precio de colocación si está seleccionado
-    const costoColocacionFinal = incluirColocacion ? precioColocacion : 0;
+    // 3. Soporte intermedio/doble
+    const precioSoporte = getSoporteResumen() ? Number(getSoporteResumen()?.precio || 0) : 0;
 
-    setPrecioSistema(nuevoPrecioSistema);
-    setPrecioTela(nuevoPrecioTela);
+    // 4. Colocación
+    const precioColocacionFinal = incluirColocacion ? precioColocacion : 0;
 
-    return (nuevoPrecioSistema + nuevoPrecioTela + costoColocacionFinal) * Number(cantidad);
+    // 5. Accesorios adicionales (no se multiplican por cantidad)
+    const totalAccesoriosAdicionales = accesoriosAdicionales.reduce(
+      (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1)),
+      0
+    );
+
+    // Calcular total: (sistema + tela + soporte + colocación) * cantidad + accesorios
+    total = (precioSistema + precioTela + precioSoporte + precioColocacionFinal) * cantidadNum + totalAccesoriosAdicionales;
+
+    // Actualizar estados para el resumen
+    setPrecioSistema(precioSistema);
+    setPrecioTela(precioTela);
+
+    return total;
   };
 
   // Función para validar medidas
