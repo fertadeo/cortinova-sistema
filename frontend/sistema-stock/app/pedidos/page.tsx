@@ -320,7 +320,7 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       className="md:!max-w-3xl z-[30] max-h-screen"
     >
               <ModalContent className="max-h-screen">
-          <ModalHeader className="text-lg md:text-xl">Detalles del Pedido2</ModalHeader>
+          <ModalHeader className="text-lg md:text-xl">Detalles del Pedido</ModalHeader>
           <ModalBody className="overflow-y-auto max-h-[calc(100vh-120px)]">
             <div className="space-y-6">
             {/* Información General */}
