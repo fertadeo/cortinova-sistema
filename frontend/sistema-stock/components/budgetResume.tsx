@@ -3,7 +3,6 @@ import React from 'react';
 import { Button, Card, CardBody } from "@heroui/react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import Image from 'next/image';
 interface BudgetResumeProps {
   presupuestoData: {
     numeroPresupuesto: string;
@@ -36,7 +35,7 @@ interface BudgetResumeProps {
 }
 
 const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
-  const invoiceRef = React.useRef(null);
+  const invoiceRef = React.useRef<HTMLDivElement>(null);
 
   // Agrupar productos por espacio
   const productosPorEspacio = presupuestoData.productos.reduce((acc, producto) => {
@@ -52,16 +51,6 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
     if (!invoiceRef.current) return;
     
     try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        scale: 1,
-        logging: false,
-        useCORS: true,
-        imageTimeout: 0,
-        backgroundColor: null,
-        removeContainer: true,
-        foreignObjectRendering: false
-      });
-
       const pdf = new jsPDF({
         format: 'a4',
         unit: 'mm',
@@ -70,18 +59,87 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
       
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = pageWidth * 0.05;
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      const contentHeight = pageHeight - (margin * 2);
       
-      const imgWidth = pageWidth - (margin * 2);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Obtener el elemento completo
+      const fullCanvas = await html2canvas(invoiceRef.current, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        imageTimeout: 15000,
+        backgroundColor: '#ffffff',
+        removeContainer: true,
+        foreignObjectRendering: false,
+        allowTaint: true,
+        onclone: (clonedDoc) => {
+          const images = clonedDoc.querySelectorAll('img');
+          images.forEach(img => {
+            img.style.display = 'block';
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+          });
+        }
+      });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
-      pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight, undefined, 'FAST');
+      const imgData = fullCanvas.toDataURL('image/png', 1.0);
+      const imgWidth = contentWidth;
+      const imgHeight = (fullCanvas.height * imgWidth) / fullCanvas.width;
+      
+      // Calcular cuántas páginas necesitamos
+      const totalPages = Math.ceil(imgHeight / contentHeight);
+      
+      console.log('Generando PDF con paginación:', {
+        imgHeight,
+        contentHeight,
+        totalPages
+      });
+      
+      // Generar cada página
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+        
+        // Calcular la posición Y para esta página
+        const sourceY = page * contentHeight * (fullCanvas.width / imgWidth);
+        const sourceHeight = Math.min(
+          contentHeight * (fullCanvas.width / imgWidth),
+          fullCanvas.height - sourceY
+        );
+        
+        // Crear un canvas temporal para esta página
+        const pageCanvas = document.createElement('canvas');
+        const ctx = pageCanvas.getContext('2d');
+        pageCanvas.width = fullCanvas.width;
+        pageCanvas.height = sourceHeight;
+        
+        // Dibujar la porción correspondiente de la imagen
+        ctx?.drawImage(
+          fullCanvas,
+          0, sourceY, fullCanvas.width, sourceHeight,
+          0, 0, fullCanvas.width, sourceHeight
+        );
+        
+        // Convertir a imagen y agregar al PDF
+        const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+        pdf.addImage(
+          pageImgData, 
+          'PNG', 
+          margin, 
+          margin, 
+          imgWidth, 
+          Math.min(contentHeight, (sourceHeight * imgWidth) / fullCanvas.width),
+          undefined, 
+          'FAST'
+        );
+      }
 
       // Limpiar el nombre del cliente para usar como nombre de archivo
       const nombreCliente = presupuestoData.cliente.nombre
-        .replace(/[^a-zA-Z0-9\s]/g, '') // Remover caracteres especiales
-        .replace(/\s+/g, '-') // Reemplazar espacios con guiones
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .replace(/\s+/g, '-')
         .toLowerCase();
       
       pdf.save(`Presupuesto-${presupuestoData.numeroPresupuesto}-${nombreCliente}.pdf`);
@@ -108,7 +166,20 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2,
         logging: false,
-        useCORS: true
+        useCORS: true,
+        imageTimeout: 15000,
+        backgroundColor: '#ffffff',
+        removeContainer: true,
+        foreignObjectRendering: false,
+        allowTaint: true,
+        onclone: (clonedDoc) => {
+          const images = clonedDoc.querySelectorAll('img');
+          images.forEach(img => {
+            img.style.display = 'block';
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+          });
+        }
       });
 
       const pdf = new jsPDF({
@@ -118,7 +189,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
       
       const imgWidth = 100;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
 
       // Crear el mensaje para WhatsApp
@@ -151,23 +222,26 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
       <CardBody className="p-8">
         <div ref={invoiceRef} className="bg-white">
           <div className="flex justify-between items-start mb-8">
-            <div>
-              <Image 
-                src="/images/logo.jpg"
-                alt="Cortinova"
-                className="mb-4"
-                width={274}
-                height={234}
-              />
-              <h1 className="text-2xl font-bold text-gray-900">
+                         <div>
+               <div className="mb-6" style={{ minHeight: '120px', display: 'flex', alignItems: 'center' }}>
+                 <img 
+                   src="/images/logo.jpg"
+                   alt="Cortinova"
+                   style={{ 
+                     width: '200px', 
+                     height: 'auto', 
+                     maxHeight: '120px',
+                     objectFit: 'contain',
+                     display: 'block'
+                   }}
+                 />
+               </div>
+              <h1 className=" font-bold text-gray-900">
                 Presupuesto #{presupuestoData.numeroPresupuesto}
               </h1>
-              <h2 className="text-lg font-semibold text-gray-700 mb-2">
-                Cliente: {presupuestoData.cliente.nombre}
-              </h2>
               <p className="text-gray-600">{presupuestoData.fecha}</p>
             </div>
-            <div className="mt-16 text-right">
+                         <div className="mt-6 text-right">
               <div className="text-gray-600">
                 <strong> <p>Cortinova - Cortinas & Deco</p>
                 <p>San Martín 269, Río Cuarto</p>
