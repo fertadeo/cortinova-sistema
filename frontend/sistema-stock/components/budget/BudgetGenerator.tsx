@@ -32,6 +32,7 @@ interface LocalTableItem {
   quantity: number;
   price: number;
   total: number;
+  espacio?: string; // Agregar campo espacio
 }
 
 const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean): number => {
@@ -231,6 +232,7 @@ export const BudgetGenerator = () => {
               quantity: pedido.detalles?.cantidad || 1,
               price: precioTotal / (pedido.detalles?.cantidad || 1),
               total: precioTotal,
+              espacio: pedido.espacio, // Agregar el espacio seleccionado
               detalles: {
                 sistema: pedido.sistema || "",
                 detalle: pedido.detalles?.detalle || "",
@@ -287,6 +289,7 @@ export const BudgetGenerator = () => {
         quantity: pedido.detalles?.cantidad || 1,
         price: precioTotal / (pedido.detalles?.cantidad || 1),
         total: precioTotal,
+        espacio: pedido.espacio, // Agregar el espacio seleccionado
         detalles: {
           sistema: pedido.sistema || "",
           detalle: pedido.detalles?.detalle || "",
@@ -390,6 +393,7 @@ export const BudgetGenerator = () => {
         clienteId: selectedClient.id,
         productos: tableData.map(item => {
           console.log('Item detalles antes de enviar:', item.detalles);
+          console.log('Item espacio:', item.espacio);
           return {
             id: item.productId || Date.now(),
             nombre: item.name,
@@ -397,6 +401,7 @@ export const BudgetGenerator = () => {
             cantidad: Number(item.quantity),
             precioUnitario: Number(item.price),
             subtotal: Number(item.price) * Number(item.quantity),
+            espacio: item.espacio, // Agregar el campo espacio
             detalles: item.detalles || {}
           };
         }),
@@ -407,6 +412,8 @@ export const BudgetGenerator = () => {
         descuentoMonto: applyDiscount && discountType === "amount" ? Number(discountValue) : 0
       };
 
+      console.log('PresupuestoData completo con espacios:', presupuestoData.productos.map(p => ({ nombre: p.nombre, espacio: p.espacio })));
+
       tableData.forEach((item, index) => {
         console.log(`Producto ${index + 1}:`, {
           nombre: item.name,
@@ -414,6 +421,7 @@ export const BudgetGenerator = () => {
           cantidad: item.quantity,
           precio: item.price,
           total: item.total,
+          espacio: item.espacio,
           detalles: item.detalles
         });
         
@@ -460,7 +468,8 @@ export const BudgetGenerator = () => {
           tipoTela: item.detalles?.tipoTela || '',
           precioUnitario: Number(item.price),
           cantidad: Number(item.quantity),
-          subtotal: Number(item.price) * Number(item.quantity)
+          subtotal: Number(item.price) * Number(item.quantity),
+          espacio: item.espacio // Agregar el espacio al presupuesto
         })),
         subtotal: subtotal,
         descuento: discount, // Usar el descuento calculado

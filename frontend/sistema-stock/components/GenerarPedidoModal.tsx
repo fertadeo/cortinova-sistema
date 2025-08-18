@@ -354,6 +354,12 @@ export default function GenerarPedidoModal({
   const [alto, setAlto] = useState(medidasPrecargadas?.alto?.toString() || '');
   const [cantidad, setCantidad] = useState(medidasPrecargadas?.cantidad?.toString() || '1');
   
+  // Agregar estado para el espacio
+  const [espacio, setEspacio] = useState(medidasPrecargadas?.ubicacion || "");
+
+  // Lista de espacios predefinidos (reutilizar las mismas opciones que en medidas)
+  const ESPACIOS = ["Comedor", "Cocina", "Dormitorio", "Living", "Baño", "Oficina", "Otro"];
+  
   // Event listener para ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -378,6 +384,7 @@ export default function GenerarPedidoModal({
       setAncho(medidasPrecargadas.ancho.toString());
       setAlto(medidasPrecargadas.alto.toString());
       setCantidad(medidasPrecargadas.cantidad.toString());
+      setEspacio(medidasPrecargadas.ubicacion || "");
       // También podemos precargar otros campos si es necesario
     }
   }, [medidasPrecargadas]);
@@ -1178,6 +1185,7 @@ export default function GenerarPedidoModal({
     
     const pedido = {
       sistema: selectedSistema,
+      espacio: espacio, // Agregar el espacio seleccionado
       detalles: {
         cantidad: parseFloat(cantidad),
         ancho: ancho && !isNaN(Number(ancho)) ? Number(ancho) : null,
@@ -1548,6 +1556,37 @@ export default function GenerarPedidoModal({
                           }
                         />
                       </div>
+                    </div>
+
+                    {/* Selector de Espacio/Ambiente */}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <Select
+                        label="Espacio/Ambiente"
+                        placeholder="Seleccione el espacio"
+                        selectedKeys={espacio ? new Set([espacio]) : new Set([])}
+                        onSelectionChange={(keys) => {
+                          const selectedValues = Array.from(keys) as string[];
+                          if (selectedValues.length > 0) {
+                            setEspacio(selectedValues[0]);
+                          }
+                        }}
+                      >
+                        {ESPACIOS.map((esp) => (
+                          <SelectItem key={esp} textValue={esp}>
+                            {esp}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                      
+                      {/* Campo adicional para cuando se selecciona "Otro" */}
+                      {espacio === "Otro" && (
+                        <Input
+                          label="Especifique espacio"
+                          placeholder="Ej: Balcón, Estudio, Terraza"
+                          value={espacio === "Otro" ? "" : espacio}
+                          onValueChange={(value) => setEspacio(value)}
+                        />
+                      )}
                     </div>
 
                     {selectedArticulo && (

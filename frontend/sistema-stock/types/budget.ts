@@ -6,6 +6,7 @@ export interface TableItem {
   quantity: number;
   price: number;
   total: number;
+  espacio?: string; // Nuevo campo para el espacio/ambiente
   detalles?: {
     sistema: string;
     detalle: string;
@@ -53,6 +54,7 @@ export interface PresupuestoResumen {
     precioUnitario: number;
     cantidad: number;
     subtotal: number;
+    espacio?: string; // Nuevo campo para el espacio/ambiente
   }[];
   subtotal: number;
   descuento: number;

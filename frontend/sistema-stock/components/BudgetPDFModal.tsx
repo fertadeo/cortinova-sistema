@@ -19,6 +19,7 @@ interface BudgetPDFModalProps {
       precioUnitario: number;
       cantidad: number;
       subtotal: number;
+      espacio?: string; // Agregar campo espacio
     }>;
     subtotal: number;
     descuento: number;

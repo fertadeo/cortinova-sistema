@@ -40,6 +40,8 @@ interface Presupuesto {
   cliente_telefono: string;
   cliente_email: string;
   items: Item[];
+  espacio?: string; // Campo espacio del presupuesto
+  presupuesto_json?: string | any; // Campo JSON del presupuesto
 }
 
 interface Item {
@@ -49,6 +51,7 @@ interface Item {
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
+  espacio?: string; // Nuevo campo para el espacio/ambiente
   detalles?: {
     sistema: string;
     detalle: string;
@@ -95,6 +98,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       precioUnitario: number;
       cantidad: number;
       subtotal: number;
+      espacio?: string; // Nuevo campo para el espacio/ambiente
     }>;
     subtotal: number;
     descuento: number;
@@ -127,6 +131,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const presupuestosData = await presupuestosResponse.json();
         const pedidosData = await pedidosResponse.json();
 
+                 console.log('Respuesta completa del backend:', presupuestosData);
+         console.log('Primer presupuesto:', presupuestosData.data?.[0] || presupuestosData[0]);
+         console.log('Campos del primer presupuesto:', Object.keys(presupuestosData.data?.[0] || presupuestosData[0] || {}));
+
         // Asegurarnos de acceder a la propiedad data si existe
         const presupuestos = presupuestosData.data || presupuestosData;
         const pedidos = pedidosData.data || pedidosData;
@@ -146,10 +154,53 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             : []
         );
 
-        const presupuestosActualizados = presupuestos.map(
-          (presupuesto: Presupuesto) => {
+                          const presupuestosActualizados = presupuestos.map(
+           (presupuesto: Presupuesto) => {
+             console.log('Procesando presupuesto:', presupuesto.id);
+             console.log('Presupuesto JSON:', presupuesto.presupuesto_json);
+             
+             // Extraer el campo espacio del presupuesto_json para cada item
+             let itemsConEspacio = presupuesto.items;
+             if (presupuesto.presupuesto_json) {
+               try {
+                 const presupuestoJson = typeof presupuesto.presupuesto_json === 'string' 
+                   ? JSON.parse(presupuesto.presupuesto_json) 
+                   : presupuesto.presupuesto_json;
+                 
+                 console.log('Presupuesto JSON parseado:', presupuestoJson);
+                 console.log('Productos en JSON:', presupuestoJson.productos);
+                 
+                 if (presupuestoJson.productos && Array.isArray(presupuestoJson.productos)) {
+                   itemsConEspacio = presupuesto.items.map((item, index) => {
+                     const productoJson = presupuestoJson.productos[index];
+                     const espacio = productoJson?.espacio || 'Sin especificar';
+                     console.log(`Item: ${item.nombre}, Espacio extraído del JSON: ${espacio}`);
+                     return {
+                       ...item,
+                       espacio: espacio
+                     };
+                   });
+                 }
+               } catch (error) {
+                 console.error('Error al parsear presupuesto_json:', error);
+                 // Si hay error, asignar "Sin especificar" a todos los items
+                 itemsConEspacio = presupuesto.items.map((item) => ({
+                   ...item,
+                   espacio: 'Sin especificar'
+                 }));
+               }
+             } else {
+               console.log('No hay presupuesto_json para este presupuesto');
+               // Si no hay presupuesto_json, asignar "Sin especificar" a todos los items
+               itemsConEspacio = presupuesto.items.map((item) => ({
+                 ...item,
+                 espacio: 'Sin especificar'
+               }));
+             }
+            
             return {
               ...presupuesto,
+              items: itemsConEspacio,
               estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
             };
           }
@@ -373,13 +424,19 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           telefono: presupuesto.cliente_telefono || 'Sin teléfono',
           email: presupuesto.cliente_email || undefined
         },
-        productos: presupuesto.items?.map(item => ({
-          nombre: item.nombre,
-          descripcion: item.descripcion,
-          precioUnitario: Number(item.precio_unitario),
-          cantidad: item.cantidad,
-          subtotal: Number(item.subtotal)
-        })) || [],
+                 productos: presupuesto.items?.map(item => {
+           console.log('Item en handleViewPDF:', item);
+           console.log('Item.espacio extraído:', item.espacio);
+           
+           return {
+             nombre: item.nombre,
+             descripcion: item.descripcion,
+             precioUnitario: Number(item.precio_unitario),
+             cantidad: item.cantidad,
+             subtotal: Number(item.subtotal),
+             espacio: item.espacio || 'Sin especificar'
+           };
+         }) || [],
         subtotal: Number(presupuesto.subtotal),
         descuento: Number(presupuesto.descuento),
         total: Number(presupuesto.total)
@@ -530,6 +587,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                     <div className="font-medium">{item.nombre}</div>
                     <div className="text-sm text-gray-600">
                       <div>Cantidad: {item.cantidad}</div>
+                      {item.espacio && (
+                        <div className="text-xs text-blue-600">
+                          Espacio: {item.espacio}
+                        </div>
+                      )}
                       {item.detalles && (
                         <div className="text-xs">
                           Sistema: {item.detalles.sistema || '-'} - 
@@ -735,6 +797,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           cantidad: item.cantidad,
           precioUnitario: item.precio_unitario,
           subtotal: item.subtotal,
+          espacio: item.espacio, // Incluir el campo espacio en el pedido
           detalles: item.detalles || {}
         })) || [],
         total: presupuestoCompleto.total,
@@ -742,6 +805,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       };
       
       console.log('Enviando datos completos del pedido:', pedidoData);
+      console.log('Productos con espacios:', pedidoData.productos.map(p => ({ nombre: p.nombre, espacio: p.espacio })));
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoId}/convertir-a-pedido`, {
         method: 'POST',

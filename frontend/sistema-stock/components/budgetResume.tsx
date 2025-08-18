@@ -21,6 +21,7 @@ interface BudgetResumeProps {
       precioUnitario: number;
       cantidad: number;
       subtotal: number;
+      espacio?: string; // Nuevo campo para el espacio/ambiente
       // Campos específicos para Dunes
       tipoApertura?: string;
       colorSistema?: string;
@@ -36,6 +37,16 @@ interface BudgetResumeProps {
 
 const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   const invoiceRef = React.useRef(null);
+
+  // Agrupar productos por espacio
+  const productosPorEspacio = presupuestoData.productos.reduce((acc, producto) => {
+    const espacio = producto.espacio || 'Sin especificar';
+    if (!acc[espacio]) {
+      acc[espacio] = [];
+    }
+    acc[espacio].push(producto);
+    return acc;
+  }, {} as Record<string, typeof presupuestoData.productos>);
 
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) return;
@@ -186,65 +197,74 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                   <th className="px-4 py-3 font-semibold text-left text-gray-900">Subtotal</th>
                 </tr>
               </thead>
-              <tbody>
-                {presupuestoData.productos.map((producto, index) => (
-                  <tr key={index} className="border-b border-gray-200">
-                    <td className="px-4 py-3">{producto.nombre}</td>
-                    <td className="px-4 py-3">{
-                      (() => {
-                        // Lógica específica para Dunes
-                        if (producto.nombre?.toLowerCase().includes('dunes')) {
-                          const detalles = [];
-                          
-                          // Agregar tipo de apertura
-                          if (producto.tipoApertura) {
-                            if (producto.tipoApertura === 'cadena_cordon') {
-                              detalles.push('Apertura con Cadena y Cordón');
-                            } else if (producto.tipoApertura === 'baston') {
-                              detalles.push('Apertura con Bastón');
-                            }
-                          }
-                          
-                          // Agregar color sistema
-                          if (producto.colorSistema) {
-                            detalles.push(`Color: ${producto.colorSistema}`);
-                          }
-                          
-                          // Agregar lado comando
-                          if (producto.ladoComando) {
-                            detalles.push(`Comando: ${producto.ladoComando}`);
-                          }
-                          
-                          // Agregar lado apertura
-                          if (producto.ladoApertura) {
-                            detalles.push(`Apertura: ${producto.ladoApertura}`);
-                          }
-                          
-                        
-                          
-                          // Agregar detalles adicionales
-                          if (producto.detalle && producto.detalle.trim() !== '') {
-                            detalles.push(`Detalles: ${producto.detalle}`);
-                          }
-                          
-                          return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
-                        }
-                        
-                        // Para otros sistemas, mantener la lógica original
-                        const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
-                        
-                        if (!descripcionLimpia || descripcionLimpia.trim() === '') {
-                          return producto.tipoTela || 'Sin descripción';
-                        }
-                        
-                        return descripcionLimpia;
-                      })()
-                    }</td>
-                    <td className="px-4 py-3">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                    <td className="px-4 py-3">{producto.cantidad}</td>
-                    <td className="px-4 py-3">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                  </tr>
-                ))}
+                              <tbody>
+                  {Object.entries(productosPorEspacio).map(([espacio, productos]) => (
+                    <React.Fragment key={espacio}>
+                      <tr>
+                        <td colSpan={5} className="px-4 py-3 font-bold text-left text-gray-900 bg-gray-50">
+                          {espacio}
+                        </td>
+                      </tr>
+                      {productos.map((producto, index) => (
+                        <tr key={index} className="border-b border-gray-200">
+                          <td className="px-4 py-3">{producto.nombre}</td>
+                          <td className="px-4 py-3">{
+                            (() => {
+                              // Lógica específica para Dunes
+                              if (producto.nombre?.toLowerCase().includes('dunes')) {
+                                const detalles = [];
+                                
+                                // Agregar tipo de apertura
+                                if (producto.tipoApertura) {
+                                  if (producto.tipoApertura === 'cadena_cordon') {
+                                    detalles.push('Apertura con Cadena y Cordón');
+                                  } else if (producto.tipoApertura === 'baston') {
+                                    detalles.push('Apertura con Bastón');
+                                  }
+                                }
+                                
+                                // Agregar color sistema
+                                if (producto.colorSistema) {
+                                  detalles.push(`Color: ${producto.colorSistema}`);
+                                }
+                                
+                                // Agregar lado comando
+                                if (producto.ladoComando) {
+                                  detalles.push(`Comando: ${producto.ladoComando}`);
+                                }
+                                
+                                // Agregar lado apertura
+                                if (producto.ladoApertura) {
+                                  detalles.push(`Apertura: ${producto.ladoApertura}`);
+                                }
+                                
+                              
+                                
+                                // Agregar detalles adicionales
+                                if (producto.detalle && producto.detalle.trim() !== '') {
+                                  detalles.push(`Detalles: ${producto.detalle}`);
+                                }
+                                
+                                return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
+                              }
+                              
+                              // Para otros sistemas, mantener la lógica original
+                              const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
+                              
+                              if (!descripcionLimpia || descripcionLimpia.trim() === '') {
+                                return producto.tipoTela || 'Sin descripción';
+                              }
+                              
+                              return descripcionLimpia;
+                            })()
+                          }</td>
+                          <td className="px-4 py-3">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                          <td className="px-4 py-3">{producto.cantidad}</td>
+                          <td className="px-4 py-3">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))}
                 <tr>
                   <td colSpan={3}></td>
                   <td className="px-4 py-3 font-bold">Subtotal</td>
