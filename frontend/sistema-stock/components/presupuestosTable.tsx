@@ -173,7 +173,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                  if (presupuestoJson.productos && Array.isArray(presupuestoJson.productos)) {
                    itemsConEspacio = presupuesto.items.map((item, index) => {
                      const productoJson = presupuestoJson.productos[index];
-                     const espacio = productoJson?.espacio || 'Sin especificar';
+                     const espacio = productoJson?.espacio || 'Espacio/Ambiente sin especificar';
                      console.log(`Item: ${item.nombre}, Espacio extraído del JSON: ${espacio}`);
                      return {
                        ...item,
@@ -194,7 +194,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                // Si no hay presupuesto_json, asignar "Sin especificar" a todos los items
                itemsConEspacio = presupuesto.items.map((item) => ({
                  ...item,
-                 espacio: 'Sin especificar'
+                 espacio: 'Espacio/Ambiente sin especificar'
                }));
              }
             
