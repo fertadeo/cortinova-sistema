@@ -236,12 +236,12 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                    }}
                  />
                </div>
-              <h1 className=" font-bold text-gray-900">
-                Presupuesto #{presupuestoData.numeroPresupuesto}
-              </h1>
+                             <h1 className=" font-bold text-gray-900">
+                 Presupuesto # {presupuestoData.numeroPresupuesto}
+               </h1>
               <p className="text-gray-600">{presupuestoData.fecha}</p>
             </div>
-                         <div className="mt-6 text-right">
+                         <div className="mt-6 text-right pr-4">
               <div className="text-gray-600">
                 <strong> <p>Cortinova - Cortinas & Deco</p>
                 <p>San Martín 269, Río Cuarto</p>
