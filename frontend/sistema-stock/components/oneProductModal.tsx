@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal,ModalContent,ModalHeader,ModalFooter,Button,Input,Checkbox,Select,SelectItem,Spinner,ModalBody} from "@heroui/react";
-import Notification from "./notification";
+import GeneralNotification from "./GeneralNotification";
 import { Proveedores } from "@/types/proveedores";
 
 
@@ -426,12 +426,12 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
           </>
         )}
       </ModalContent>
-      <Notification
+      <GeneralNotification
         message={notification.message}
         description={notification.description}
+        type={notification.type}
         isVisible={notification.isVisible}
         onClose={handleNotificationClose}
-        type={notification.type}
       />
     </Modal>
   );

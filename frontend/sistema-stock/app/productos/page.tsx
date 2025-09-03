@@ -6,7 +6,7 @@ import { Button, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem 
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
 import OneProductModal from '@/components/oneProductModal';
 import PricesModal from '@/components/pricesModal';
-import Notification from '@/components/notification';
+import GeneralNotification from '@/components/GeneralNotification';
 import * as XLSX from 'xlsx';
 
 // Componentes SVG inline
@@ -359,15 +359,12 @@ const ProductosPage = () => {
       />
       
       {/* Notificación */}
-      <Notification
+      <GeneralNotification
         message={notification.message} 
         description={notification.description}
-        pedidosAtrasados={0}
-        pedidosNuevos={0}
-        onDismiss={() => {}}
+        type={notification.type}
         isVisible={notification.isVisible}
         onClose={handleNotificationClose}
-        type={notification.type}
       />
     </div>
   );

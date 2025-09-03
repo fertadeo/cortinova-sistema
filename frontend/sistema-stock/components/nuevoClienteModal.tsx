@@ -9,7 +9,7 @@ import {
   Input,
   Spinner,
 } from "@heroui/react";
-import Notification from "./notification"; // Importa el componente de notificación
+import GeneralNotification from "./GeneralNotification"; // Importa el componente de notificación general
 
 interface NuevoClienteModalProps {
   isOpen: boolean;
@@ -253,12 +253,12 @@ const NuevoClienteModal: React.FC<NuevoClienteModalProps> = ({
         </ModalContent>
       </Modal>
 
-      <Notification
+      <GeneralNotification
         message={notificationMessage}
         description={notificationDescription}
+        type={notificationType}
         isVisible={notificationVisible}
         onClose={() => setNotificationVisible(false)}
-        type={notificationType}
       />
     </>
   );
