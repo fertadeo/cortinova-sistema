@@ -156,8 +156,8 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
   const getTabStyle = (category: Category) => {
     return `px-4 py-2 cursor-pointer transition-all ${
       selectedCategory === category
-        ? 'text-blue-600 border-b-2 border-blue-600 font-medium'
-        : 'text-gray-500 hover:text-gray-700'
+        ? 'text-blue-500 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400 font-medium'
+        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
     }`;
   };
 
@@ -268,7 +268,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
 
     if (errorMedidas) {
       return (
-        <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">
+        <div className="p-4 mb-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg">
           {errorMedidas}
         </div>
       );
@@ -276,7 +276,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
 
     if (!medidasAgrupadas || Object.keys(medidasAgrupadas.medidas).length === 0) {
       return (
-        <div className="flex items-center justify-center h-[20rem] text-center text-gray-500 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-center h-[20rem] text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg">
           No hay medidas registradas para este cliente
         </div>
       );
@@ -285,12 +285,12 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
     return (
       <div className="space-y-6">
         {Object.entries(medidasAgrupadas.medidas).map(([ubicacion, medidas]) => (
-          <div key={ubicacion} className="bg-white rounded-xl border shadow-sm">
-            <div className="p-4 bg-gray-50 border-b">
-              <h4 className="mb-3 text-lg font-semibold">{ubicacion}</h4>
+          <div key={ubicacion} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+              <h4 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">{ubicacion}</h4>
               <div className="space-y-4">
                 {medidas.map((medida) => (
-                  <div key={medida.id} className="flex justify-between items-center p-3 bg-white rounded-lg border">
+                  <div key={medida.id} className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
                     <Checkbox
                       isSelected={medidasSeleccionadas.includes(medida.id)}
                       onValueChange={(isSelected) => {
@@ -302,12 +302,12 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                       }}
                     >
                       <div className="ml-2">
-                        <p className="font-medium">{medida.elemento}</p>
-                        <p className="text-sm text-gray-600">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{medida.elemento}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {medida.ancho}cm x {medida.alto}cm - Cantidad: {medida.cantidad}
                         </p>
                         {medida.detalles && (
-                          <p className="text-sm text-gray-500">{medida.detalles}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{medida.detalles}</p>
                         )}
                       </div>
                     </Checkbox>
@@ -342,13 +342,13 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
             <div className="flex flex-col h-full">
               {/* Info del cliente */}
               <div className="grid grid-cols-2 gap-4 mb-4">
-                <p>Teléfono: {cliente?.telefono || 'No registrado'}</p>
-                <p>Email: {cliente?.email || 'No registrado'}</p>
-                <p className="col-span-2">Dirección: {cliente?.direccion || 'No registrada'}</p>
+                <p className="text-gray-900 dark:text-gray-100">Teléfono: {cliente?.telefono || 'No registrado'}</p>
+                <p className="text-gray-900 dark:text-gray-100">Email: {cliente?.email || 'No registrado'}</p>
+                <p className="col-span-2 text-gray-900 dark:text-gray-100">Dirección: {cliente?.direccion || 'No registrada'}</p>
               </div>
 
               {/* Tabs de categorías */}
-              <div className="mb-4 border-b">
+              <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex space-x-8">
                   <button
                     className={getTabStyle('Presupuestos')}
@@ -378,10 +378,10 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
               <div className="flex-1 overflow-y-auto min-h-[25rem] max-h-[25rem]">
                 {selectedCategory === 'Presupuestos' && (
                   <>
-                    <h3 className="mb-4 text-lg font-semibold">Historial de Presupuestos</h3>
+                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Historial de Presupuestos</h3>
                     
                     {error && (
-                      <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">
+                      <div className="p-4 mb-4 text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg">
                         {error}
                       </div>
                     )}
@@ -394,12 +394,12 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                       <>
                         <div className="space-y-4">
                           {items.map((presupuesto) => (
-                            <div key={presupuesto.id} className="bg-white rounded-xl border shadow-sm">
-                              <div className="p-4 bg-gray-50 border-b">
+                            <div key={presupuesto.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                              <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                                 <div className="flex flex-col gap-3 justify-between sm:flex-row sm:items-center">
                                   <div className="space-y-2">
                                     <div className="flex flex-wrap gap-3 items-center">
-                                      <span className="text-sm text-gray-600">
+                                      <span className="text-sm text-gray-600 dark:text-gray-400">
                                         <i className="mr-1 far fa-calendar"></i>
                                         {new Date(presupuesto.fecha).toLocaleDateString('es-AR', {
                                           day: '2-digit',
@@ -407,7 +407,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                                           year: 'numeric'
                                         })}
                                       </span>
-                                      <span className="px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
+                                      <span className="px-3 py-1 text-sm font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                                         Presupuesto #{formatearNumeroPresupuesto(presupuesto.numero_presupuesto)}
                                       </span>
                                     </div>
@@ -458,7 +458,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                                       </PopoverContent>
                                     </Popover>
                                     
-                                    <span className="text-lg font-bold text-gray-800">
+                                    <span className="text-lg font-bold text-gray-800 dark:text-gray-200">
                                       ${presupuesto.total.toLocaleString('es-AR')}
                                     </span>
                                   </div>
@@ -469,7 +469,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-center justify-center h-[20rem] text-center text-gray-500 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-center h-[20rem] text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         No hay presupuestos registrados para este cliente
                       </div>
                     )}
@@ -477,7 +477,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                 )}
 
                 {selectedCategory === 'Pedidos' && (
-                  <div className="flex items-center justify-center h-[20rem] text-center text-gray-500 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-center h-[20rem] text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     Historial de Pedidos - Próximamente
                   </div>
                 )}

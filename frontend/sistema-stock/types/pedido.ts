@@ -17,3 +17,45 @@ export const estadoColors: Record<PedidoEstado, string> = {
     [PedidoEstado.ENTREGADO]: "default",
     
 }; 
+
+export interface Pedido {
+  sistema: string;
+  espacio: string;
+  detalles: {
+    cantidad: number;
+    ancho: number;
+    alto: number;
+    sistemaRecomendado: string;
+    articuloSeleccionado: string;
+    tela: any;
+    caidaPorDelante: boolean;
+    colorSistema: string;
+    ladoComando: string;
+    tipoTela: string;
+    soporteIntermedio: boolean;
+    soporteDoble: boolean;
+    detalle: string;
+    incluirColocacion: boolean;
+    precioColocacion: number;
+    incluirMotorizacion: boolean;
+    precioMotorizacion: number;
+    soporteIntermedioTipo: any;
+    soporteDobleProducto: any;
+    accesorios: string[];
+    accesoriosAdicionales: string[];
+    multiplicadorTela?: number;
+    metrosTotalesTela?: number;
+    // Campos específicos para Dunes
+    productoDunes?: any;
+    telaDunes?: any;
+    precioSistemaDunes?: number;
+    precioTelaDunes?: number;
+    ladoApertura?: string;
+    instalacion?: string;
+    tipoApertura?: string;
+  };
+  fecha: string;
+  precioUnitario: number;
+  precioTotal: number;
+  medidaId?: number;
+}

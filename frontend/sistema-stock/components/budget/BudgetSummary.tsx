@@ -90,7 +90,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
 
   return (
     <div className="flex justify-start mt-4">
-      <div className="p-4 w-80 bg-gray-50 rounded-lg shadow-sm">
+      <div className="p-4 w-80 bg-gray-50 dark:bg-dark-card rounded-lg shadow-sm">
         <div className="flex flex-col gap-2 mb-3">
           <div className="flex gap-2 items-center">
             <Checkbox

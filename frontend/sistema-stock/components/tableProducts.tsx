@@ -611,7 +611,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
               paginatedProducts.map((product) => (
                 <TableRow
                   key={product.id}
-                  className={`cursor-pointer ${selectedRowId === product.id ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                  className={`cursor-pointer ${selectedRowId === product.id ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
                   onClick={() => setSelectedRowId(product.id)}
                 >
                   {columns.map((column) => (

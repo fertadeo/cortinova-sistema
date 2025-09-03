@@ -180,18 +180,18 @@ export const TelasSearch = ({
         />
 
         {showTelasList && (
-          <div className="overflow-auto absolute z-50 w-full max-h-60 bg-white rounded-lg border shadow-lg">
+          <div className="overflow-auto absolute z-50 w-full max-h-60 bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border shadow-lg">
             {localFilteredTelas.length > 0 ? (
               localFilteredTelas.map((tela: Tela) => (
                 <button
                   key={tela.id}
-                  className="p-3 w-full text-left border-b hover:bg-gray-50 last:border-b-0"
+                  className="p-3 w-full text-left border-b border-gray-200 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-gray-700/50 last:border-b-0"
                   onClick={() => handleTelaSelect(tela)}
                   tabIndex={0}
                 >
-                  <div className="font-medium">{tela.nombreProducto}</div>
+                  <div className="font-medium text-gray-900 dark:text-dark-text">{tela.nombreProducto}</div>
                   {tela.id !== 0 && ( // Solo mostrar detalles si no es "Sin tela"
-                    (<div className="text-sm text-gray-600">
+                    (<div className="text-sm text-gray-600 dark:text-dark-text-secondary">
                       {tela.color && <span className="mr-2">Color: {tela.color}</span>}
                       {tela.precio && Number(tela.precio) > 0 && <span className="mr-2">Precio: ${Number(tela.precio).toFixed(2)}</span>}
                       {tela.tipo && <span>Descripción: {tela.tipo}</span>}
@@ -200,7 +200,7 @@ export const TelasSearch = ({
                 </button>
               ))
             ) : (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500 dark:text-dark-text-secondary">
                 No se encontraron resultados...
               </div>
             )}
@@ -211,10 +211,10 @@ export const TelasSearch = ({
       {/* Multiplicador de tela - Solo para sistema Tradicional */}
       {(selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios')) && (
         <div className="mt-4">
-          <label htmlFor="multiplicadorTela" className="block text-sm font-medium mb-2">Multiplicador de tela</label>
+          <label htmlFor="multiplicadorTela" className="block text-sm font-medium mb-2 text-gray-900 dark:text-dark-text">Multiplicador de tela</label>
           <div className="flex gap-4 items-center mt-2">
             {multiplicadores.map((mult) => (
-              <label key={mult} className="flex items-center gap-1 cursor-pointer">
+              <label key={mult} className="flex items-center gap-1 cursor-pointer text-gray-900 dark:text-dark-text">
                 <input
                   type="radio"
                   id={`multiplicadorTela-${mult}`}
@@ -232,7 +232,7 @@ export const TelasSearch = ({
             ))}
             {/* Campo manual */}
             <div className="flex items-center gap-1 ml-4">
-              <label htmlFor="cantidadTelaManual" className="text-sm to-blue-700">o ingrese manualmente los metros cuadrados de tela:</label>
+              <label htmlFor="cantidadTelaManual" className="text-sm text-blue-700 dark:text-primary">o ingrese manualmente los metros cuadrados de tela:</label>
               <input
                 type="number"
                 id="cantidadTelaManual"
@@ -250,10 +250,10 @@ export const TelasSearch = ({
                     onCantidadTelaManualChange?.(parseFloat(val));
                   }
                 }}
-                className="w-24 border rounded px-2 py-1 text-sm"
+                className="w-24 border border-gray-300 dark:border-dark-border rounded px-2 py-1 text-sm bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
                 placeholder="0"
               />
-              <span className="text-xs text-gray-500">m²</span>
+              <span className="text-xs text-gray-500 dark:text-dark-text-secondary">m²</span>
             </div>
           </div>
         </div>

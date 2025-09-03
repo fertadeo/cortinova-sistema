@@ -1,24 +1,35 @@
 import ConditionalLayout from '../components/conditionalLayout';
-import TourGuide from '@/components/TourGuide';
+import { Providers } from './providers';
+import { AvatarProvider } from '@/contexts/AvatarContext';
+import NotificationProvider from '@/components/NotificationProvider';
 
 export default function RootLayout({
     children,
   }: {
     children: React.ReactNode
-  }) {
+  }) {  
     return (
-      <html lang="es">
+      <html lang="es" suppressHydrationWarning>
         <head>
-          <link 
-            rel="stylesheet" 
-            href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"
-          />
+         
         </head>
         <body>
-        <ConditionalLayout>
-          <main>{children}</main>
-        </ConditionalLayout>
-        {/* <TourGuide /> */}
+          <Providers
+            themeProps={{
+              attribute: "class",
+              defaultTheme: "light",
+              enableSystem: true,
+              disableTransitionOnChange: false,
+            }}
+          >
+            <AvatarProvider>
+              <NotificationProvider>
+                <ConditionalLayout>
+                  <main>{children}</main>
+                </ConditionalLayout>
+              </NotificationProvider>
+            </AvatarProvider>
+          </Providers>
         </body>
       </html>
     )

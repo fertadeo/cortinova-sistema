@@ -92,9 +92,9 @@ export const Login = () => {
         </div>
 
         <div className="w-full mt-16">
-          <h1 className="mt-12 text-2xl font-bold leading-tight text-center">
-            Inicia sesión en tu cuenta
-          </h1>
+                     <h1 className="mt-12 text-2xl font-bold leading-tight text-center text-gray-800">
+             Inicia sesión en tu cuenta
+           </h1>
 
           {error && (
             <div className="px-4 py-3 mt-4 text-red-700 bg-red-100 border border-red-400 rounded">
@@ -104,43 +104,43 @@ export const Login = () => {
 
           <form className="mt-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-gray-700">
-                Correo Electrónico
-              </label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Ingresa tu correo electrónico"
-                className="w-full px-4 py-3 mt-2 border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+                             <label htmlFor="email" className="block text-gray-800">
+                 Correo Electrónico
+               </label>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               <input
+                     type="email"
+                     id="email"
+                     placeholder="Ingresa tu correo electrónico"
+                     className="w-full px-4 py-3 mt-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:border-yellow-500 focus:outline-none [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-800 [&:-webkit-autofill]:shadow-[0_0_0_30px_white_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:theme(colors.gray.800)]"
+                     value={email}
+                     onChange={(e) => setEmail(e.target.value)}
+                     required
+                   />
             </div>
 
             <div className="mt-4">
-              <label htmlFor="password" className="block text-gray-700">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Ingresa tu contraseña"
-                minLength={6}
-                className="w-full px-4 py-3 mt-2 border rounded-lg focus:border-yellow-500 focus:bg-white focus:outline-none"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+                             <label htmlFor="password" className="block text-gray-800">
+                 Contraseña
+               </label>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               <input
+                     type="password"
+                     id="password"
+                     placeholder="Ingresa tu contraseña"
+                     minLength={6}
+                     className="w-full px-4 py-3 mt-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:border-yellow-500 focus:outline-none [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-800 [&:-webkit-autofill]:shadow-[0_0_0_30px_white_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:theme(colors.gray.800)]"
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                     required
+                   />
             </div>
 
             <div className="hidden mt-2 text-right">
-              <Link
-                href="/recuperar-password"
-                className="text-sm font-semibold text-gray-700 hover:text-yellow-600"
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
+                             <Link
+                 href="/recuperar-password"
+                 className="text-sm font-semibold text-gray-800 hover:text-yellow-600"
+               >
+                 ¿Olvidaste tu contraseña?
+               </Link>
             </div>
 
             <button

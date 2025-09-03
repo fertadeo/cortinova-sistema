@@ -16,9 +16,9 @@ const ConditionalLayout: React.FC<PropsWithChildren<{}>> = ({ children }) => {
       {isLoginPage || isRecoverPasswordPage ? ( // Si es login o recuperar contraseña, no muestra el sidebar
         <>{children}</>
       ) : (
-        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-dark-bg">
           <SideBar />
-          <main style={{ flexGrow: 1, overflow: 'auto', padding: '20px' }}>
+          <main className="flex-grow overflow-auto p-5 bg-gray-50 dark:bg-dark-bg">
             {children}
           </main>
         </div>

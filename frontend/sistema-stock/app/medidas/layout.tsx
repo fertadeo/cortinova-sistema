@@ -31,13 +31,11 @@ export default function HomeLayout({
   return (
     <section
       className={clsx("bg-background font-sans antialiased", fontSans.variable)}
-      style={{ backgroundColor: "#F5F5F5" }}
     >
       <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-        <div className="flex h-screen ">
+        <div className="flex h-screen bg-gray-50 dark:bg-dark-bg">
           {/* Sidebar */}
-          <aside className="hidden h-full lg:flex lg:w-[18%]" />
-         
+          <aside className="hidden h-full lg:flex lg:w-[18%] bg-gray-50 dark:bg-dark-bg" />
          
 
           {/* Contenido principal */}

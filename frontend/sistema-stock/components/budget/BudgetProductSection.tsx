@@ -72,19 +72,19 @@ export const BudgetProductSection = ({ onProductSelect, onShowPedidoModal }: Bud
       {showProductsList && products.length > 0 && (
         <div 
           ref={productsListRef}
-          className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg"
+          className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white dark:bg-dark-card rounded-md border border-gray-200 dark:border-dark-border shadow-lg"
         >
           {products.map((product) => (
             <div
               key={product.id}
               role="button"
               tabIndex={0}
-              className="px-4 py-2 border-b cursor-pointer hover:bg-gray-100 last:border-b-0"
+              className="px-4 py-2 border-b border-gray-200 dark:border-dark-border cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 last:border-b-0"
               onClick={() => handleProductSelect(product)}
               onKeyDown={(e) => e.key === 'Enter' && handleProductSelect(product)}
             >
-              <div className="font-semibold">{product.nombreProducto}</div>
-              <div className="grid grid-cols-1 gap-1 text-sm text-gray-600">
+              <div className="font-semibold text-gray-900 dark:text-dark-text">{product.nombreProducto}</div>
+              <div className="grid grid-cols-1 gap-1 text-sm text-gray-600 dark:text-dark-text-secondary">
                 {product.descripcion && <div>📝 {product.descripcion}</div>}
                 <div>💰 ${typeof product.precio === 'number' ? 
                   product.precio.toFixed(2) : 

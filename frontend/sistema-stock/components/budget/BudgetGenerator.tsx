@@ -24,6 +24,14 @@ interface LocalTableItem {
     soporteDoble: boolean; 
     accesorios?: any[];
     accesoriosAdicionales?: any[];
+    incluirMotorizacion?: boolean;
+    precioMotorizacion?: number;
+    tipoApertura?: string;
+    ladoApertura?: string;
+    // Información de segunda tela
+    tela2?: any;
+    multiplicadorTela2?: number;
+    cantidadTelaManual2?: number | null;
   };
   id: number;
   productId: number;
@@ -168,7 +176,13 @@ export const BudgetGenerator = () => {
           item.id === id ? { 
             ...item, 
             quantity,
-            total: item.price * quantity
+            total: (() => {
+              const baseTotal = item.price * quantity;
+              const motorizacion = item.detalles?.incluirMotorizacion 
+                ? (item.detalles.precioMotorizacion || 0) * quantity 
+                : 0;
+              return baseTotal + motorizacion;
+            })()
           } : item
         )
       );
@@ -210,6 +224,24 @@ export const BudgetGenerator = () => {
     // Usar los precios calculados y pasados desde el modal
     const precioUnitario = pedido.precioUnitario;
     const precioTotal = pedido.precioTotal;
+    
+    // Calcular el total incluyendo motorización
+    const motorizacion = pedido.detalles?.incluirMotorizacion 
+      ? (pedido.detalles.precioMotorizacion || 0) * (pedido.detalles?.cantidad || 1)
+      : 0;
+    const totalConMotorizacion = precioTotal + motorizacion;
+    
+    console.log('Motorización:', {
+      incluirMotorizacion: pedido.detalles?.incluirMotorizacion,
+      precioMotorizacion: pedido.detalles?.precioMotorizacion,
+      cantidad: pedido.detalles?.cantidad
+    });
+    console.log('Cálculos:', {
+      precioUnitario: precioUnitario,
+      precioTotal: precioTotal,
+      motorizacion: motorizacion,
+      totalConMotorizacion: totalConMotorizacion
+    });
     // Si el pedido viene de una medida precargada, actualizar ese item
     if (pedido.medidaId) {
       setTableData(prev => prev.map(item => 
@@ -217,21 +249,27 @@ export const BudgetGenerator = () => {
           ? {
               ...item,
               name: `Cortina ${pedido.sistema}`,
-              description: (() => {
-                // Lógica específica para Dunes
-                if (pedido.sistema?.toLowerCase().includes('dunes')) {
-                  const productoDunes = pedido.detalles?.productoDunes;
-                  const telaDunes = pedido.detalles?.telaDunes;
-                  if (productoDunes && telaDunes) {
-                    return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
-                  }
-                }
-                // Para otros sistemas, usar la lógica original
-                return `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`;
-              })(),
+                      description: (() => {
+          // Lógica específica para Dunes
+          if (pedido.sistema?.toLowerCase().includes('dunes')) {
+            const productoDunes = pedido.detalles?.productoDunes;
+            const telaDunes = pedido.detalles?.telaDunes;
+            if (productoDunes && telaDunes) {
+              return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
+            }
+          }
+          // Para otros sistemas, incluir información de segunda tela si existe
+          const telaPrincipal = pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || '';
+          const telaSecundaria = pedido.detalles?.tela2?.nombreProducto || '';
+          
+          if (telaSecundaria) {
+            return `${telaPrincipal} + ${telaSecundaria}`;
+          }
+          return telaPrincipal;
+        })(),
               quantity: pedido.detalles?.cantidad || 1,
               price: precioTotal / (pedido.detalles?.cantidad || 1),
-              total: precioTotal,
+              total: totalConMotorizacion,
               espacio: pedido.espacio, // Agregar el espacio seleccionado
               detalles: {
                 sistema: pedido.sistema || "",
@@ -251,6 +289,10 @@ export const BudgetGenerator = () => {
                 // Información específica para tela tradicional
                 multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
                 metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null,
+                // Información específica para segunda tela
+                tela2: pedido.detalles?.tela2 || null,
+                multiplicadorTela2: pedido.detalles?.multiplicadorTela2 || null,
+                cantidadTelaManual2: pedido.detalles?.cantidadTelaManual2 || null,
                 // Información específica para Dunes
                 ...(pedido.sistema?.toLowerCase().includes('dunes') && {
                   productoDunes: pedido.detalles?.productoDunes,
@@ -263,7 +305,10 @@ export const BudgetGenerator = () => {
                   ladoApertura: pedido.detalles?.ladoApertura || "",
                   instalacion: pedido.detalles?.instalacion || "",
                   tipoApertura: pedido.detalles?.tipoApertura || ""
-                })
+                }),
+                // Información de motorización
+                incluirMotorizacion: pedido.detalles?.incluirMotorizacion || false,
+                precioMotorizacion: pedido.detalles?.precioMotorizacion || 0
               }
             }
           : item
@@ -283,12 +328,18 @@ export const BudgetGenerator = () => {
               return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
             }
           }
-          // Para otros sistemas, usar la lógica original
-          return `${pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || ''}`;
+          // Para otros sistemas, incluir información de segunda tela si existe
+          const telaPrincipal = pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || '';
+          const telaSecundaria = pedido.detalles?.tela2?.nombreProducto || '';
+          
+          if (telaSecundaria) {
+            return `${telaPrincipal} + ${telaSecundaria}`;
+          }
+          return telaPrincipal;
         })(),
         quantity: pedido.detalles?.cantidad || 1,
         price: precioTotal / (pedido.detalles?.cantidad || 1),
-        total: precioTotal,
+        total: totalConMotorizacion,
         espacio: pedido.espacio, // Agregar el espacio seleccionado
         detalles: {
           sistema: pedido.sistema || "",
@@ -308,6 +359,10 @@ export const BudgetGenerator = () => {
           // Información específica para tela tradicional
           multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
           metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null,
+          // Información específica para segunda tela
+          tela2: pedido.detalles?.tela2 || null,
+          multiplicadorTela2: pedido.detalles?.multiplicadorTela2 || null,
+          cantidadTelaManual2: pedido.detalles?.cantidadTelaManual2 || null,
           // Información específica para Dunes
           ...(pedido.sistema?.toLowerCase().includes('dunes') && {
             productoDunes: pedido.detalles?.productoDunes,
@@ -320,7 +375,10 @@ export const BudgetGenerator = () => {
             ladoApertura: pedido.detalles?.ladoApertura || "",
             instalacion: pedido.detalles?.instalacion || "",
             tipoApertura: pedido.detalles?.tipoApertura || ""
-          })
+          }),
+          // Información de motorización
+          incluirMotorizacion: pedido.detalles?.incluirMotorizacion || false,
+          precioMotorizacion: pedido.detalles?.precioMotorizacion || 0
         } as any
       };
       console.log('=== ITEM GUARDADO EN TABLEDATA ===');
@@ -394,15 +452,34 @@ export const BudgetGenerator = () => {
         productos: tableData.map(item => {
           console.log('Item detalles antes de enviar:', item.detalles);
           console.log('Item espacio:', item.espacio);
+          
+          // Calcular subtotal incluyendo motorización
+          const subtotalBase = Number(item.price) * Number(item.quantity);
+          const motorizacion = item.detalles?.incluirMotorizacion 
+            ? (item.detalles.precioMotorizacion || 0) * Number(item.quantity) 
+            : 0;
+          const subtotalConMotorizacion = subtotalBase + motorizacion;
+          
           return {
             id: item.productId || Date.now(),
             nombre: item.name,
             descripcion: item.description,
             cantidad: Number(item.quantity),
             precioUnitario: Number(item.price),
-            subtotal: Number(item.price) * Number(item.quantity),
-            espacio: item.espacio, // Agregar el campo espacio
-            detalles: item.detalles || {}
+            subtotal: subtotalConMotorizacion,
+            espacio: item.espacio,
+            incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
+            precioMotorizacion: item.detalles?.precioMotorizacion || 0,
+            tipoTela: item.detalles?.tipoTela || '',
+            tipoApertura: item.detalles?.tipoApertura || '',
+            colorSistema: item.detalles?.colorSistema || '',
+            ladoComando: item.detalles?.ladoComando || '',
+            ladoApertura: item.detalles?.ladoApertura || '',
+            detalle: item.detalles?.detalle || '',
+            // Información de segunda tela
+            tela2: (item.detalles as any)?.tela2 || null,
+            multiplicadorTela2: (item.detalles as any)?.multiplicadorTela2 || null,
+            cantidadTelaManual2: (item.detalles as any)?.cantidadTelaManual2 || null
           };
         }),
         total: finalTotal,
@@ -462,15 +539,35 @@ export const BudgetGenerator = () => {
         numeroPresupuesto: presupuestoId,
         fecha: new Date().toLocaleDateString(),
         cliente: selectedClient,
-        productos: tableData.map(item => ({
-          nombre: item.name,
-          descripcion: item.description,
-          tipoTela: item.detalles?.tipoTela || '',
-          precioUnitario: Number(item.price),
-          cantidad: Number(item.quantity),
-          subtotal: Number(item.price) * Number(item.quantity),
-          espacio: item.espacio // Agregar el espacio al presupuesto
-        })),
+        productos: tableData.map(item => {
+          // Calcular subtotal incluyendo motorización
+          const subtotalBase = Number(item.price) * Number(item.quantity);
+          const motorizacion = item.detalles?.incluirMotorizacion 
+            ? (item.detalles.precioMotorizacion || 0) * Number(item.quantity) 
+            : 0;
+          const subtotalConMotorizacion = subtotalBase + motorizacion;
+          
+          return {
+            nombre: item.name,
+            descripcion: item.description,
+            tipoTela: item.detalles?.tipoTela || '',
+            precioUnitario: Number(item.price),
+            cantidad: Number(item.quantity),
+            subtotal: subtotalConMotorizacion,
+            espacio: item.espacio,
+            incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
+            precioMotorizacion: item.detalles?.precioMotorizacion || 0,
+            tipoApertura: item.detalles?.tipoApertura || '',
+            colorSistema: item.detalles?.colorSistema || '',
+            ladoComando: item.detalles?.ladoComando || '',
+            ladoApertura: item.detalles?.ladoApertura || '',
+            detalle: item.detalles?.detalle || '',
+            // Información de segunda tela
+            tela2: (item.detalles as any)?.tela2 || null,
+            multiplicadorTela2: (item.detalles as any)?.multiplicadorTela2 || null,
+            cantidadTelaManual2: (item.detalles as any)?.cantidadTelaManual2 || null
+          };
+        }),
         subtotal: subtotal,
         descuento: discount, // Usar el descuento calculado
         total: finalTotal

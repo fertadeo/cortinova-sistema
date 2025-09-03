@@ -509,11 +509,11 @@ export default function PropiosForm({
                 />
                 {showRielesList && (searchRiel.length > 1 || searchRiel.trim() === '*') && selectedTab !== 'sin-sistema' && (
                   rielesFiltrados.length > 0 ? (
-                    <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative">
+                    <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 dark:bg-dark-card z-[1050] relative">
                       {rielesFiltrados.map(item => (
                         <button
                           key={item.id}
-                          className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-200 last:border-b-0"
+                          className="p-2 w-full text-left border-b border-gray-200 dark:border-dark-border cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700/50 last:border-b-0"
                           onClick={() => {
                             setSelectedRiel(item);
                             setShowRielesList(false);
@@ -524,16 +524,16 @@ export default function PropiosForm({
                           role="option"
                           aria-selected={selectedRiel?.id === item.id}
                         >
-                          <div className="font-medium">{item.nombreProducto}</div>
-                          <div className="text-sm text-gray-600">
-                            {item.descripcion && <span className="text-gray-500">{item.descripcion}</span>}
+                          <div className="font-medium text-gray-900 dark:text-dark-text">{item.nombreProducto}</div>
+                          <div className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                            {item.descripcion && <span className="text-gray-500 dark:text-dark-text-secondary">{item.descripcion}</span>}
                             {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
                           </div>
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative flex items-center justify-center p-4 text-gray-500">
+                    <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 dark:bg-dark-card z-[1050] relative flex items-center justify-center p-4 text-gray-500 dark:text-dark-text-secondary">
                       Sin resultados
                     </div>
                   )
@@ -617,11 +617,11 @@ export default function PropiosForm({
                 />
                 {showBarralesList && (searchBarral.length > 1 || searchBarral.trim() === '*') && (
                   barralesFiltrados.length > 0 ? (
-                    <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative">
+                    <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 dark:bg-dark-card z-[1050] relative">
                       {barralesFiltrados.map(item => (
                         <button
                           key={item.id}
-                          className="p-2 w-full text-left border-b cursor-pointer hover:bg-gray-200 last:border-b-0"
+                          className="p-2 w-full text-left border-b border-gray-200 dark:border-dark-border cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700/50 last:border-b-0"
                           onClick={() => {
                             setSelectedBarral(item);
                             setShowBarralesList(false);
@@ -630,16 +630,16 @@ export default function PropiosForm({
                           role="option"
                           aria-selected={selectedBarral?.id === item.id}
                         >
-                          <div className="font-medium">{item.nombreProducto}</div>
-                          <div className="text-sm text-gray-600">
-                            {item.descripcion && <span className="text-gray-500">{item.descripcion}</span>}
+                          <div className="font-medium text-gray-900 dark:text-dark-text">{item.nombreProducto}</div>
+                          <div className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                            {item.descripcion && <span className="text-gray-500 dark:text-dark-text-secondary">{item.descripcion}</span>}
                             {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
                           </div>
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 z-[1050] relative flex items-center justify-center p-4 text-gray-500">
+                    <div className="mt-2 max-h-48 rounded-lg border bg-gray-100 dark:bg-dark-card z-[1050] relative flex items-center justify-center p-4 text-gray-500 dark:text-dark-text-secondary">
                       Sin resultados
                     </div>
                   )
@@ -689,10 +689,10 @@ export default function PropiosForm({
           <Card>
             <CardBody className="space-y-4">
               <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 dark:text-dark-text-secondary mb-4">
                   Para esta opción solo se requiere seleccionar la tela y especificar detalles adicionales.
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-dark-text-secondary">
                   No se requiere sistema de riel o barral.
                 </p>
               </div>
@@ -707,7 +707,7 @@ export default function PropiosForm({
         {/* Sección de Accesorios Adicionales */}
         <Card>
           <CardBody className="space-y-4">
-            <h4 className="font-semibold text-lg">Accesorios Adicionales</h4>
+            <h4 className="font-semibold text-lg text-gray-900 dark:text-dark-text">Accesorios Adicionales</h4>
             {/* Buscador de accesorios */}
             <div className="space-y-4">
               <Input
@@ -723,35 +723,35 @@ export default function PropiosForm({
                 }
               />
               {showAccesoriosList && accesoriosDisponibles.length > 0 && (
-                <div className="text-blue-600 text-xs mb-2">Presiona ESC para ocultar las opciones</div>
+                <div className="text-blue-600 dark:text-primary text-xs mb-2">Presiona ESC para ocultar las opciones</div>
               )}
               {showAccesoriosList && searchAccesorio && accesoriosDisponibles.length > 0 && (
-                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
-                  <h5 className="font-medium mb-2">Accesorios disponibles:</h5>
+                <div className="border border-gray-200 dark:border-dark-border rounded-lg p-3 max-h-48 overflow-y-auto bg-white dark:bg-dark-card">
+                  <h5 className="font-medium mb-2 text-gray-900 dark:text-dark-text">Accesorios disponibles:</h5>
                   <div className="space-y-2">
                     {accesoriosDisponibles.map((accesorio) => (
                       <div
                         key={accesorio.id}
-                        className="flex items-center gap-2 p-2 border rounded hover:bg-gray-50"
+                        className="flex items-center gap-2 p-2 border border-gray-200 dark:border-dark-border rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-white dark:bg-dark-card"
                       >
                         <div className="flex-1">
-                          <p className="font-medium">{accesorio.nombreProducto}</p>
+                          <p className="font-medium text-gray-900 dark:text-dark-text">{accesorio.nombreProducto}</p>
                           {accesorio.descripcion && (
-                            <p className="text-sm text-gray-600">{accesorio.descripcion}</p>
+                            <p className="text-sm text-gray-600 dark:text-dark-text-secondary">{accesorio.descripcion}</p>
                           )}
                           {accesorio.precio && (
-                            <p className="text-sm text-green-600">Precio: ${accesorio.precio}</p>
+                            <p className="text-sm text-green-600 dark:text-green-400">Precio: ${accesorio.precio}</p>
                           )}
                         </div>
                         <input
                           type="number"
                           min={1}
                           defaultValue={1}
-                          className="w-16 border rounded px-2 py-1 text-sm"
+                          className="w-16 border border-gray-300 dark:border-dark-border rounded px-2 py-1 text-sm bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
                           onChange={e => accesorio._cantidad = Number(e.target.value)}
                         />
                         <button
-                          className="text-blue-600 hover:text-blue-800 text-xl px-2"
+                          className="text-blue-600 dark:text-primary hover:text-blue-800 dark:hover:text-primary/80 text-xl px-2"
                           onClick={() => {
                             const cantidad = accesorio._cantidad || 1;
                             const accesorioConCantidad = { ...accesorio, cantidad };
@@ -771,27 +771,27 @@ export default function PropiosForm({
 
               {/* Accesorios seleccionados */}
               {accesoriosSeleccionados.length > 0 && (
-                <div className="border rounded-lg p-3">
-                  <h5 className="font-medium mb-2">Accesorios seleccionados:</h5>
+                <div className="border border-gray-200 dark:border-dark-border rounded-lg p-3 bg-white dark:bg-dark-card">
+                  <h5 className="font-medium mb-2 text-gray-900 dark:text-dark-text">Accesorios seleccionados:</h5>
                   <div className="space-y-2">
                     {accesoriosSeleccionados.map((accesorio, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-2 bg-blue-50 border rounded"
+                        className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded"
                       >
                         <div className="flex-1">
-                          <p className="font-medium">{accesorio.nombreProducto}</p>
+                          <p className="font-medium text-gray-900 dark:text-dark-text">{accesorio.nombreProducto}</p>
                           {accesorio.descripcion && (
-                            <p className="text-sm text-gray-600">{accesorio.descripcion}</p>
+                            <p className="text-sm text-gray-600 dark:text-dark-text-secondary">{accesorio.descripcion}</p>
                           )}
                           {accesorio.precio && (
-                            <p className="text-sm text-green-600">Precio: ${accesorio.precio}</p>
+                            <p className="text-sm text-green-600 dark:text-green-400">Precio: ${accesorio.precio}</p>
                           )}
-                          <p className="text-sm">Cantidad: {accesorio.cantidad || 1}</p>
+                          <p className="text-sm text-gray-700 dark:text-dark-text-secondary">Cantidad: {accesorio.cantidad || 1}</p>
                         </div>
                         <button
                           onClick={() => handleQuitarAccesorio(accesorio.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -804,7 +804,7 @@ export default function PropiosForm({
               )}
 
               {!searchAccesorio && accesoriosSeleccionados.length === 0 && (
-                <div className="text-center py-4 text-gray-500">
+                <div className="text-center py-4 text-gray-500 dark:text-dark-text-secondary">
                   <p>Agrega los accesorios que necesites</p>
                 </div>
               )}

@@ -1,0 +1,154 @@
+import { useState, useCallback, useEffect } from 'react';
+
+interface ProfileData {
+  id?: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar: string;
+  phone: string;
+  company: string;
+  avatarUrl?: string;
+  lastUpdated?: string;
+}
+
+interface ProfileSettings {
+  name: string;
+  email: string;
+  role: string;
+  avatar: string;
+  phone: string;
+  company: string;
+}
+
+export const useProfile = () => {
+  const [profile, setProfile] = useState<ProfileData>({
+    name: 'Gonzalo Manavella',
+    email: 'administracion@cortinovaok.com',
+    role: 'Administrador',
+    avatar: '',
+    phone: '+54 9 351 755-2258',
+    company: 'Cortinova'
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cargar perfil desde localStorage al inicializar
+  useEffect(() => {
+    loadProfileFromStorage();
+  }, []);
+
+  const loadProfileFromStorage = useCallback(() => {
+    try {
+      const storedProfile = localStorage.getItem('profileSettings');
+      if (storedProfile) {
+        const parsedProfile = JSON.parse(storedProfile);
+        setProfile(prev => ({ ...prev, ...parsedProfile }));
+      }
+    } catch (error) {
+      console.error('Error cargando perfil desde localStorage:', error);
+    }
+  }, []);
+
+  const saveProfileToStorage = useCallback((profileData: ProfileSettings) => {
+    try {
+      localStorage.setItem('profileSettings', JSON.stringify(profileData));
+      setProfile(prev => ({ ...prev, ...profileData, lastUpdated: new Date().toISOString() }));
+    } catch (error) {
+      console.error('Error guardando perfil en localStorage:', error);
+      setError('Error al guardar el perfil localmente');
+    }
+  }, []);
+
+  const updateProfile = useCallback(async (profileData: Partial<ProfileSettings>) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Simular llamada a API (aquí iría tu endpoint real)
+      const updatedProfile = { ...profile, ...profileData };
+      
+      // Guardar en localStorage inmediatamente
+      saveProfileToStorage(updatedProfile);
+
+      // Aquí iría la llamada real a tu API
+      // const response = await fetch('/api/profile', {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(updatedProfile)
+      // });
+      
+      // if (!response.ok) throw new Error('Error al actualizar perfil');
+
+      setIsLoading(false);
+      return { success: true, data: updatedProfile };
+    } catch (error) {
+      setIsLoading(false);
+      setError('Error al actualizar el perfil');
+      return { success: false, error: 'Error al actualizar el perfil' };
+    }
+  }, [profile, saveProfileToStorage]);
+
+  const uploadAvatar = useCallback(async (file: File): Promise<{ success: boolean; avatarUrl?: string; error?: string }> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Validar archivo
+      if (!file.type.startsWith('image/')) {
+        throw new Error('El archivo debe ser una imagen');
+      }
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB
+        throw new Error('La imagen no puede superar 5MB');
+      }
+
+      // Crear URL temporal para preview
+      const tempUrl = URL.createObjectURL(file);
+
+      // Aquí iría la subida real a tu servicio de almacenamiento
+      // Por ahora, simulamos la subida
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
+
+      // Simular URL de imagen subida
+      const avatarUrl = tempUrl; // En producción sería la URL del cloud storage
+
+      // Actualizar perfil con nueva imagen
+      const updatedProfile = { ...profile, avatar: file.name, avatarUrl };
+      saveProfileToStorage(updatedProfile);
+
+      setIsLoading(false);
+      return { success: true, avatarUrl };
+    } catch (error) {
+      setIsLoading(false);
+      const errorMessage = error instanceof Error ? error.message : 'Error al subir la imagen';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }, [profile, saveProfileToStorage]);
+
+  const resetProfile = useCallback(() => {
+    const defaultProfile: ProfileSettings = {
+      name: 'Gonzalo Manavella',
+      email: 'administracion@cortinovaok.com',
+      role: 'Administrador',
+      avatar: '',
+      phone: '+54 9 351 755-2258',
+      company: 'Cortinova'
+    };
+
+    saveProfileToStorage(defaultProfile);
+    setError(null);
+  }, [saveProfileToStorage]);
+
+  return {
+    profile,
+    isLoading,
+    error,
+    updateProfile,
+    uploadAvatar,
+    resetProfile,
+    loadProfileFromStorage
+  };
+};

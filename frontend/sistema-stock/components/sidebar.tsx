@@ -2,12 +2,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { Divider } from "@heroui/react"
+import { Divider, Avatar } from "@heroui/react"
+import { useProfile } from '@/hooks/useProfile';
+import { useAvatarContext } from '@/contexts/AvatarContext';
 
 export const SideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { profile } = useProfile();
+  const { avatarUpdateTrigger } = useAvatarContext();
 
   // Cerrar sidebar cuando cambia la ruta
   useEffect(() => {
@@ -24,40 +28,46 @@ export const SideBar = () => {
 
   return (
     <section className="font-sans antialiased">
-      <div
-        className={`
-          fixed left-0 overflow-x-hidden px-3 h-screen bg-white shadow-xl w-60
-          transition-transform duration-300 ease-in-out z-40
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-          md:translate-x-0
-        `}
-        id="sidebar"
-      >
+              <div
+          className={`
+            fixed left-0 overflow-x-hidden px-3 h-screen bg-white dark:bg-dark-card shadow-xl w-60
+            transition-transform duration-300 ease-in-out z-40
+            ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
+            md:translate-x-0
+          `}
+          id="sidebar"
+        >
         <div className="mt-[50px] space-y-6 md:space-y-10">
-          <h1 className="text-sm font-bold text-center md:block md:text-xl">
-            Cortinova<span className="text-amber-400">.</span>
-          </h1>
+          <div className="flex items-center justify-center">
+            <h1 className="text-sm font-bold text-center md:block md:text-xl text-gray-900 dark:text-dark-text ml-2.5">
+              Cortinova<span className="text-amber-400">.</span>
+            </h1>
+          </div>
           <div id="profile" className="space-y-3">
-            {/* <Image
-              src="https://images.unsplash.com/photo-1628157588553-5eeea00af15c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=880&q=80"
-              alt="Avatar user"
-              className="mx-auto w-10 rounded-full md:w-16"
-              width={150} // Añade las dimensiones
-              height={150} // Añade las dimensiones
-            /> */}
+            <div className="flex justify-center">
+              <Avatar
+                key={avatarUpdateTrigger}
+                src={profile.avatarUrl || undefined}
+                name={profile.name}
+                size="lg"
+                className="w-12 h-12 md:w-16 md:h-16"
+                isBordered
+                color="primary"
+              />
+            </div>
             <div>
               <h2
-                className="hidden text-xs font-medium text-center text-teal-500 md:text-sm"
+                className="text-xs font-medium text-center text-teal-500 md:text-sm"
               >
-                Eduard Pantazi
+                ¡Hola, {profile.name}!
               </h2>
-              <p className="hidden text-xs text-center text-gray-500">Administrador/Empleado</p>
+              <p className="text-xs text-center text-gray-500 dark:text-dark-text-secondary">{profile.role}</p>
             </div>
           </div>
           <div id="menu" className="flex flex-col self-end space-y-2">
             <Link
               href="/home"
-              className="justify-center px-2 py-2 text-gray-700 align-middle rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:text-base"
+              className="justify-center px-2 py-2 text-gray-700 dark:text-dark-text-secondary align-middle rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:text-base"
             >
               <svg
                 className="inline-block w-6 h-6 fill-current"
@@ -82,7 +92,7 @@ export const SideBar = () => {
             </Link> */}
             <Link
               href="/clientes"
-              className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
+              className="px-2 py-2 text-sm font-medium text-gray-700 dark:text-dark-text-secondary rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:scale-105"
             >
               <svg
                 className="inline-block w-6 h-6 fill-current"
@@ -98,7 +108,7 @@ export const SideBar = () => {
             </Link>
             <Link
               href="/productos"
-              className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
+              className="px-2 py-2 text-sm font-medium text-gray-700 dark:text-dark-text-secondary rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:scale-105"
             >
               <svg
                 className="inline-block w-6 h-6 fill-current"
@@ -114,7 +124,7 @@ export const SideBar = () => {
             </Link>
             <Link
               href="/presupuestos"
-              className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
+              className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 dark:text-dark-text-secondary rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:scale-105"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -130,7 +140,7 @@ export const SideBar = () => {
 
             <Link
               href="/medidas"
-              className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
+              className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 dark:text-dark-text-secondary rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:scale-105"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
@@ -142,7 +152,7 @@ export const SideBar = () => {
 
             <Link
               href="/pedidos"
-              className="px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
+              className="px-2 py-2 text-sm font-medium text-gray-700 dark:text-dark-text-secondary rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:scale-105"
             >
 
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="inline-block w-6 h-6 fill-current size-6">
@@ -181,7 +191,7 @@ export const SideBar = () => {
 
             <Link
               href="https://api.whatsapp.com/send?phone=5493517552258"
-              className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md transition duration-150 ease-in-out hover:bg-teal-500 hover:text-white hover:scale-105"
+              className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 dark:text-dark-text-secondary rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:scale-105"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -208,19 +218,20 @@ export const SideBar = () => {
             <div className="mt-auto">
               <button
                 onClick={handleLogout}
-                className="flex gap-2 items-center px-4 py-2 text-sm font-medium text-red-700 rounded-md transition duration-150 ease-in-out hover:bg-red-500 hover:text-white hover:scale-105"
+                className="flex gap-2 items-center px-4 py-2 text-sm font-medium text-red-700 dark:text-white dark:bg-red-500/20 dark:hover:bg-red-500/70 rounded-md transition duration-150 ease-in-out hover:bg-red-500 hover:text-white hover:scale-105"
               >
                 <svg
                   width="24"
                   height="24"
                   viewBox="0 0 24 24"
                   fill="none"
-                  xmlns="http://www.w3.org/2000/svg">
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="dark:text-white">
                   <path d="M10 9V5C10 3.89543 10.8954 3 12 3H16C17.1046 3 18 3.89543 18 5V19C18 20.1046 17.1046 21 16 21H12C10.8954 21 10 20.1046 10 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M15 12H3M3 12L6 9M3 12L6 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
 
-                <span className="pr-10 text-lg">
+                <span className="pr-10 text-lg text-red-700 hover:text-white dark:text-white">
                   Cerrar sesión</span>
               </button>
             </div>
@@ -238,7 +249,7 @@ export const SideBar = () => {
       {/* Botón de toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-0 left-0 z-50 p-2 text-gray-500 bg-white rounded-md border-2 border-gray-200 shadow-lg focus:bg-teal-500 focus:outline-none focus:text-white sm:hidden"
+        className="fixed top-0 left-0 z-50 p-2 text-gray-500 dark:text-dark-text-secondary bg-white dark:bg-dark-card rounded-md border-2 border-gray-200 dark:border-dark-border shadow-lg focus:bg-teal-500 focus:outline-none focus:text-white sm:hidden"
       >
         {isOpen ? (
           // Ícono X para cerrar

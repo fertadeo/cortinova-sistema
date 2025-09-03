@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Input, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { PedidoEstado, estadoColors } from "@/types/pedido";
 import { jsPDF } from "jspdf";
+import Notification from "@/components/notification";
 
 interface Pedido {
   id: number;
@@ -55,7 +56,7 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
         <ModalBody className="overflow-y-auto max-h-[calc(100vh-120px)]">
           <div className="space-y-6">
             {/* Información General */}
-            <div className="p-3 bg-gray-50 rounded-lg md:p-4">
+            <div className="p-3 bg-gray-50 dark:bg-dark-card rounded-lg md:p-4">
               <h3 className="mb-3 text-base font-semibold md:text-lg">Resumen del Pedido</h3>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="text-sm md:text-base">
@@ -65,18 +66,25 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
                   <span className="font-medium">Cliente:</span> {pedido.cliente.nombre}
                 </div>
                 <div className="text-sm md:text-base">
-                  <span className="font-medium">Sistema:</span> {pedido.pedido_json.productos[0]?.detalles.sistema}
+                  <span className="font-medium">Sistema:</span> {pedido.pedido_json.productos[0]?.detalles?.sistema || 'N/A'}
                 </div>
               </div>
             </div>
 
             {/* Especificaciones */}
             <div className="overflow-y-auto max-h-[30vh] md:max-h-[40vh]">
-              <h3 className="sticky top-0 py-2 text-base font-semibold bg-white md:text-lg">
+              <h3 className="sticky top-0 py-2 text-base font-semibold bg-white dark:bg-dark-card md:text-lg">
                 Especificaciones
               </h3>
               <div className="space-y-4">
-                {pedido.pedido_json.productos.map((producto, index) => (
+                {pedido.pedido_json.productos.map((producto, index) => {
+                  // Validar que el producto tenga detalles
+                  if (!producto || !producto.detalles) {
+                    console.warn(`Producto ${index + 1} sin detalles válidos:`, producto);
+                    return null; // No renderizar este producto
+                  }
+                  
+                  return (
                   <div key={index} className="p-3 rounded-lg border md:p-4">
                     <div className="text-sm font-medium md:text-base">{producto.nombre}</div>
                     <div className="mt-2 space-y-2 text-sm">
@@ -84,7 +92,7 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
                         <span className="font-medium">Cantidad:</span>
                         <span className="ml-2">{producto.cantidad}</span>
                       </div>
-                      {Object.entries(formatearDetallesSegunSistema(producto.detalles)).map(([key, value]) => (
+                        {Object.entries(formatearDetallesSegunSistema(producto.detalles || {})).map(([key, value]) => (
                         <div key={key} className="flex flex-wrap">
                           <span className="font-medium">{key}:</span>
                           <span className="ml-2">
@@ -94,7 +102,8 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
                       ))}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -102,7 +111,7 @@ const ProduccionModal = ({ isOpen, onClose, pedido, onConfirm }: ProduccionModal
             <div className="mt-4">
               <label 
                 htmlFor="fechaEntrega" 
-                className="block mb-2 text-sm font-medium text-gray-700 md:text-base"
+                className="block mb-2 text-sm font-medium text-gray-700 dark:text-dark-text md:text-base"
               >
                 Fecha de Entrega Estimada
               </label>
@@ -152,6 +161,11 @@ interface DetalleModalProps {
 const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComoEntregado }: DetalleModalProps) => {
   // Función para formatear detalles específicamente para el PDF de confección
   const formatearDetallesParaConfeccion = (detalles: any) => {
+    // Validar que detalles no sea undefined o null
+    if (!detalles) {
+      return { '❌ Error': 'Detalles no disponibles' };
+    }
+    
     const info: { [key: string]: any } = {};
     
     // Cantidad (siempre presente)
@@ -169,7 +183,7 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
     }
     
     // Sistema
-    if (detalles.sistema) {
+    if (detalles?.sistema) {
       info['Sistema'] = detalles.sistema;
     }
     
@@ -281,12 +295,17 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
     // Productos
     let yPos = 80;
     pedido.pedido_json.productos.forEach((producto, index) => {
+       // Validar que el producto tenga detalles
+       if (!producto || !producto.detalles) {
+         console.warn(`Producto ${index + 1} sin detalles válidos:`, producto);
+         return; // Saltar este producto
+       }
       doc.setFontSize(14);
       doc.text(`Producto ${index + 1}: ${producto.nombre}`, 20, yPos);
       yPos += 10;
       
       // Detalles del producto formateados para confección
-      const detallesFormateados = formatearDetallesParaConfeccion(producto.detalles);
+       const detallesFormateados = formatearDetallesParaConfeccion(producto.detalles || {});
       Object.entries(detallesFormateados).forEach(([key, value]) => {
         doc.setFontSize(12);
         
@@ -324,7 +343,7 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
           <ModalBody className="overflow-y-auto max-h-[calc(100vh-120px)]">
             <div className="space-y-6">
             {/* Información General */}
-            <div className="p-3 bg-gray-50 rounded-lg md:p-4">
+            <div className="p-3 bg-gray-50 dark:bg-dark-card rounded-lg md:p-4">
               <h3 className="mb-3 text-base font-semibold md:text-lg">Información General</h3>
               <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 md:text-base">
                 <div><span className="font-medium">N° Pedido:</span> {pedido.pedido_json.numeroPresupuesto}</div>
@@ -345,16 +364,23 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
             <div>
               <h3 className="mb-3 text-base font-semibold md:text-lg">Productos</h3>
               <div className="space-y-4">
-                {pedido.pedido_json.productos.map((producto, index) => (
+                {pedido.pedido_json.productos.map((producto, index) => {
+                  // Validar que el producto tenga detalles
+                  if (!producto || !producto.detalles) {
+                    console.warn(`Producto ${index + 1} sin detalles válidos:`, producto);
+                    return null; // No renderizar este producto
+                  }
+                  
+                  return (
                   <div key={index} className="p-3 rounded-lg border md:p-4">
                     <div className="text-base font-medium md:text-lg">{producto.nombre}</div>
                     <div className="mt-3 space-y-3">
                       <div className="text-sm md:text-base">
                         <span className="font-medium">Cantidad:</span> {producto.cantidad}
                       </div>
-                      <div className="p-3 bg-gray-50 rounded">
+                        <div className="p-3 bg-gray-50 dark:bg-dark-card rounded">
                         <div className="mb-2 text-sm font-medium md:text-base">Especificaciones:</div>
-                        {Object.entries(formatearDetallesSegunSistema(producto.detalles)).map(([key, value]) => (
+                          {Object.entries(formatearDetallesSegunSistema(producto.detalles || {})).map(([key, value]) => (
                           <div key={key} className="text-sm md:text-base">
                             <span className="font-medium">{key}:</span> {
                               typeof value === 'object' ? JSON.stringify(value) : String(value)
@@ -364,7 +390,8 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -475,6 +502,11 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
 
 // Función mejorada para formatear los detalles según el sistema (optimizada para producción)
 const formatearDetallesSegunSistema = (detalles: any) => {
+  // Validar que detalles no sea undefined o null
+  if (!detalles) {
+    return { '❌ Error': 'Detalles no disponibles' };
+  }
+  
   const sistema = detalles.sistema?.toLowerCase() || '';
   const info: { [key: string]: any } = {};
   
@@ -490,7 +522,7 @@ const formatearDetallesSegunSistema = (detalles: any) => {
   }
   
   // 🏷️ SISTEMA
-  info['🏷️ Sistema'] = detalles.sistema || 'No especificado';
+  info['🏷️ Sistema'] = detalles?.sistema || 'No especificado';
   
   // 🧵 TELA/MATERIAL
   if (detalles.tipoTela) {
@@ -678,6 +710,7 @@ export default function PedidosPage() {
   const [isProduccionModalOpen, setIsProduccionModalOpen] = useState(false);
   const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
   const [selectedPedidoDetalle, setSelectedPedidoDetalle] = useState<Pedido | null>(null);
+  const [notificationDismissed, setNotificationDismissed] = useState(false);
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -697,6 +730,20 @@ export default function PedidosPage() {
 
     fetchPedidos();
   }, []);
+
+  // Calcular pedidos atrasados y nuevos
+  const pedidosAtrasados = pedidos.filter(pedido => {
+    if (pedido.estado === PedidoEstado.EN_PRODUCCION && pedido.fecha_entrega) {
+      const fechaEntrega = new Date(pedido.fecha_entrega);
+      const hoy = new Date();
+      return fechaEntrega < hoy;
+    }
+    return false;
+  }).length;
+
+  const pedidosNuevos = pedidos.filter(pedido => 
+    pedido.estado === PedidoEstado.CONFIRMADO
+  ).length;
 
   const filteredPedidos = pedidos.filter((pedido) => {
     const searchTerm = filterValue.toLowerCase();
@@ -817,9 +864,58 @@ export default function PedidosPage() {
 
   return (
     <div className="p-4 z-[20]">
-      <h1 className="mb-6 text-2xl font-bold">Pedidos</h1>
-      <div className="p-4 mb-4 bg-white rounded-lg shadow-sm">
+      {/* Notificación de alertas */}
+      {!notificationDismissed && (
+        <Notification
+          pedidosAtrasados={pedidosAtrasados}
+          pedidosNuevos={pedidosNuevos}
+          onDismiss={() => setNotificationDismissed(true)}
+        />
+      )}
+             <div className="flex items-center justify-between mb-6">
+         <h1 className="text-2xl font-bold">Pedidos</h1>
+         {(pedidosAtrasados > 0 || pedidosNuevos > 0) && (
+           <div className="flex items-center space-x-4">
+             {pedidosAtrasados > 0 && (
+               <div className="flex items-center space-x-2 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 rounded-full">
+                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                 </svg>
+                 <span className="text-sm font-medium">{pedidosAtrasados} atrasado{pedidosAtrasados > 1 ? 's' : ''}</span>
+               </div>
+             )}
+             {pedidosNuevos > 0 && (
+               <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded-full">
+                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                 </svg>
+                 <span className="text-sm font-medium">{pedidosNuevos} nuevo{pedidosNuevos > 1 ? 's' : ''}</span>
+               </div>
+             )}
+           </div>
+         )}
+       </div>
+             <div className="p-4 mb-4 bg-white dark:bg-dark-card rounded-lg shadow-sm">
         <div className="flex gap-4 justify-between items-center">
+           {/* Botón para reactivar notificaciones */}
+           {(pedidosAtrasados > 0 || pedidosNuevos > 0) && notificationDismissed && (
+             <Button
+               color="warning"
+               variant="flat"
+               size="sm"
+               onPress={() => setNotificationDismissed(false)}
+               className="flex items-center space-x-2"
+             >
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.19 4.19A4 4 0 0 0 4 6v6a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4V6a4 4 0 0 0-4-4H6a4 4 0 0 0-2.81 1.19z" />
+               </svg>
+               <span>
+                 {pedidosAtrasados > 0 && `${pedidosAtrasados} atrasado${pedidosAtrasados > 1 ? 's' : ''}`}
+                 {pedidosAtrasados > 0 && pedidosNuevos > 0 && ' • '}
+                 {pedidosNuevos > 0 && `${pedidosNuevos} nuevo${pedidosNuevos > 1 ? 's' : ''}`}
+               </span>
+             </Button>
+           )}
           <div className="w-96">
             <Input
               isClearable
@@ -876,18 +972,30 @@ export default function PedidosPage() {
                 {new Date(pedido.fecha_pedido).toLocaleDateString('es-AR')}
               </TableCell>
               <TableCell>
+                 <div className="flex items-center space-x-2">
+                   <span>
                 {pedido.fecha_entrega 
                   ? new Date(pedido.fecha_entrega).toLocaleDateString('es-AR')
                   : new Date(new Date(pedido.fecha_pedido).getTime() + (15 * 24 * 60 * 60 * 1000)).toLocaleDateString('es-AR')
                 }
+                   </span>
+                   {pedido.estado === PedidoEstado.EN_PRODUCCION && pedido.fecha_entrega && new Date(pedido.fecha_entrega) < new Date() && (
+                     <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-800 bg-red-100 dark:text-red-400 dark:bg-red-900/30 rounded-full">
+                       <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                       </svg>
+                       Atrasado
+                     </span>
+                   )}
+                 </div>
               </TableCell>
               <TableCell>{pedido.cliente.nombre}</TableCell>
               <TableCell>
-                {pedido.pedido_json.productos[0]?.detalles.sistema || 'N/A'}
+                 {pedido.pedido_json.productos[0]?.detalles?.sistema || 'N/A'}
               </TableCell>
               <TableCell>
                 {pedido.estado === PedidoEstado.CONFIRMADO && (
-                  <div className="px-3 py-2 text-sm text-green-700 bg-green-100 rounded-md">
+                   <div className="px-3 py-2 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded-md">
                     ¡Tenés un pedido pendiente de producción!
                   </div>
                 )}

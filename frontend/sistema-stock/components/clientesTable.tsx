@@ -227,7 +227,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="flex justify-between items-center p-4 h-20 bg-white rounded-lg shadow-medium">
+      <div className="flex justify-between items-center p-4 h-20 bg-white dark:bg-dark-card rounded-lg shadow-medium">
         <Input
           isClearable
           placeholder="Buscar"

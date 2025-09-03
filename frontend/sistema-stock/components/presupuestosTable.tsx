@@ -131,10 +131,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const presupuestosData = await presupuestosResponse.json();
         const pedidosData = await pedidosResponse.json();
 
-                 console.log('Respuesta completa del backend:', presupuestosData);
-         console.log('Primer presupuesto:', presupuestosData.data?.[0] || presupuestosData[0]);
-         console.log('Campos del primer presupuesto:', Object.keys(presupuestosData.data?.[0] || presupuestosData[0] || {}));
-
         // Asegurarnos de acceder a la propiedad data si existe
         const presupuestos = presupuestosData.data || presupuestosData;
         const pedidos = pedidosData.data || pedidosData;
@@ -156,8 +152,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
                           const presupuestosActualizados = presupuestos.map(
            (presupuesto: Presupuesto) => {
-             console.log('Procesando presupuesto:', presupuesto.id);
-             console.log('Presupuesto JSON:', presupuesto.presupuesto_json);
+             
              
              // Extraer el campo espacio del presupuesto_json para cada item
              let itemsConEspacio = presupuesto.items;
@@ -167,14 +162,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                    ? JSON.parse(presupuesto.presupuesto_json) 
                    : presupuesto.presupuesto_json;
                  
-                 console.log('Presupuesto JSON parseado:', presupuestoJson);
-                 console.log('Productos en JSON:', presupuestoJson.productos);
-                 
                  if (presupuestoJson.productos && Array.isArray(presupuestoJson.productos)) {
                    itemsConEspacio = presupuesto.items.map((item, index) => {
                      const productoJson = presupuestoJson.productos[index];
                      const espacio = productoJson?.espacio || 'Espacio/Ambiente sin especificar';
-                     console.log(`Item: ${item.nombre}, Espacio extraído del JSON: ${espacio}`);
                      return {
                        ...item,
                        espacio: espacio
@@ -190,7 +181,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                  }));
                }
              } else {
-               console.log('No hay presupuesto_json para este presupuesto');
                // Si no hay presupuesto_json, asignar "Sin especificar" a todos los items
                itemsConEspacio = presupuesto.items.map((item) => ({
                  ...item,
@@ -242,8 +232,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
   // Función para formatear la información detallada del producto
   const formatearDetallesProducto = (item: Item) => {
-    console.log('formatearDetallesProducto - item completo:', item);
-    console.log('formatearDetallesProducto - detalles:', item.detalles);
     
     const detalles = [];
     
@@ -425,9 +413,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           email: presupuesto.cliente_email || undefined
         },
                  productos: presupuesto.items?.map(item => {
-           console.log('Item en handleViewPDF:', item);
-           console.log('Item.espacio extraído:', item.espacio);
-           
+                  
            return {
              nombre: item.nombre,
              descripcion: item.descripcion,
@@ -613,7 +599,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       case "total":
         const totalNumber = Number(presupuesto.total);
         const formattedTotal = totalNumber.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-        console.log('Total original:', presupuesto.total, 'Como número:', totalNumber, 'Formateado:', formattedTotal);
         return (
           <div className="font-medium text-right">
             ${formattedTotal}
@@ -803,10 +788,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         total: presupuestoCompleto.total,
         fecha_pedido: new Date().toISOString()
       };
-      
-      console.log('Enviando datos completos del pedido:', pedidoData);
-      console.log('Productos con espacios:', pedidoData.productos.map(p => ({ nombre: p.nombre, espacio: p.espacio })));
-      
+        
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoId}/convertir-a-pedido`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -843,12 +825,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   const pages = Math.ceil(presupuestos.length / rowsPerPage);
   const items = presupuestos.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
-  console.log('Estado del componente:');
-  console.log('- loading:', loading);
-  console.log('- error:', error);
-  console.log('- presupuestos.length:', presupuestos.length);
-  console.log('- presupuestos:', presupuestos);
-
   if (loading) {
     return <div className="flex justify-center p-4">Cargando presupuestos...</div>;
   }
@@ -862,8 +838,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   }
 
   // Si no hay presupuestos, mostrar tabla vacía con mensaje informativo
-  if (!loading && presupuestos.length === 0) {
-    console.log('Mostrando estado vacío');
+  if (!loading && presupuestos.length === 0) { 
     return (
       <div>
         <Alert 
@@ -896,7 +871,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     );
   }
 
-  console.log('Mostrando tabla con presupuestos');
   return (
     <div>
       {notification && (

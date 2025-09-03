@@ -110,7 +110,7 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
       {showClientsList && (
         <div 
           ref={clientsListRef}
-          className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-md border border-gray-200 shadow-lg"
+          className="overflow-auto absolute z-50 mt-1 w-full max-h-60 bg-white dark:bg-dark-card rounded-md border border-gray-200 dark:border-dark-border shadow-lg"
         >
           {clients.length > 0 ? (
             clients.map(client => (
@@ -118,15 +118,15 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
                 key={client.id}
                 role="button"
                 tabIndex={0}
-                className="px-4 py-2 border-b cursor-pointer hover:bg-gray-100 last:border-b-0"
+                className="px-4 py-2 border-b border-gray-200 dark:border-dark-border cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 last:border-b-0"
                 onClick={() => handleClientSelect(client)}
                 onKeyDown={(e) => e.key === 'Enter' && handleClientSelect(client)}
               >
-                <div className="font-semibold">
+                <div className="font-semibold text-gray-900 dark:text-dark-text">
                   <span className="mr-2">👤</span>
                   {client.nombre}
                 </div>
-                <div className="ml-6 text-sm text-gray-600">
+                <div className="ml-6 text-sm text-gray-600 dark:text-dark-text-secondary">
                   {client.telefono && (
                     <div>
                       <span className="mr-2">📞</span>
@@ -150,7 +150,7 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
             ))
           ) : (
             <div className="p-4">
-              <p className="mb-2 text-gray-600">No hemos encontrado este resultado...</p>
+              <p className="mb-2 text-gray-600 dark:text-dark-text-secondary">No hemos encontrado este resultado...</p>
               <Button 
                 color="primary" 
                 size="sm"
@@ -168,7 +168,7 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
 
       {/* Cliente seleccionado */}
       {selectedClient && (
-        <div className="relative p-3 mt-2 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+        <div className="relative p-3 mt-2 bg-gray-50 dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border shadow-sm">
           <div className="absolute top-2 right-2">
             <Button
               color="danger"
@@ -181,7 +181,7 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
               ✕
             </Button>
           </div>
-          <h3 className="flex justify-between items-center font-semibold">
+          <h3 className="flex justify-between items-center font-semibold text-gray-900 dark:text-dark-text">
             Cliente Seleccionado:
             <div className="flex space-x-2">
               <button onClick={() => handleSort('nombre')}>
@@ -192,19 +192,19 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
               </button>
             </div>
           </h3>
-          <p>
+          <p className="text-gray-700 dark:text-dark-text-secondary">
             <span>👤</span> {selectedClient.nombre} {/* Emoji de persona junto al nombre */}
           </p>
-          <p>
+          <p className="text-gray-700 dark:text-dark-text-secondary">
             <span>📞</span> {selectedClient.telefono} {/* Emoji de teléfono junto al número */}
           </p>
           {selectedClient.direccion && (
-            <p>
+            <p className="text-gray-700 dark:text-dark-text-secondary">
               <span>🏠</span> {selectedClient.direccion} {/* Emoji de dirección junto a la dirección */}
             </p>
           )}
           {selectedClient.email && (
-            <p>
+            <p className="text-gray-700 dark:text-dark-text-secondary">
               <span>✉️</span> {selectedClient.email} {/* Emoji de email junto al email */}
             </p>
           )}

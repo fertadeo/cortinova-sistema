@@ -360,8 +360,11 @@ const ProductosPage = () => {
       
       {/* Notificación */}
       <Notification
-        message={notification.message}
+        message={notification.message} 
         description={notification.description}
+        pedidosAtrasados={0}
+        pedidosNuevos={0}
+        onDismiss={() => {}}
         isVisible={notification.isVisible}
         onClose={handleNotificationClose}
         type={notification.type}

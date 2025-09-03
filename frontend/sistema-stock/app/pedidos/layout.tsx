@@ -6,7 +6,7 @@ export default function PedidosLayout({
     return (
       <div className="flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="w-[70%] md:w-1/5"/>
+      <aside className="w-[70%] md:w-1/5 bg-gray-50 dark:bg-dark-bg"/>
      
     
   

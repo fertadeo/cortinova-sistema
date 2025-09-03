@@ -21,6 +21,10 @@ export interface TableItem {
     alto?: number;
     ubicacion?: string;
     accesorios?: any[];
+    incluirMotorizacion?: boolean;
+    precioMotorizacion?: number;
+    tipoApertura?: string;
+    ladoApertura?: string;
   };
 }
 
@@ -55,6 +59,14 @@ export interface PresupuestoResumen {
     cantidad: number;
     subtotal: number;
     espacio?: string; // Nuevo campo para el espacio/ambiente
+    incluirMotorizacion?: boolean;
+    precioMotorizacion?: number;
+    tipoTela?: string;
+    tipoApertura?: string;
+    colorSistema?: string;
+    ladoComando?: string;
+    ladoApertura?: string;
+    detalle?: string;
   }[];
   subtotal: number;
   descuento: number;

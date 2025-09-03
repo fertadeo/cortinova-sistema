@@ -2,9 +2,32 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button
 import { TableItem as BaseTableItem } from '../../types/budget';
 import { useState, useEffect } from 'react';
 
-interface TableItem extends Omit<BaseTableItem, 'id'> {
+interface LocalTableItem extends Omit<BaseTableItem, 'id' | 'detalles'> {
   localId: string;
   parentId: number;
+  detalles?: {
+    sistema: string;
+    detalle: string;
+    caidaPorDelante: string;
+    colorSistema: string;
+    ladoComando: string;
+    tipoTela: string;
+    soporteIntermedio: boolean;
+    soporteDoble: boolean;
+    medidaId?: number;
+    ancho?: number;
+    alto?: number;
+    ubicacion?: string;
+    accesorios?: any[];
+    incluirMotorizacion?: boolean;
+    precioMotorizacion?: number;
+    tipoApertura?: string;
+    ladoApertura?: string;
+    // Propiedades de la segunda tela
+    tela2?: any;
+    multiplicadorTela2?: number;
+    cantidadTelaManual2?: number | null;
+  };
 }
 
 interface BudgetTableProps {
@@ -18,7 +41,7 @@ interface BudgetTableProps {
 export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem, onItemsChange }: BudgetTableProps) => {
   const generateLocalId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  const createTableItem = (baseItem: BaseTableItem): TableItem => {
+  const createTableItem = (baseItem: BaseTableItem): LocalTableItem => {
     const { id, ...rest } = baseItem;
     return {
       ...rest,
@@ -27,7 +50,7 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
     };
   };
 
-  const [tableItems, setTableItems] = useState<TableItem[]>(() => 
+  const [tableItems, setTableItems] = useState<LocalTableItem[]>(() => 
     items.map(createTableItem)
   );
 
@@ -35,12 +58,19 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
     setTableItems(items.map(createTableItem));
   }, [items]);
 
-  const handleDuplicate = (item: TableItem) => {
+  const handleDuplicate = (item: LocalTableItem) => {
     try {
-      const duplicatedItem: TableItem = {
+      const duplicatedItem: LocalTableItem = {
         ...JSON.parse(JSON.stringify(item)),
         localId: generateLocalId(),
         description: `${item.description} (copia)`,
+        detalles: {
+          ...item.detalles,
+          // Asegurar que la información de la segunda tela se duplique correctamente
+          tela2: item.detalles?.tela2 || null,
+          multiplicadorTela2: item.detalles?.multiplicadorTela2 || null,
+          cantidadTelaManual2: item.detalles?.cantidadTelaManual2 || null,
+        }
       };
 
       const newItems = [...tableItems, duplicatedItem];
@@ -50,7 +80,7 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
       const baseItems = newItems.map(item => ({
         ...item,
         id: item.parentId
-      }));
+      })) as BaseTableItem[];
       onItemsChange?.(baseItems);
     } catch (error) {
       console.error("Error al duplicar el item:", error);
@@ -65,7 +95,13 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
           ? {
               ...item,
               quantity: newQuantity,
-              total: item.price * newQuantity
+              total: (() => {
+                const baseTotal = item.price * newQuantity;
+                const motorizacion = item.detalles?.incluirMotorizacion 
+                  ? (item.detalles.precioMotorizacion || 0) * newQuantity 
+                  : 0;
+                return baseTotal + motorizacion;
+              })()
             }
           : item
       );
@@ -81,7 +117,7 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
       const baseItems = newItems.map(item => ({
         ...item,
         id: item.parentId
-      }));
+      })) as BaseTableItem[];
       onItemsChange?.(baseItems);
     } catch (error) {
       console.error("Error al cambiar la cantidad:", error);
@@ -102,19 +138,19 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
       const baseItems = newItems.map(item => ({
         ...item,
         id: item.parentId
-      }));
+      })) as BaseTableItem[];
       onItemsChange?.(baseItems);
     } catch (error) {
       console.error("Error al eliminar el item:", error);
     }
   };
 
-  const handleEdit = (item: TableItem) => {
+  const handleEdit = (item: LocalTableItem) => {
     try {
       const itemToEdit = {
         ...item,
         id: item.parentId
-      };
+      } as BaseTableItem;
       onEditItem(itemToEdit);
     } catch (error) {
       console.error("Error al editar el item:", error);
@@ -130,7 +166,7 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
     { name: "ACCIONES", uid: "actions" }
   ];
 
-  const renderCell = (item: TableItem, columnKey: React.Key) => {
+  const renderCell = (item: LocalTableItem, columnKey: React.Key) => {
     switch (columnKey) {
       case "name":
         return <TableCell>{item.name}</TableCell>;

@@ -27,6 +27,8 @@ interface BudgetResumeProps {
       ladoComando?: string;
       ladoApertura?: string;
       detalle?: string;
+      incluirMotorizacion?: boolean;
+      precioMotorizacion?: number;
     }>;
     subtotal: number;
     descuento: number;
@@ -220,7 +222,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   return (
     <Card className="mx-auto max-w-2xl bg-white">
       <CardBody className="p-8">
-        <div ref={invoiceRef} className="bg-white">
+        <div ref={invoiceRef} className="bg-white text-gray-900">
           <div className="flex justify-between items-start mb-8">
                          <div>
                <div className="mb-6" style={{ minHeight: '120px', display: 'flex', alignItems: 'center' }}>
@@ -236,7 +238,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                    }}
                  />
                </div>
-                             <h1 className=" font-bold text-gray-900">
+                             <h1 className="font-bold text-gray-900">
                  Presupuesto # {presupuestoData.numeroPresupuesto}
                </h1>
               <p className="text-gray-600">{presupuestoData.fecha}</p>
@@ -280,81 +282,89 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                         </td>
                       </tr>
                       {productos.map((producto, index) => (
-                        <tr key={index} className="border-b border-gray-200">
-                          <td className="px-4 py-3">{producto.nombre}</td>
-                          <td className="px-4 py-3">{
-                            (() => {
-                              // Lógica específica para Dunes
-                              if (producto.nombre?.toLowerCase().includes('dunes')) {
-                                const detalles = [];
-                                
-                                // Agregar tipo de apertura
-                                if (producto.tipoApertura) {
-                                  if (producto.tipoApertura === 'cadena_cordon') {
-                                    detalles.push('Apertura con Cadena y Cordón');
-                                  } else if (producto.tipoApertura === 'baston') {
-                                    detalles.push('Apertura con Bastón');
+                        <React.Fragment key={index}>
+                          <tr>
+                            <td className="px-4 py-3 text-gray-900">{producto.nombre}</td>
+                            <td className="px-4 py-3 text-gray-900">{
+                              (() => {
+                                // Lógica específica para Dunes
+                                if (producto.nombre?.toLowerCase().includes('dunes')) {
+                                  const detalles = [];
+                                  
+                                  // Agregar tipo de apertura
+                                  if (producto.tipoApertura) {
+                                    if (producto.tipoApertura === 'cadena_cordon') {
+                                      detalles.push('Apertura con Cadena y Cordón');
+                                    } else if (producto.tipoApertura === 'baston') {
+                                      detalles.push('Apertura con Bastón');
+                                    }
                                   }
+                                  
+                                  // Agregar color sistema
+                                  if (producto.colorSistema) {
+                                    detalles.push(`Color: ${producto.colorSistema}`);
+                                  }
+                                  
+                                  // Agregar lado comando
+                                  if (producto.ladoComando) {
+                                    detalles.push(`Comando: ${producto.ladoComando}`);
+                                  }
+                                  
+                                  // Agregar lado apertura
+                                  if (producto.ladoApertura) {
+                                    detalles.push(`Apertura: ${producto.ladoApertura}`);
+                                  }
+                                  
+                                
+                                
+                                  // Agregar detalles adicionales
+                                  if (producto.detalle && producto.detalle.trim() !== '') {
+                                    detalles.push(`Detalles: ${producto.detalle}`);
+                                  }
+                                  
+                                  return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
                                 }
                                 
-                                // Agregar color sistema
-                                if (producto.colorSistema) {
-                                  detalles.push(`Color: ${producto.colorSistema}`);
+                                // Para otros sistemas, mantener la lógica original
+                                const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
+                                
+                                if (!descripcionLimpia || descripcionLimpia.trim() === '') {
+                                  return producto.tipoTela || 'Sin descripción';
                                 }
                                 
-                                // Agregar lado comando
-                                if (producto.ladoComando) {
-                                  detalles.push(`Comando: ${producto.ladoComando}`);
-                                }
-                                
-                                // Agregar lado apertura
-                                if (producto.ladoApertura) {
-                                  detalles.push(`Apertura: ${producto.ladoApertura}`);
-                                }
-                                
-                              
-                                
-                                // Agregar detalles adicionales
-                                if (producto.detalle && producto.detalle.trim() !== '') {
-                                  detalles.push(`Detalles: ${producto.detalle}`);
-                                }
-                                
-                                return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
-                              }
-                              
-                              // Para otros sistemas, mantener la lógica original
-                              const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
-                              
-                              if (!descripcionLimpia || descripcionLimpia.trim() === '') {
-                                return producto.tipoTela || 'Sin descripción';
-                              }
-                              
-                              return descripcionLimpia;
-                            })()
-                          }</td>
-                          <td className="px-4 py-3">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                          <td className="px-4 py-3">{producto.cantidad}</td>
-                          <td className="px-4 py-3">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                        </tr>
+                                return descripcionLimpia;
+                              })()
+                            }</td>
+                            <td className="px-4 py-3 text-gray-900">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            <td className="px-4 py-3 text-gray-900">{producto.cantidad}</td>
+                            <td className="px-4 py-3 text-gray-900">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                          </tr>
+                          {producto.incluirMotorizacion && (
+                            <tr>
+                              <td colSpan={4} className="px-4 py-3 font-bold text-gray-900">Motorización</td>
+                              <td className="px-4 py-3 text-gray-900">${producto.precioMotorizacion?.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       ))}
                     </React.Fragment>
                   ))}
                 <tr>
                   <td colSpan={3}></td>
-                  <td className="px-4 py-3 font-bold">Subtotal</td>
-                  <td className="px-4 py-3">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                  <td className="px-4 py-3 font-bold text-gray-900">Subtotal</td>
+                  <td className="px-4 py-3 text-gray-900">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
                 {presupuestoData.descuento && presupuestoData.descuento > 0 && (
                   <tr>
                     <td colSpan={3}></td>
-                    <td className="px-4 py-3 font-bold">Descuento</td>
-                    <td className="px-4 py-3">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    <td className="px-4 py-3 font-bold text-gray-900">Descuento</td>
+                    <td className="px-4 py-3 text-gray-900">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                   </tr>
                 )}
                 <tr>
                   <td colSpan={3}></td>
-                  <td className="px-4 py-3 font-bold">Total</td>
-                  <td className="px-4 py-3 font-bold">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                  <td className="px-4 py-3 font-bold text-gray-900">Total</td>
+                  <td className="px-4 py-3 font-bold text-gray-900">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
               </tbody>
             </table>

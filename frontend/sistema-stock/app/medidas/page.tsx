@@ -1,6 +1,8 @@
 "use client"
 import { useState, useEffect, useRef } from "react";
 import { Button, Input, Select, SelectItem, Card, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Selection, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Alert } from "@heroui/react";
+import { useNotificationsV2 } from "../../hooks/useNotificationsV2";
+import NotificationTestButton from "../../components/NotificationTestButton";
 
 interface Cliente {
   id: string;
@@ -47,6 +49,9 @@ export default function MedidasPage() {
   const [medidas, setMedidas] = useState<Medida[]>([]);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ visible: false, message: "", type: "" });
+  
+  // Hook de notificaciones
+  const { createNotification } = useNotificationsV2();
   
   // Estados para el modal de nuevo cliente
   const [showNuevoClienteModal, setShowNuevoClienteModal] = useState(false);
@@ -221,8 +226,8 @@ export default function MedidasPage() {
     try {
       setLoading(true);
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/clientes`;
-      console.log("Enviando POST a:", apiUrl);
-      console.log("Datos del cliente:", nuevoCliente);
+      // console.log("Enviando POST a:", apiUrl);
+      // console.log("Datos del cliente:", nuevoCliente);
       
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -239,7 +244,7 @@ export default function MedidasPage() {
       }
       
       const nuevoClienteCreado = await response.json();
-      console.log("Cliente creado exitosamente:", nuevoClienteCreado);
+      // console.log("Cliente creado exitosamente:", nuevoClienteCreado);
       
       // Agregamos el cliente a la lista y lo seleccionamos automáticamente
       const clienteNuevo = {
@@ -351,6 +356,29 @@ export default function MedidasPage() {
       const resultados = await Promise.all(promesas);
       console.log('Medidas guardadas exitosamente:', resultados);
       
+      // Crear notificación de nueva medida
+      const clienteSeleccionado = clientes.find(c => c.id === clienteId);
+      const totalMedidas = medidas.length;
+      
+      try {
+        await createNotification({
+          template_name: 'INFO',
+          variables: {
+            cliente_nombre: clienteSeleccionado?.nombre || 'Cliente',
+            cantidad_medidas: totalMedidas,
+            fecha: new Date().toLocaleDateString('es-ES'),
+            hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+          },
+          priority: 'MEDIUM',
+          action_url: '/medidas',
+          action_text: 'Ver medidas'
+        });
+        
+        console.log('Notificación de nueva medida creada exitosamente');
+      } catch (error) {
+        console.error('Error al crear notificación:', error);
+      }
+      
       setAlert({
         visible: true,
         message: "Medidas guardadas exitosamente",
@@ -437,11 +465,11 @@ export default function MedidasPage() {
                 
                 {/* Resultados de búsqueda con estilo NextUI */}
                 {mostrarResultados && busquedaCliente.trim() !== "" && clientesFiltrados.length > 0 && (
-                  <div className="overflow-y-auto absolute z-50 mt-1 w-full max-h-60 bg-white rounded-lg border shadow-lg">
+                  <div className="overflow-y-auto absolute z-50 mt-1 w-full max-h-60 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
                     {clientesFiltrados.map((cliente) => (
                       <div 
                         key={cliente.id} 
-                        className={`px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${selectedCliente.includes(cliente.id) ? 'bg-blue-50' : ''}`}
+                        className={`px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedCliente.includes(cliente.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                         onClick={() => {
                           setSelectedCliente([cliente.id]);
                           setBusquedaCliente(cliente.nombre);
@@ -457,8 +485,8 @@ export default function MedidasPage() {
                           }
                         }}
                       >
-                        <div className="font-medium">{cliente.nombre}</div>
-                        <div className="text-sm text-gray-600">{cliente.telefono}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{cliente.nombre}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{cliente.telefono}</div>
                       </div>
                     ))}
                   </div>
@@ -477,11 +505,11 @@ export default function MedidasPage() {
             
             {/* Muestra el cliente seleccionado */}
             {selectedCliente.length > 0 && (
-              <div className="p-3 mt-2 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="font-medium">
+              <div className="p-3 mt-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                <div className="font-medium text-blue-900 dark:text-blue-100">
                   Cliente seleccionado: {clientes.find(c => c.id === selectedCliente[0])?.nombre}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-blue-700 dark:text-blue-200">
                   Teléfono: {clientes.find(c => c.id === selectedCliente[0])?.telefono}
                 </div>
               </div>
@@ -615,7 +643,7 @@ export default function MedidasPage() {
                     <Input
                       label="Especifique ubicación"
                       placeholder="Ej: Balcón, Estudio"
-                      key={medida.ubicacionPersonalizada || ""}
+                      value={medida.ubicacionPersonalizada || ""}
                       onChange={(e) => handleUpdateMedida(medida.id, "ubicacionPersonalizada", e.target.value)}
                       className="max-w-full"
                     />
