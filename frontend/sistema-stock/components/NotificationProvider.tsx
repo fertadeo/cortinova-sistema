@@ -164,7 +164,7 @@ const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
                      color={getNotificationColor(currentNotification.type) as any}
                      onPress={() => markAsRead(currentNotification.id)}
                    >
-                     Marcar como leída
+                     Marcar como leída y archivar
                    </Button>
                  )}
                  <Button

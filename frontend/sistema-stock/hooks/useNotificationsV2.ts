@@ -87,6 +87,7 @@ export interface NotificationFilters {
   type?: NotificationType;
   category?: NotificationCategory;
   is_read?: boolean;
+  is_archived?: boolean;
   priority?: NotificationPriority;
   sort?: 'created_at' | 'priority' | 'type';
   order?: 'asc' | 'desc';
@@ -142,6 +143,8 @@ export const useNotificationsV2 = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [markingAsRead, setMarkingAsRead] = useState<Set<string>>(new Set());
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   
@@ -161,7 +164,7 @@ export const useNotificationsV2 = () => {
   ): Promise<ApiResponse<T>> => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
-      const response = await fetch(`${baseUrl}/notifications/`, {
+      const response = await fetch(`${baseUrl}/notifications${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
@@ -182,6 +185,61 @@ export const useNotificationsV2 = () => {
     }
   }, []);
 
+  // Cargar notificaciones archivadas
+  const loadArchivedNotifications = useCallback(async (filters: NotificationFilters = {}) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Agregar filtro de archivadas
+      queryParams.append('is_archived', 'true');
+      
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && key !== 'is_archived') {
+          queryParams.append(key, value.toString());
+        }
+      });
+
+      const response = await apiRequest<Notification[]>(`?${queryParams.toString()}`);
+
+      console.log('Respuesta de notificaciones archivadas:', response);
+
+      if (response.success && response.data) {
+        setNotifications(response.data);
+        
+        setPagination({
+          page: 1,
+          limit: 20,
+          total: response.data.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false
+        });
+        
+        // Las archivadas no cuentan como no leídas
+        setUnreadCount(0);
+      } else {
+        console.error('Respuesta de API no exitosa:', response);
+        setNotifications([]);
+        setPagination({
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false
+        });
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al cargar notificaciones archivadas');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiRequest]);
+
   // Cargar notificaciones
   const loadNotifications = useCallback(async (filters: NotificationFilters = {}) => {
     setIsLoading(true);
@@ -189,6 +247,11 @@ export const useNotificationsV2 = () => {
 
     try {
       const queryParams = new URLSearchParams();
+      
+      // Por defecto, cargar solo notificaciones no archivadas
+      if (filters.is_archived === undefined) {
+        queryParams.append('is_archived', 'false');
+      }
       
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -253,45 +316,75 @@ export const useNotificationsV2 = () => {
     }
   }, []);
 
-  // Marcar notificación como leída
+  // Marcar notificación como leída (y archivarla)
   const markAsRead = useCallback(async (notificationId: string) => {
+    // Agregar a la lista de notificaciones siendo marcadas como leídas
+    setMarkingAsRead(prev => new Set(prev).add(notificationId));
+    
     try {
-      const response = await apiRequest(`/${notificationId}/read`, {
+      // Mostrar spinner por 1.5 segundos
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const response = await apiRequest(`/${notificationId}/read-and-archive`, {
         method: 'PATCH'
       });
 
       if (response.success) {
+        // Remover la notificación de la lista actual inmediatamente
         setNotifications(prev => 
-          prev.map(notification => 
-            notification.id === notificationId 
-              ? { ...notification, is_read: true }
-              : notification
-          )
+          prev.filter(notification => notification.id !== notificationId)
         );
         setUnreadCount(prev => Math.max(0, prev - 1));
+        
+        // Actualizar notificaciones archivadas para dar sensación de tiempo real
+        // Solo si hay un tab activo de archivadas (esto se manejará desde el componente)
+        console.log('Notificación marcada como leída y archivada:', notificationId);
       }
     } catch (error) {
       console.error('Error al marcar como leída:', error);
+    } finally {
+      // Remover de la lista de notificaciones siendo marcadas como leídas
+      setMarkingAsRead(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notificationId);
+        return newSet;
+      });
     }
   }, [apiRequest]);
 
   // Marcar todas como leídas
   const markAllAsRead = useCallback(async () => {
+    setMarkingAllAsRead(true);
+    
     try {
+      // Mostrar spinner por 1.5 segundos antes de enviar la petición
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const response = await apiRequest('/read-all', {
         method: 'PATCH'
       });
 
       if (response.success) {
-        setNotifications(prev => 
-          prev.map(notification => ({ ...notification, is_read: true }))
-        );
+        // Limpiar la lista actual ya que todas las notificaciones están leídas
+        setNotifications([]);
         setUnreadCount(0);
+        
+        // Recargar la lista para obtener el estado actualizado desde el servidor
+        // Esto asegura que no aparezcan notificaciones en el tab "Nuevas"
+        setTimeout(async () => {
+          try {
+            await loadNotifications({ page: 1, limit: 10 });
+          } catch (error) {
+            console.error('Error al recargar notificaciones:', error);
+          }
+        }, 500); // Pequeño delay para asegurar que el servidor haya procesado el cambio
       }
     } catch (error) {
       console.error('Error al marcar todas como leídas:', error);
+    } finally {
+      setMarkingAllAsRead(false);
     }
-  }, [apiRequest]);
+  }, [apiRequest, loadNotifications]);
 
   // Eliminar notificación
   const deleteNotification = useCallback(async (notificationId: string) => {
@@ -513,6 +606,15 @@ export const useNotificationsV2 = () => {
     setCurrentNotification(null);
   }, []);
 
+  // Función para actualizar notificaciones archivadas (para tiempo real)
+  const refreshArchivedNotifications = useCallback(async () => {
+    try {
+      await loadArchivedNotifications({ page: 1, limit: 10 });
+    } catch (error) {
+      console.error('Error al actualizar notificaciones archivadas:', error);
+    }
+  }, [loadArchivedNotifications]);
+
   return {
     // Estado
     notifications,
@@ -523,6 +625,8 @@ export const useNotificationsV2 = () => {
     error,
     isSettingsLoading,
     settingsError,
+    markingAsRead,
+    markingAllAsRead,
     
     // Estado SSE
     isSSEConnected,
@@ -532,6 +636,7 @@ export const useNotificationsV2 = () => {
     
     // Acciones
     loadNotifications,
+    loadArchivedNotifications,
     loadSettings,
     markAsRead,
     markAllAsRead,
@@ -539,6 +644,7 @@ export const useNotificationsV2 = () => {
     createNotification,
     updateSettings,
     closeFloatingNotification,
+    refreshArchivedNotifications,
     
     // Utilidades
     refresh: () => loadNotifications()

@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Badge, Card, CardBody, Divider, Pagination } from "@heroui/react";
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Badge, Card, CardBody, Divider, Pagination, Tabs, Tab } from "@heroui/react";
 import { useAlertSound } from '@/hooks/useAlertSound';
 import { useNotificationsV2 } from '@/hooks/useNotificationsV2';
 import { SSEStatusIndicator } from './SSEStatusIndicator';
+import ModalConfirmation from './modalConfirmation';
 
 // Usar la interfaz de notificaciones del hook
 import type { Notification } from '@/hooks/useNotificationsV2';
@@ -12,6 +13,9 @@ import type { Notification } from '@/hooks/useNotificationsV2';
 const NotificationCenter = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<'nuevas' | 'archivadas'>('nuevas');
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [notificationToDelete, setNotificationToDelete] = useState<string | null>(null);
   const { 
     notifications, 
     unreadCount, 
@@ -22,12 +26,17 @@ const NotificationCenter = () => {
     markAllAsRead,
     pagination,
     loadNotifications,
-    isLoading
+    loadArchivedNotifications,
+    refreshArchivedNotifications,
+    isLoading,
+    markingAsRead,
+    markingAllAsRead
   } = useNotificationsV2();
   const { playNotificationSound } = useAlertSound();
 
   const handleOpen = () => {
     setIsOpen(true);
+    setActiveTab('nuevas');
     // Cargar notificaciones de la primera página
     loadNotifications({ page: 1, limit: 10 });
     setCurrentPage(1);
@@ -35,11 +44,52 @@ const NotificationCenter = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    loadNotifications({ page, limit: 10 });
+    if (activeTab === 'archivadas') {
+      loadArchivedNotifications({ page, limit: 10 });
+    } else {
+      loadNotifications({ page, limit: 10 });
+    }
+  };
+
+  const handleTabChange = (tab: 'nuevas' | 'archivadas') => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    // Cargar notificaciones según el tab seleccionado
+    if (tab === 'archivadas') {
+      loadArchivedNotifications({ page: 1, limit: 10 });
+    } else {
+      loadNotifications({ page: 1, limit: 10 });
+    }
   };
 
   const handleClose = () => {
     setIsOpen(false);
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    await markAsRead(notificationId);
+    // Actualizar notificaciones archivadas para dar sensación de tiempo real
+    if (activeTab === 'archivadas') {
+      await refreshArchivedNotifications();
+    }
+  };
+
+  const handleDeleteClick = (notificationId: string) => {
+    setNotificationToDelete(notificationId);
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (notificationToDelete) {
+      await deleteNotification(notificationToDelete);
+      setShowDeleteConfirmation(false);
+      setNotificationToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
+    setNotificationToDelete(null);
   };
 
     const getNotificationColor = (type: Notification['type']) => {
@@ -218,6 +268,32 @@ const NotificationCenter = () => {
                 )}
               </div> */}
             </div>
+            
+            {/* Tabs para notificaciones nuevas y archivadas */}
+            <div className="w-full">
+              <Tabs 
+                selectedKey={activeTab} 
+                onSelectionChange={(key) => handleTabChange(key as 'nuevas' | 'archivadas')}
+                color="primary"
+                variant="underlined"
+                className="w-full"
+              >
+                <Tab 
+                  key="nuevas" 
+                  title={
+                    <div className="flex items-center gap-2">
+                      <span>Nuevas</span>
+                      {unreadCount > 0 && (
+                        <Badge color="danger" size="sm" variant="flat">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </div>
+                  }
+                />
+                <Tab key="archivadas" title="Archivadas" />
+              </Tabs>
+            </div>
           </ModalHeader>
           
           <ModalBody>
@@ -231,7 +307,12 @@ const NotificationCenter = () => {
                 <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 00-6 6v3.75a6 6 0 006 6h3a6 6 0 006-6V9.75a6 6 0 00-6-6h-3z" />
                 </svg>
-                <p className="text-gray-500">No hay notificaciones</p>
+                <p className="text-gray-500">
+                  {activeTab === 'archivadas' 
+                    ? 'No hay notificaciones archivadas' 
+                    : 'No hay notificaciones'
+                  }
+                </p>
               </div>
             ) : (
               <>
@@ -272,14 +353,15 @@ const NotificationCenter = () => {
                           </div>
                           
                           <div className="flex items-center space-x-2 ml-4">
-                            {!notification.is_read && (
+                            {!notification.is_read && activeTab === 'nuevas' && (
                               <Button
                                 size="sm"
                                 variant="light"
                                 color="primary"
-                                onPress={() => markAsRead(notification.id)}
+                                isLoading={markingAsRead.has(notification.id)}
+                                onPress={() => handleMarkAsRead(notification.id)}
                               >
-                                Marcar como leída
+                                {markingAsRead.has(notification.id) ? 'Marcando...' : 'Marcar como leída y archivar'}
                               </Button>
                             )}
                             <Button
@@ -287,7 +369,7 @@ const NotificationCenter = () => {
                               variant="light"
                               color="danger"
                               isIconOnly
-                              onPress={() => deleteNotification(notification.id)}
+                              onPress={() => handleDeleteClick(notification.id)}
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -323,25 +405,26 @@ const NotificationCenter = () => {
               Cerrar
             </Button>
             <div className="flex gap-2">
-              <Button 
-                color="secondary" 
-                variant="light"
-                onPress={() => loadNotifications({ page: currentPage, limit: 10 })}
-              >
-                Recargar
-              </Button>
-                             {notifications && notifications.length > 0 && (
+                             {notifications && notifications.length > 0 && activeTab === 'nuevas' && (
                 <Button 
                   color="primary" 
+                  isLoading={markingAllAsRead}
                   onPress={markAllAsRead}
                 >
-                  Marcar todas como leídas
+                  {markingAllAsRead ? 'Marcando todas...' : 'Marcar todas como leídas'}
                 </Button>
               )}
             </div>
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal de confirmación para eliminar */}
+      <ModalConfirmation
+        isOpen={showDeleteConfirmation}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />
     </>
   );
 };
