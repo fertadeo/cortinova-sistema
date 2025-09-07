@@ -36,7 +36,7 @@ const Notification = ({ pedidosAtrasados, pedidosNuevos, onDismiss }: Notificati
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-bounce">
+    <div className="fixed top-4 right-4 z-50 animate-bounce hidden">
       <div className="bg-red-500 dark:bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg border-l-4 border-red-700 dark:border-red-800 max-w-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
