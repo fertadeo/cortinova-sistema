@@ -533,6 +533,29 @@ export default function GenerarPedidoModal({
     setShowRielesBarralesList(false);
     setIncluirMotorizacion(false);
     setPrecioMotorizacion(0);
+    
+    // Limpiar campos adicionales que no estaban en la función original
+    setSearchTela2("");
+    setTelasFiltradas2([]);
+    setSelectedTela2(null);
+    setShowTelasList2(false);
+    setMultiplicadorTela2(1);
+    setCantidadTelaManual2(null);
+    setPrecioSistema(0);
+    setPrecioTela(0);
+    setPrecioTela2(0);
+    setIncluirColocacion(true);
+    setError("");
+    setShowValidationAlert(false);
+    setShowCloseConfirmModal(false);
+    setMultiplicadorTelaLocal(1);
+    setEspacio("");
+    setEspacioPersonalizado("");
+    setShowCambioSistema(false);
+    setNombreSistemaCambio("");
+    setSistemaRecomendado("");
+    setPedidoJSON("");
+    setSelectedSoporteIntermedio(null);
   };
 
   // Función para validar si se puede proceder al siguiente paso
@@ -1433,6 +1456,7 @@ export default function GenerarPedidoModal({
     }
     
     onPedidoCreated(pedido);
+    resetInputs(); // Limpiar todos los campos antes de cerrar el modal
     onOpenChange(false);
   };
 
