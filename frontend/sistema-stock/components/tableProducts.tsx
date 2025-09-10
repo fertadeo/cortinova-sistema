@@ -51,7 +51,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
     // { name: "Acciones", uid: "acciones" },
   ];
 
-  const [sortMode, setSortMode] = useState<'id' | 'nombre'>('nombre');
+  const [sortMode, setSortMode] = useState<'id' | 'nombre'>('id');
 
   const fetchProducts = async () => {
     try {
