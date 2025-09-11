@@ -18,8 +18,20 @@ interface PresupuestoData {
   total_clientes: number;
 }
 
+interface PedidoData {
+  mes: string;
+  total_pedidos_confirmados: number;
+  suma_total_confirmados: number;
+  total_clientes_confirmados: number;
+}
+
 interface APIResponse {
   data: PresupuestoData[];
+}
+
+interface PedidoAPIResponse {
+  success: boolean;
+  data: PedidoData[];
 }
 
 const BarChart = ({ options }: BarChartProps) => {
@@ -37,7 +49,7 @@ const BarChart = ({ options }: BarChartProps) => {
         borderWidth: 1,
       },
       {
-        label: 'Pedidos Realizados',
+        label: 'Pedidos Confirmados',
         data: [],
         backgroundColor: 'rgba(153, 102, 255, 0.2)',
         borderColor: 'rgba(153, 102, 255, 1)',
@@ -56,13 +68,15 @@ const BarChart = ({ options }: BarChartProps) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientesResponse, presupuestosResponse] = await Promise.all([
+        const [clientesResponse, presupuestosResponse, pedidosResponse] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/clientes/clientes-por-mes`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/presupuestos-por-mes`)
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/presupuestos-por-mes`), 
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos/pedidos-confirmados-por-mes`)
         ]);
 
         const clientesData: ClienteData[] = await clientesResponse.json();
         const presupuestosData: APIResponse = await presupuestosResponse.json();
+        const pedidosData: PedidoAPIResponse = await pedidosResponse.json();
 
         // Extraer años únicos de los datos
         const years = new Set<number>();
@@ -70,11 +84,18 @@ const BarChart = ({ options }: BarChartProps) => {
           const year = parseInt(data.mes.split('-')[0]);
           years.add(year);
         });
+        // También agregar años de los pedidos
+        if (pedidosData.success && pedidosData.data) {
+          pedidosData.data.forEach((data) => {
+            const year = parseInt(data.mes.split('-')[0]);
+            years.add(year);
+          });
+        }
         setAvailableYears(Array.from(years).sort());
 
         // Inicializa los datos
         const monthlyClientData = Array(12).fill(0);
-        const monthlyPresupuestoPendienteData = Array(12).fill(0);
+        const monthlyPedidosConfirmadosData = Array(12).fill(0);
         const monthlyPresupuestoEmitidoData = Array(12).fill(0);
 
         // Filtrar y llenar los datos según el año seleccionado
@@ -90,8 +111,23 @@ const BarChart = ({ options }: BarChartProps) => {
             }
           });
 
+        // Procesar datos de pedidos confirmados
+        if (pedidosData.success && pedidosData.data) {
+          pedidosData.data
+            .filter((data) => data.mes.startsWith(selectedYear.toString()))
+            .forEach((monthData: PedidoData) => {
+              const [_, month] = monthData.mes.split('-');
+              const monthIndex = parseInt(month) - 1;
+              
+              if (monthIndex >= 0 && monthIndex < 12) {
+                monthlyPedidosConfirmadosData[monthIndex] = monthData.total_pedidos_confirmados;
+              }
+            });
+        }
+
         console.log('=== DATOS DEL GRÁFICO ===');
         console.log('Clientes por mes:', monthlyClientData);
+        console.log('Pedidos confirmados por mes:', monthlyPedidosConfirmadosData);
         console.log('Presupuestos por mes:', monthlyPresupuestoEmitidoData);
 
         const monthNames = [
@@ -111,8 +147,8 @@ const BarChart = ({ options }: BarChartProps) => {
               borderWidth: 1,
             },
             {
-              label: 'Pedidos Realizados',
-              data: monthlyPresupuestoPendienteData,
+              label: 'Pedidos Confirmados',
+              data: monthlyPedidosConfirmadosData,
               backgroundColor: 'rgba(153, 102, 255, 0.2)',
               borderColor: 'rgba(153, 102, 255, 1)',
               borderWidth: 1,
