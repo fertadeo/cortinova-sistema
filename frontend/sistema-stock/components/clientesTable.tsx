@@ -199,7 +199,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
                   }
                 }}
               >
-                <DeleteIcon className="hidden" />
+                <DeleteIcon />
               </span>
             </Tooltip>
 
@@ -282,6 +282,7 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleDeleteUser}
+        message="¿Seguro que deseas borrar este cliente? Los datos vinculados a este cliente se borrarán. Esta acción es irreversible."
       />
     </div>
   );

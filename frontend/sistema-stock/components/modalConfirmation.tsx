@@ -12,15 +12,26 @@ interface ModalConfirmationProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  message?: string;
 }
 
-const ModalConfirmation: React.FC<ModalConfirmationProps> = ({ isOpen, onClose, onConfirm }) => {
+const ModalConfirmation: React.FC<ModalConfirmationProps> = ({ isOpen, onClose, onConfirm, message }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} backdrop="opaque">
       <ModalContent>
         <ModalHeader>Confirmación</ModalHeader>
         <ModalBody>
-          <p>¿Está seguro que desea realizar esta acción?</p>
+          <p>
+            {message ? (
+              <>
+                {message.split('Esta acción es irreversible')[0]}
+                <span className="text-red-500 font-semibold">Esta acción es irreversible</span>
+                {message.split('Esta acción es irreversible')[1]}
+              </>
+            ) : (
+              "¿Está seguro que desea realizar esta acción?"
+            )}
+          </p>
         </ModalBody>
         <ModalFooter>
           <Button color="danger" onClick={onConfirm}>

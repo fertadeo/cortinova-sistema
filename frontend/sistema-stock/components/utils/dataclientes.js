@@ -3,9 +3,9 @@
 
 
 const columns = [
-  {name: "NAME", uid: "name"},
-  {name: "TELEFONO", uid: "telefono"},
-  {name: "ACTIONS", uid: "actions"},
+  {name: "NOMBRE", uid: "name"},
+  {name: "TELÉFONO", uid: "telefono"},
+  {name: "ACCIONES", uid: "actions"},
 ];
 
 

@@ -22,6 +22,10 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@heroui/react";
 import BudgetPDFModal from './BudgetPDFModal';
 import { FaFilePdf } from 'react-icons/fa';
@@ -112,6 +116,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [presupuestoToDelete, setPresupuestoToDelete] = useState<Presupuesto | null>(null);
+  const [deletingPresupuestoId, setDeletingPresupuestoId] = useState<number | null>(null);
+  const [convertingPresupuestoId, setConvertingPresupuestoId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -438,6 +446,64 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     setShowConfirmModal(true);
   };
 
+  const handleOpenDeleteModal = (presupuesto: Presupuesto) => {
+    // Verificar si el presupuesto ya fue convertido a pedido
+    if (presupuesto.estado === "Confirmado") {
+      setNotification({
+        message: "No se puede eliminar un presupuesto que ya fue convertido a pedido",
+        variant: "error"
+      });
+      return;
+    }
+    
+    setPresupuestoToDelete(presupuesto);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setPresupuestoToDelete(null);
+  };
+
+  const handleDeletePresupuesto = async () => {
+    if (!presupuestoToDelete) return;
+
+    setDeletingPresupuestoId(presupuestoToDelete.id);
+
+    try {
+      // Simular delay de 1.5 segundos
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el presupuesto');
+      }
+
+      // Actualizar la lista de presupuestos removiendo el eliminado
+      setPresupuestos(prevPresupuestos => 
+        prevPresupuestos.filter(p => p.id !== presupuestoToDelete.id)
+      );
+
+      setNotification({
+        message: "Presupuesto eliminado exitosamente",
+        variant: "success"
+      });
+
+      handleCloseDeleteModal();
+    } catch (error) {
+      console.error('Error al eliminar el presupuesto:', error);
+      setNotification({
+        message: "Error al eliminar el presupuesto",
+        variant: "error"
+      });
+    } finally {
+      setDeletingPresupuestoId(null);
+    }
+  };
+
   const handleDuplicatePresupuesto = async (presupuesto: Presupuesto) => {
     try {
       setIsDuplicating(true);
@@ -613,6 +679,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
               variant="flat"
               onClick={() => handleOpenConfirmModal(presupuesto)}
               isDisabled={presupuesto.estado === "Confirmado" || isUpdating}
+              isLoading={convertingPresupuestoId === presupuesto.id}
             >
               {presupuesto.estado === "Confirmado" ? "Pedido Confirmado" : "Convertir a Pedido"}
             </Button>
@@ -689,7 +756,8 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                             setPresupuestoToConfirm(null);
                           }
                         }}
-                        isLoading={isUpdating}
+                        isLoading={convertingPresupuestoId === presupuestoToConfirm?.id}
+                        isDisabled={convertingPresupuestoId === presupuestoToConfirm?.id}
                       >
                         Confirmar Pedido
                       </Button>
@@ -723,6 +791,58 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                 />
               </svg>
             </Button>
+            
+            <Dropdown>
+              <DropdownTrigger>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  isDisabled={deletingPresupuestoId === presupuesto.id}
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    strokeWidth="1.5" 
+                    stroke="currentColor" 
+                    className="size-6"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" 
+                    />
+                  </svg>
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Acciones del presupuesto">
+                <DropdownItem
+                  key="delete"
+                  className="text-danger"
+                  color="danger"
+                  onPress={() => handleOpenDeleteModal(presupuesto)}
+                  isDisabled={presupuesto.estado === "Confirmado"}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      strokeWidth="1.5" 
+                      stroke="currentColor" 
+                      className="size-4"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" 
+                      />
+                    </svg>
+                    Eliminar presupuesto
+                  </div>
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
           </div>
         );
       default:
@@ -757,7 +877,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
   const handleConvertirAPedido = async (presupuestoId: number) => {
     try {
+      setConvertingPresupuestoId(presupuestoId);
       setIsUpdating(true);
+
+      // Simular delay de 1.5 segundos
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Obtener el presupuesto completo para preservar todos los datos
       const presupuestoCompleto = presupuestos.find(p => p.id === presupuestoId);
@@ -819,6 +943,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       });
     } finally {
       setIsUpdating(false);
+      setConvertingPresupuestoId(null);
     }
   };
 
@@ -929,6 +1054,39 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             presupuestoData={formattedPresupuesto}
           />
         )}
+
+        {/* Modal de confirmación para eliminar presupuesto */}
+        <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal} backdrop="opaque">
+          <ModalContent>
+            <ModalHeader>Confirmar eliminación</ModalHeader>
+            <ModalBody>
+              <p>
+                ¿Seguro que deseas eliminar este presupuesto? 
+                <span className="text-red-500 font-semibold"> Esta acción es irreversible</span>.
+              </p>
+              {presupuestoToDelete && (
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="font-medium text-gray-900 dark:text-gray-100">Presupuesto: {formatearNumeroPresupuesto(presupuestoToDelete.numero_presupuesto)}</p>
+                  <p className="text-gray-700 dark:text-gray-300">Cliente: {presupuestoToDelete.cliente_nombre}</p>
+                  <p className="text-gray-700 dark:text-gray-300">Total: ${Number(presupuestoToDelete.total).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                </div>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button color="default" onClick={handleCloseDeleteModal}>
+                Cancelar
+              </Button>
+              <Button 
+                color="danger" 
+                onClick={handleDeletePresupuesto}
+                isLoading={deletingPresupuestoId === presupuestoToDelete?.id}
+                isDisabled={deletingPresupuestoId === presupuestoToDelete?.id}
+              >
+                Eliminar
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </div>
     </div>
   );
