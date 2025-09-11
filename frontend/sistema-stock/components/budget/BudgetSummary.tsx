@@ -32,9 +32,9 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
     }
   };
 
-  // Función para redondear a la centena más cercana
-  const roundToHundred = (num: number): number => {
-    return Math.round(num / 100) * 100;
+  // Función para redondear al millar más cercano
+  const roundToThousand = (num: number): number => {
+    return Math.round(num / 1000) * 1000;
   };
 
   // Calcular valores finales sin actualizar el estado
@@ -43,7 +43,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
     let finalTotal = subtotal - baseDiscount;
     
     if (shouldRound && applyDiscount) {
-      const roundedTotal = roundToHundred(finalTotal);
+      const roundedTotal = roundToThousand(finalTotal);
       const adjustedDiscount = subtotal - roundedTotal; // NO redondear aquí
       
       return {
@@ -136,7 +136,7 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
                   checked={shouldRound}
                   onChange={(e) => onDiscountChange(applyDiscount, discountType, discountValue, e.target.checked)}
                 >
-                  Redondear a centenas
+                  Redondear a miles
                 </Checkbox>
               </div>
             </>

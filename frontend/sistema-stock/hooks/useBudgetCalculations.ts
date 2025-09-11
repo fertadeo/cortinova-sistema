@@ -1,8 +1,8 @@
 import { TableItem } from '../types/budget';
 
 export const useBudgetCalculations = () => {
-  const roundToHundred = (num: number): number => {
-    return Math.round(num / 100) * 100;
+  const roundToThousand = (num: number): number => {
+    return Math.round(num / 1000) * 1000;
   };
 
   const calculateTotals = (
@@ -29,8 +29,8 @@ export const useBudgetCalculations = () => {
           const baseDiscount = (subtotal * discountPercentage) / 100;
           // Calcular el total base
           const baseTotal = subtotal - baseDiscount;
-          // Redondear el total a centenas
-          const roundedTotal = roundToHundred(baseTotal);
+          // Redondear el total a miles
+          const roundedTotal = roundToThousand(baseTotal);
           // Calcular el descuento ajustado para lograr el total redondo
           discount = subtotal - roundedTotal;
         } else {
@@ -38,7 +38,7 @@ export const useBudgetCalculations = () => {
         }
       } else if (discountAmount !== undefined) {
         discount = shouldRound 
-          ? roundToHundred(discountAmount)
+          ? roundToThousand(discountAmount)
           : discountAmount;
       }
     }
