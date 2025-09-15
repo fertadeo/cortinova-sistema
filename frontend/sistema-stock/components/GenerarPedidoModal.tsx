@@ -562,28 +562,28 @@ export default function GenerarPedidoModal({
   const canProceedToNextStep = () => {
     // Validaciones básicas obligatorias para todos los sistemas
     if (!selectedSistema) {
-      console.log('❌ Validación fallida: No hay sistema seleccionado');
+      // console.log('❌ Validación fallida: No hay sistema seleccionado');
       return false;
     }
     
     if (!cantidad || Number(cantidad) <= 0) {
-      console.log('❌ Validación fallida: Cantidad inválida');
+      // console.log('❌ Validación fallida: Cantidad inválida');
       return false;
     }
     
     if (!ancho || Number(ancho) <= 0) {
-      console.log('❌ Validación fallida: Ancho inválido');
+      // console.log('❌ Validación fallida: Ancho inválido');
       return false;
     }
     
     if (!alto || Number(alto) <= 0) {
-      console.log('❌ Validación fallida: Alto inválido');
+      // console.log('❌ Validación fallida: Alto inválido');
       return false;
     }
 
     // Validación de medidas mínimas (al menos 10cm x 10cm)
     if (Number(ancho) < 10 || Number(alto) < 10) {
-      console.log('❌ Validación fallida: Medidas muy pequeñas');
+      // console.log('❌ Validación fallida: Medidas muy pequeñas');
       return false;
     }
 
@@ -593,7 +593,7 @@ export default function GenerarPedidoModal({
     // Para sistemas que requieren producto específico (no Propios/Tradicional)
     if (!sistemaLower.includes('tradicional') && !sistemaLower.includes('propios')) {
       if (!selectedRielBarral || !selectedRielBarral.precio) {
-        console.log('❌ Validación fallida: No hay producto seleccionado para sistema', selectedSistema);
+        // console.log('❌ Validación fallida: No hay producto seleccionado para sistema', selectedSistema);
         return false;
       }
     }
@@ -601,18 +601,18 @@ export default function GenerarPedidoModal({
     // Para sistemas Propios/Tradicional, validar que haya detalles del sistema y producto
     if (sistemaLower.includes('tradicional') || sistemaLower.includes('propios')) {
       if (!sistemaPedidoDetalles) {
-        console.log('❌ Validación fallida: No hay detalles del sistema para Propios/Tradicional');
+        // console.log('❌ Validación fallida: No hay detalles del sistema para Propios/Tradicional');
         return false;
       }
       if (!sistemaPedidoDetalles.productoSeleccionado) {
-        console.log('❌ Validación fallida: No hay producto seleccionado para sistema Propios/Tradicional');
+        // console.log('❌ Validación fallida: No hay producto seleccionado para sistema Propios/Tradicional');
         return false;
       }
     }
 
     // Para todos los sistemas excepto Venecianas, requerimos tela
     if (!sistemaLower.includes('veneciana') && !selectedTela) {
-      console.log('❌ Validación fallida: No hay tela seleccionada');
+      // console.log('❌ Validación fallida: No hay tela seleccionada');
       return false;
     }
 
@@ -628,25 +628,25 @@ export default function GenerarPedidoModal({
       );
       
       if (!medidasValidas) {
-        console.log('❌ Validación fallida: Medidas no válidas según ábaco');
+        // console.log('❌ Validación fallida: Medidas no válidas según ábaco');
         return false;
       }
     }
 
     // Validación de errores del sistema
     if (error) {
-      console.log('❌ Validación fallida: Hay errores en el sistema');
+      // console.log('❌ Validación fallida: Hay errores en el sistema');
       return false;
     }
 
     // Validación de precio total
     const precioTotal = calcularPrecioTotal();
     if (precioTotal <= 0) {
-      console.log('❌ Validación fallida: Precio total inválido');
+      // console.log('❌ Validación fallida: Precio total inválido');
       return false;
     }
 
-    console.log('✅ Todas las validaciones pasaron');
+    // console.log('✅ Todas las validaciones pasaron');
     return true;
   };
 
@@ -729,9 +729,9 @@ export default function GenerarPedidoModal({
 
   // Actualizar la función handleTelaSearch para usar el endpoint dinámico
   const handleTelaSearch = async (value: string) => {
-    console.log('🔍 [TELAS] Iniciando búsqueda de telas...');
-    console.log('🔍 [TELAS] Valor buscado:', value);
-    console.log('🔍 [TELAS] Sistema seleccionado:', selectedSistema);
+    // console.log('🔍 [TELAS] Iniciando búsqueda de telas...');
+    // console.log('🔍 [TELAS] Valor buscado:', value);
+    // console.log('🔍 [TELAS] Sistema seleccionado:', selectedSistema);
     
     setSearchTela(value);
     setShowTelasList(true);
@@ -739,7 +739,7 @@ export default function GenerarPedidoModal({
     // Permitir búsqueda si es '*' (con o sin espacios) o si hay texto
     const isAsterisk = value.trim() === '*';
     if (!value.trim() && !isAsterisk) {
-      console.log('🔍 [TELAS] Valor vacío, limpiando resultados');
+      // console.log('🔍 [TELAS] Valor vacío, limpiando resultados');
       setTelasFiltradas([]);
       setShowTelasList(false);
       return;
@@ -748,7 +748,7 @@ export default function GenerarPedidoModal({
     try {
       // Usar el endpoint dinámico para telas según el sistema seleccionado
       const sistemaKey = selectedSistema?.toLowerCase();
-      console.log('🔍 [TELAS] Sistema key:', sistemaKey);
+      // console.log('🔍 [TELAS] Sistema key:', sistemaKey);
       
       if (!sistemaKey || !sistemaToApiParams[sistemaKey]) {
         console.log('[DEBUG] No sistema seleccionado para búsqueda de telas:', selectedSistema);
@@ -758,25 +758,25 @@ export default function GenerarPedidoModal({
       }
 
       const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
-      console.log('🔍 [TELAS] Parámetros del sistema:', { sistemaId, rubroId, proveedorId });
+      // console.log('🔍 [TELAS] Parámetros del sistema:', { sistemaId, rubroId, proveedorId });
       
       // Si el valor es '*', buscar todas las telas (q=*)
       const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
       const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
       
-      console.log('🔍 [TELAS] URL completa:', url);
-      console.log('🔍 [TELAS] Base URL:', process.env.NEXT_PUBLIC_API_URL);
+      // console.log('🔍 [TELAS] URL completa:', url);
+      // console.log('🔍 [TELAS] Base URL:', process.env.NEXT_PUBLIC_API_URL);
       
       const response = await fetch(url);
-      console.log('🔍 [TELAS] Status de la respuesta:', response.status);
+      // console.log('🔍 [TELAS] Status de la respuesta:', response.status);
       
       if (!response.ok) {
         throw new Error('Error al buscar telas');
       }
       
       const data = await response.json();
-      console.log('🔍 [TELAS] Respuesta completa:', data);
-      console.log('🔍 [TELAS] Cantidad de resultados:', data.data?.length || 0);
+      // console.log('🔍 [TELAS] Respuesta completa:', data);
+      // console.log('🔍 [TELAS] Cantidad de resultados:', data.data?.length || 0);
       
       // Formatear las telas para que coincidan con la interfaz Tela
       const telasFormateadas = Array.isArray(data.data) ? data.data.map((tela: any) => ({
@@ -787,7 +787,7 @@ export default function GenerarPedidoModal({
         precio: tela.precio ? Number(tela.precio).toString() : '0'
       })) : [];
       
-      console.log('🔍 [TELAS] Telas formateadas:', telasFormateadas);
+      // console.log('🔍 [TELAS] Telas formateadas:', telasFormateadas);
       setTelasFiltradas(telasFormateadas);
     } catch (error) {
       console.error('❌ [TELAS] Error al buscar telas:', error);
@@ -797,9 +797,9 @@ export default function GenerarPedidoModal({
 
   // Función para manejar la búsqueda de la segunda tela
   const handleTelaSearch2 = async (value: string) => {
-    console.log('🔍 [TELAS2] Iniciando búsqueda de segunda tela...');
-    console.log('🔍 [TELAS2] Valor buscado:', value);
-    console.log('🔍 [TELAS2] Sistema seleccionado:', selectedSistema);
+    // console.log('🔍 [TELAS2] Iniciando búsqueda de segunda tela...');
+    // console.log('🔍 [TELAS2] Valor buscado:', value);
+    // console.log('🔍 [TELAS2] Sistema seleccionado:', selectedSistema);
     
     setSearchTela2(value);
     setShowTelasList2(true);
@@ -807,7 +807,7 @@ export default function GenerarPedidoModal({
     // Permitir búsqueda si es '*' (con o sin espacios) o si hay texto
     const isAsterisk = value.trim() === '*';
     if (!value.trim() && !isAsterisk) {
-      console.log('🔍 [TELAS2] Valor vacío, limpiando resultados');
+      // console.log('🔍 [TELAS2] Valor vacío, limpiando resultados');
       setTelasFiltradas2([]);
       setShowTelasList2(false);
       return;
@@ -816,7 +816,7 @@ export default function GenerarPedidoModal({
     try {
       // Usar el endpoint dinámico para telas según el sistema seleccionado
       const sistemaKey = selectedSistema?.toLowerCase();
-      console.log('🔍 [TELAS2] Sistema key:', sistemaKey);
+      // console.log('🔍 [TELAS2] Sistema key:', sistemaKey);
       
       if (!sistemaKey || !sistemaToApiParams[sistemaKey]) {
         console.log('[DEBUG] No sistema seleccionado para búsqueda de segunda tela:', selectedSistema);
@@ -826,24 +826,24 @@ export default function GenerarPedidoModal({
       }
 
       const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
-      console.log('🔍 [TELAS2] Parámetros del sistema:', { sistemaId, rubroId, proveedorId });
+      // console.log('🔍 [TELAS2] Parámetros del sistema:', { sistemaId, rubroId, proveedorId });
       
       // Si el valor es '*', buscar todas las telas (q=*)
       const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
       const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
       
-      console.log('🔍 [TELAS2] URL completa:', url);
+      // console.log('🔍 [TELAS2] URL completa:', url);
       
       const response = await fetch(url);
-      console.log('🔍 [TELAS2] Status de la respuesta:', response.status);
+      // console.log('🔍 [TELAS2] Status de la respuesta:', response.status);
       
       if (!response.ok) {
         throw new Error('Error al buscar segunda tela');
       }
       
       const data = await response.json();
-      console.log('🔍 [TELAS2] Respuesta completa:', data);
-      console.log('🔍 [TELAS2] Cantidad de resultados:', data.data?.length || 0);
+      // console.log('🔍 [TELAS2] Respuesta completa:', data);
+      // console.log('🔍 [TELAS2] Cantidad de resultados:', data.data?.length || 0);
       
       // Formatear las telas para que coincidan con la interfaz Tela
       const telasFormateadas = Array.isArray(data.data) ? data.data.map((tela: any) => ({
@@ -854,7 +854,7 @@ export default function GenerarPedidoModal({
         precio: tela.precio ? Number(tela.precio).toString() : '0'
       })) : [];
       
-      console.log('🔍 [TELAS2] Telas formateadas:', telasFormateadas);
+      // console.log('🔍 [TELAS2] Telas formateadas:', telasFormateadas);
       setTelasFiltradas2(telasFormateadas);
     } catch (error) {
       console.error('❌ [TELAS2] Error al buscar segunda tela:', error);
@@ -879,16 +879,16 @@ export default function GenerarPedidoModal({
       if (productoDunes && productoDunes.precio) {
         const precioBase = Number(productoDunes.precio);
         const precioCalculado = precioBase * anchoMetros; // Solo por metro lineal (ancho)
-        console.log('🏗️ Cálculo Dunes por metro lineal:', {
-          sistema: selectedSistema,
-          producto: productoDunes.nombreProducto,
-          precioBase: precioBase,
-          anchoMetros: anchoMetros,
-          precioCalculado: precioCalculado
-        });
+        // console.log('🏗️ Cálculo Dunes por metro lineal:', {
+        //   sistema: selectedSistema,
+        //   producto: productoDunes.nombreProducto,
+        //   precioBase: precioBase,
+        //   anchoMetros: anchoMetros,
+        //   precioCalculado: precioCalculado
+        // });
         return precioCalculado;
       }
-      console.log('⚠️ No hay producto Dunes disponible');
+      // console.log('⚠️ No hay producto Dunes disponible');
       return 0;
     }
     
@@ -903,35 +903,35 @@ export default function GenerarPedidoModal({
     
     // Solo calcular precio si hay un producto específico seleccionado
     if (!productoSeleccionado || !productoSeleccionado.precio) {
-      console.log('⚠️ No hay producto seleccionado, no se puede calcular precio del sistema');
+      // console.log('⚠️ No hay producto seleccionado, no se puede calcular precio del sistema');
       return 0;
     }
     
     const precioBase = Number(productoSeleccionado.precio);
-    console.log('🎯 Usando precio del producto seleccionado:', precioBase);
+    // console.log('🎯 Usando precio del producto seleccionado:', precioBase);
     
     // Para Roller y Veneciana, calcular por área (ancho × alto)
     if (selectedSistema?.toLowerCase().includes('roller') || selectedSistema?.toLowerCase().includes('veneciana')) {
       const precioCalculado = precioBase * anchoMetros * altoMetros;
-      console.log('🏗️ Cálculo por m² (Roller/Veneciana):', {
-        sistema: selectedSistema,
-        precioBase: precioBase,
-        anchoMetros: anchoMetros,
-        altoMetros: altoMetros,
-        area: anchoMetros * altoMetros,
-        precioCalculado: precioCalculado
-      });
+      // console.log('🏗️ Cálculo por m² (Roller/Veneciana):', {
+      //   sistema: selectedSistema,
+      //   precioBase: precioBase,
+      //   anchoMetros: anchoMetros,
+      //   altoMetros: altoMetros,
+      //   area: anchoMetros * altoMetros,
+      //   precioCalculado: precioCalculado
+      // });
       return precioCalculado;
     }
     
     // Para otros sistemas, calcular por metro lineal (ancho)
     const precioCalculado = precioBase * anchoMetros;
-    console.log('📏 Cálculo por metro lineal:', {
-      sistema: selectedSistema,
-      precioBase: precioBase,
-      anchoMetros: anchoMetros,
-      precioCalculado: precioCalculado
-    });
+    // console.log('📏 Cálculo por metro lineal:', {
+    //   sistema: selectedSistema,
+    //   precioBase: precioBase,
+    //   anchoMetros: anchoMetros,
+    //   precioCalculado: precioCalculado
+    // });
     return precioCalculado;
   };
 
@@ -1133,7 +1133,7 @@ export default function GenerarPedidoModal({
       });
       
       const nuevoPrecioSistema = calcularPrecioSistema();
-      console.log('💰 Nuevo precio del sistema:', nuevoPrecioSistema);
+      // console.log('💰 Nuevo precio del sistema:', nuevoPrecioSistema);
       setPrecioSistema(nuevoPrecioSistema);
       
       // Si hay tela seleccionada y no es Veneciana, recalcular precio de tela también
@@ -1170,10 +1170,10 @@ export default function GenerarPedidoModal({
         selectedSistema
       );
       
-      console.log('💰 Nuevos precios Dunes:', {
-        precioSistema: nuevoPrecioSistema,
-        precioTela: nuevoPrecioTela
-      });
+      // console.log('💰 Nuevos precios Dunes:', {
+      //   precioSistema: nuevoPrecioSistema,
+      //   precioTela: nuevoPrecioTela
+      // });
       
       setPrecioSistema(nuevoPrecioSistema);
       setPrecioTela(nuevoPrecioTela);
@@ -1183,13 +1183,13 @@ export default function GenerarPedidoModal({
   // useEffect para recalcular precio cuando cambie la segunda tela
   useEffect(() => {
     if (selectedSistema && (selectedSistema.toLowerCase().includes('tradicional') || selectedSistema.toLowerCase().includes('propios')) && ancho && alto) {
-      console.log('🔄 Recalculando precio por cambio de segunda tela:', {
-        sistema: selectedSistema,
-        ancho: ancho,
-        alto: alto,
-        selectedTela2: selectedTela2,
-        multiplicadorTela2: multiplicadorTela2
-      });
+      // console.log('🔄 Recalculando precio por cambio de segunda tela:', {
+      //   sistema: selectedSistema,
+      //   ancho: ancho,
+      //   alto: alto,
+      //   selectedTela2: selectedTela2,
+      //   multiplicadorTela2: multiplicadorTela2
+      // });
       
       // Calcular precio de la segunda tela
       let nuevoPrecioTela2 = 0;
@@ -1205,11 +1205,11 @@ export default function GenerarPedidoModal({
       }
       
       setPrecioTela2(nuevoPrecioTela2);
-      console.log('💰 Nuevo precio de segunda tela:', nuevoPrecioTela2);
+      // console.log('💰 Nuevo precio de segunda tela:', nuevoPrecioTela2);
       
       // Recalcular el precio total que incluye la segunda tela
       const nuevoPrecioTotal = calcularPrecioTotal();
-      console.log('💰 Nuevo precio total con segunda tela:', nuevoPrecioTotal);
+      // console.log('💰 Nuevo precio total con segunda tela:', nuevoPrecioTotal);
     }
   }, [selectedTela2, multiplicadorTela2, cantidadTelaManual2, selectedSistema, ancho, alto]);
 
@@ -1255,7 +1255,7 @@ export default function GenerarPedidoModal({
 
     // Lógica específica para Dunes
     if (selectedSistema?.toLowerCase().includes('dunes')) {
-      console.log('🏗️ [DUNES] Calculando precio para sistema Dunes');
+      // console.log('🏗️ [DUNES] Calculando precio para sistema Dunes');
       
       // Usar la función calcularPrecioSistema que ya maneja Dunes correctamente
       precioUnitario = calcularPrecioSistema();
@@ -1269,19 +1269,19 @@ export default function GenerarPedidoModal({
         selectedSistema
       );
       
-      console.log('💰 [DUNES] Precios calculados:', {
-        precioSistema: precioUnitario,
-        precioTela: precioTelaTotal,
-        precioColocacion: colocacionTotal,
-        cantidad: cantidadNum
-      });
+      // console.log('💰 [DUNES] Precios calculados:', {
+      //   precioSistema: precioUnitario,
+      //   precioTela: precioTelaTotal,
+      //   precioColocacion: colocacionTotal,
+      //   cantidad: cantidadNum
+      // });
     } else {
       // Lógica para otros sistemas (mantener la original)
       if (selectedRielBarral && selectedRielBarral.precio) {
-        console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
+        // console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
         if (selectedSistema?.toLowerCase().includes('veneciana')) {
           if (Number(ancho) > 0 && Number(alto) > 0) {
-            console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
+            // console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
             precioUnitario = (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio);
           } else {
             precioUnitario = 0;
@@ -1290,7 +1290,7 @@ export default function GenerarPedidoModal({
           precioUnitario = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
         }
       } else {
-        console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
+        // console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
         precioUnitario = 0;
       }
       
@@ -1329,45 +1329,45 @@ export default function GenerarPedidoModal({
     const precioUnitarioCompleto = precioUnitario + precioTelaTotal + precioTela2Total + soporteIntermedioTotal + colocacionTotal;
     const precioTotal = precioUnitarioCompleto * cantidadNum + totalAccesoriosAdicionales;
     
-    console.log('💰 [PRECIO FINAL] Desglose completo:', {
-      precioUnitario: precioUnitario,
-      precioTelaTotal: precioTelaTotal,
-      precioTela2Total: precioTela2Total,
-      soporteIntermedioTotal: soporteIntermedioTotal,
-      colocacionTotal: colocacionTotal,
-      precioUnitarioCompleto: precioUnitarioCompleto,
-      cantidadNum: cantidadNum,
-      totalAccesoriosAdicionales: totalAccesoriosAdicionales,
-      precioTotal: precioTotal
-    });
+    // console.log('💰 [PRECIO FINAL] Desglose completo:', {
+    //   precioUnitario: precioUnitario,
+    //   precioTelaTotal: precioTelaTotal,
+    //   precioTela2Total: precioTela2Total,
+    //   soporteIntermedioTotal: soporteIntermedioTotal,
+    //   colocacionTotal: colocacionTotal,
+    //   precioUnitarioCompleto: precioUnitarioCompleto,
+    //   cantidadNum: cantidadNum,
+    //   totalAccesoriosAdicionales: totalAccesoriosAdicionales,
+    //   precioTotal: precioTotal
+    // });
 
-    console.log('selectedSoporteIntermedio:', selectedSoporteIntermedio);
-    console.log('accesoriosAdicionales:', accesoriosAdicionales);
+    // console.log('selectedSoporteIntermedio:', selectedSoporteIntermedio);
+    // console.log('accesoriosAdicionales:', accesoriosAdicionales);
     
     // Log detallado de todos los datos del pedido para cortina tradicional
-    console.log('=== DETALLE COMPLETO DEL PEDIDO TRADICIONAL ===');
-    console.log('Sistema:', selectedSistema);
-    console.log('Medidas:', { ancho: Number(ancho), alto: Number(alto) });
-    console.log('Cantidad:', cantidad);
-    console.log('Tela seleccionada:', selectedTela);
-    console.log('Soporte intermedio:', selectedSoporteIntermedio);
-    console.log('Accesorios adicionales:', accesoriosAdicionales);
-    console.log('Colocación incluida:', incluirColocacion);
-    console.log('Precio colocación:', precioColocacion);
-    console.log('Precio unitario completo:', precioUnitarioCompleto);
-    console.log('Precio total:', precioTotal);
-    console.log('Detalles del sistema:', {
-      sistemaRecomendado,
-      articuloSeleccionado: selectedArticulo,
-      caidaPorDelante,
-      colorSistema,
-      ladoComando,
-      tipoTela,
-      soporteIntermedio,
-      soporteDoble,
-      detalle
-    });
-    console.log('=== FIN DETALLE COMPLETO ===');
+    // console.log('=== DETALLE COMPLETO DEL PEDIDO TRADICIONAL ===');
+    // console.log('Sistema:', selectedSistema);
+    // console.log('Medidas:', { ancho: Number(ancho), alto: Number(alto) });
+    // console.log('Cantidad:', cantidad);
+    // console.log('Tela seleccionada:', selectedTela);
+    // console.log('Soporte intermedio:', selectedSoporteIntermedio);
+    // console.log('Accesorios adicionales:', accesoriosAdicionales);
+    // console.log('Colocación incluida:', incluirColocacion);
+    // console.log('Precio colocación:', precioColocacion);
+    // console.log('Precio unitario completo:', precioUnitarioCompleto);
+    // console.log('Precio total:', precioTotal);
+    // console.log('Detalles del sistema:', {
+    //   sistemaRecomendado,
+    //   articuloSeleccionado: selectedArticulo,
+    //   caidaPorDelante,
+    //   colorSistema,
+    //   ladoComando,
+    //   tipoTela,
+    //   soporteIntermedio,
+    //   soporteDoble,
+    //   detalle
+    // });
+    // console.log('=== FIN DETALLE COMPLETO ===');
     
     // Calcular información de tela para sistemas tradicionales
     let multiplicadorTelaInfo = null;
@@ -1447,7 +1447,7 @@ export default function GenerarPedidoModal({
     
     // Log específico para Dunes
     if (selectedSistema?.toLowerCase().includes('dunes')) {
-      console.log('🏗️ [DUNES] Pedido final creado:');
+      // console.log('🏗️ [DUNES] Pedido final creado:');
       console.log('Precio Unitario Completo:', precioUnitarioCompleto);
       console.log('Precio Total:', precioTotal);
       console.log('Cantidad:', cantidadNum);

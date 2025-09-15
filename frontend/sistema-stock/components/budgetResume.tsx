@@ -13,6 +13,7 @@ interface BudgetResumeProps {
       telefono?: string;
       email?: string;
     };
+    showMeasuresInPDF?: boolean;
     productos: Array<{
       nombre: string;
       descripcion: string;
@@ -29,6 +30,8 @@ interface BudgetResumeProps {
       detalle?: string;
       incluirMotorizacion?: boolean;
       precioMotorizacion?: number;
+      ancho?: number; // Medidas del producto
+      alto?: number; // Medidas del producto
     }>;
     subtotal: number;
     descuento: number;
@@ -268,6 +271,9 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                 <tr className="border-b border-gray-200">
                   <th className="px-4 py-3 font-semibold text-left text-gray-900">Producto</th>
                   <th className="px-4 py-3 font-semibold text-left text-gray-900">Descripción</th>
+                  {presupuestoData.showMeasuresInPDF && (
+                    <th className="px-4 py-3 font-semibold text-left text-gray-900">Medidas</th>
+                  )}
                   <th className="px-4 py-3 font-semibold text-left text-gray-900">Precio Unit.</th>
                   <th className="px-4 py-3 font-semibold text-left text-gray-900">Cantidad</th>
                   <th className="px-4 py-3 font-semibold text-left text-gray-900">Subtotal</th>
@@ -277,7 +283,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                   {Object.entries(productosPorEspacio).map(([espacio, productos]) => (
                     <React.Fragment key={espacio}>
                       <tr>
-                        <td colSpan={5} className="px-4 py-3 font-bold text-left text-gray-900 bg-gray-50">
+                        <td colSpan={presupuestoData.showMeasuresInPDF ? 6 : 5} className="px-4 py-3 font-bold text-left text-gray-900 bg-gray-50">
                           {espacio}
                         </td>
                       </tr>
@@ -335,13 +341,24 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                                 return descripcionLimpia;
                               })()
                             }</td>
+                            {presupuestoData.showMeasuresInPDF && (
+                              <td className="px-4 py-3 text-gray-900">
+                                {(() => {
+                                  // Usar las medidas directas del producto
+                                  if (producto.ancho && producto.alto) {
+                                    return `${producto.ancho} cm x ${producto.alto} cm`;
+                                  }
+                                  return 'Sin medidas';
+                                })()}
+                              </td>
+                            )}
                             <td className="px-4 py-3 text-gray-900">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                             <td className="px-4 py-3 text-gray-900">{producto.cantidad}</td>
                             <td className="px-4 py-3 text-gray-900">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                           </tr>
                           {producto.incluirMotorizacion && (
                             <tr>
-                              <td colSpan={4} className="px-4 py-3 font-bold text-gray-900">Motorización</td>
+                              <td colSpan={presupuestoData.showMeasuresInPDF ? 5 : 4} className="px-4 py-3 font-bold text-gray-900">Motorización</td>
                               <td className="px-4 py-3 text-gray-900">${producto.precioMotorizacion?.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                             </tr>
                           )}
@@ -350,19 +367,19 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                     </React.Fragment>
                   ))}
                 <tr>
-                  <td colSpan={3}></td>
+                  <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                   <td className="px-4 py-3 font-bold text-gray-900">Subtotal</td>
                   <td className="px-4 py-3 text-gray-900">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
                 {presupuestoData.descuento && presupuestoData.descuento > 0 && (
                   <tr>
-                    <td colSpan={3}></td>
+                    <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                     <td className="px-4 py-3 font-bold text-gray-900">Descuento</td>
                     <td className="px-4 py-3 text-gray-900">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                   </tr>
                 )}
                 <tr>
-                  <td colSpan={3}></td>
+                  <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                   <td className="px-4 py-3 font-bold text-gray-900">Total</td>
                   <td className="px-4 py-3 font-bold text-gray-900">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>

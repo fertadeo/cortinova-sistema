@@ -62,6 +62,7 @@ export const BudgetGenerator = () => {
   const [discountType, setDiscountType] = useState<"percentage" | "amount">("percentage");
   const [discountValue, setDiscountValue] = useState("10");
   const [shouldRound, setShouldRound] = useState(false);
+  const [showMeasuresInPDF, setShowMeasuresInPDF] = useState(false);
   const { calculateTotals } = useBudgetCalculations();
   
   // Estados de UI
@@ -412,6 +413,10 @@ export const BudgetGenerator = () => {
     if (round !== undefined) setShouldRound(round);
   };
 
+  const handleShowMeasuresChange = (checked: boolean) => {
+    setShowMeasuresInPDF(checked);
+  };
+
   // Manejador de emisión de presupuesto
   const handleEmitirPresupuesto = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -539,6 +544,7 @@ export const BudgetGenerator = () => {
         numeroPresupuesto: presupuestoId,
         fecha: new Date().toLocaleDateString(),
         cliente: selectedClient,
+        showMeasuresInPDF: showMeasuresInPDF,
         productos: tableData.map(item => {
           // Calcular subtotal incluyendo motorización
           const subtotalBase = Number(item.price) * Number(item.quantity);
@@ -562,6 +568,9 @@ export const BudgetGenerator = () => {
             ladoComando: item.detalles?.ladoComando || '',
             ladoApertura: item.detalles?.ladoApertura || '',
             detalle: item.detalles?.detalle || '',
+            // Medidas del producto
+            ancho: item.detalles?.ancho || undefined,
+            alto: item.detalles?.alto || undefined,
             // Información de segunda tela
             tela2: (item.detalles as any)?.tela2 || null,
             multiplicadorTela2: (item.detalles as any)?.multiplicadorTela2 || null,
@@ -630,6 +639,8 @@ export const BudgetGenerator = () => {
         applyDiscount={applyDiscount}
         onDiscountChange={handleDiscountChange}
         shouldRound={shouldRound}
+        showMeasuresInPDF={showMeasuresInPDF}
+        onShowMeasuresChange={handleShowMeasuresChange}
       />
       
       <Spacer y={6} />

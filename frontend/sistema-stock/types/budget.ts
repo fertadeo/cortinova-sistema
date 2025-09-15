@@ -52,6 +52,7 @@ export interface PresupuestoResumen {
   numeroPresupuesto: string;
   fecha: string;
   cliente: Client;
+  showMeasuresInPDF?: boolean;
   productos: {
     nombre: string;
     descripcion: string;
@@ -67,6 +68,8 @@ export interface PresupuestoResumen {
     ladoComando?: string;
     ladoApertura?: string;
     detalle?: string;
+    ancho?: number; // Medidas del producto
+    alto?: number; // Medidas del producto
   }[];
   subtotal: number;
   descuento: number;

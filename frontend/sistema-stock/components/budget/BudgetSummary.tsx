@@ -8,9 +8,11 @@ interface BudgetSummaryProps {
   applyDiscount: boolean;
   onDiscountChange: (checked: boolean, type?: "percentage" | "amount", value?: string, round?: boolean) => void;
   shouldRound: boolean;
+  showMeasuresInPDF: boolean;
+  onShowMeasuresChange: (checked: boolean) => void;
 }
 
-export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRound }: BudgetSummaryProps) => {
+export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRound, showMeasuresInPDF, onShowMeasuresChange }: BudgetSummaryProps) => {
   const { calculateTotals } = useBudgetCalculations();
   const [discountType, setDiscountType] = useState<"percentage" | "amount">("percentage");
   const [discountValue, setDiscountValue] = useState("10");
@@ -98,6 +100,15 @@ export const BudgetSummary = ({ items, applyDiscount, onDiscountChange, shouldRo
               onChange={(e) => onDiscountChange(e.target.checked, discountType, discountValue, shouldRound)}
             >
               Aplicar descuento
+            </Checkbox>
+          </div>
+          
+          <div className="flex gap-2 items-center">
+            <Checkbox
+              checked={showMeasuresInPDF}
+              onChange={(e) => onShowMeasuresChange(e.target.checked)}
+            >
+              Mostrar medidas en este PDF
             </Checkbox>
           </div>
           
