@@ -38,9 +38,23 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
     };
   }, []);
 
+  // Sincronizar el campo de búsqueda con el cliente seleccionado
+  useEffect(() => {
+    if (selectedClient) {
+      setClientSearch(selectedClient.nombre);
+    } else {
+      setClientSearch('');
+    }
+  }, [selectedClient]);
+
   const handleClientSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setClientSearch(value);
+    
+    // Si el usuario está escribiendo y hay un cliente seleccionado, deseleccionarlo
+    if (selectedClient && value !== selectedClient.nombre) {
+      onClientSelect(null);
+    }
     
     if (!value.trim()) {
       setShowClientsList(false);
@@ -81,13 +95,44 @@ export const BudgetClientSection = ({ onClientSelect, selectedClient }: BudgetCl
           throw new Error('Error al crear el cliente');
         }
 
-        const createdClient = await response.json();
+        const responseData = await response.json();
+        
+        // Verificar que la respuesta tenga la estructura correcta
+        let createdClient: Client;
+        if (responseData.data && responseData.data.id) {
+          // Si la respuesta viene envuelta en un objeto data
+          createdClient = responseData.data;
+        } else if (responseData.id) {
+          // Si la respuesta es directamente el cliente
+          createdClient = responseData;
+        } else {
+          // Si no hay datos válidos, usar los datos del formulario con un ID temporal
+          createdClient = {
+            ...newClient,
+            id: Date.now() // ID temporal para evitar errores
+          };
+        }
+
+        // Validar que el cliente tenga los datos mínimos necesarios
+        if (!createdClient.nombre || !createdClient.telefono) {
+          console.error('Cliente creado con datos incompletos:', createdClient);
+          throw new Error('El cliente se creó pero con datos incompletos');
+        }
+
+        // Seleccionar el cliente y actualizar la UI
         onClientSelect(createdClient);
         setClientSearch(createdClient.nombre);
         setShowNewClientForm(false);
+        setShowClientsList(false);
+        
+        // Limpiar el formulario
         setNewClient({ id: 0, nombre: '', direccion: '', telefono: '', email: '', dni: '' });
+        
+        console.log('Cliente creado y seleccionado exitosamente:', createdClient);
       } catch (error) {
         console.error('Error al crear el cliente:', error);
+        // Mostrar un mensaje de error al usuario (opcional)
+        alert('Error al crear el cliente. Por favor, inténtalo de nuevo.');
       }
     }
   };
