@@ -45,10 +45,13 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   // Agrupar productos por espacio
   const productosPorEspacio = presupuestoData.productos.reduce((acc, producto) => {
     const espacio = producto.espacio || 'Espacio/Ambiente sin especificar';
-    if (!acc[espacio]) {
-      acc[espacio] = [];
+    const espacioConPrefijo = espacio === 'Espacio/Ambiente sin especificar' 
+      ? espacio 
+      : `Espacio: ${espacio}`;
+    if (!acc[espacioConPrefijo]) {
+      acc[espacioConPrefijo] = [];
     }
-    acc[espacio].push(producto);
+    acc[espacioConPrefijo].push(producto);
     return acc;
   }, {} as Record<string, typeof presupuestoData.productos>);
 

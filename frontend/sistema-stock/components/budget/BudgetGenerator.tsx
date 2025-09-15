@@ -271,7 +271,7 @@ export const BudgetGenerator = () => {
               quantity: pedido.detalles?.cantidad || 1,
               price: precioTotal / (pedido.detalles?.cantidad || 1),
               total: totalConMotorizacion,
-              espacio: pedido.espacio, // Agregar el espacio seleccionado
+              espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio, // Usar espacio personalizado si es "Otro"
               detalles: {
                 sistema: pedido.sistema || "",
                 detalle: pedido.detalles?.detalle || "",
@@ -341,7 +341,7 @@ export const BudgetGenerator = () => {
         quantity: pedido.detalles?.cantidad || 1,
         price: precioTotal / (pedido.detalles?.cantidad || 1),
         total: totalConMotorizacion,
-        espacio: pedido.espacio, // Agregar el espacio seleccionado
+        espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio, // Usar espacio personalizado si es "Otro"
         detalles: {
           sistema: pedido.sistema || "",
           detalle: pedido.detalles?.detalle || "",
