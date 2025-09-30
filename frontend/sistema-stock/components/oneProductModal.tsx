@@ -153,8 +153,8 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
 
     setIsSaving(true);
     try {
-      // Enviar como objeto único, no como array
-      const productToSend = {
+      // Enviar como array de un solo producto
+      const productToSend = [{
         id: parseInt(productData.id, 10),
         nombreProducto: productData.Producto,
         cantidad_stock: productData.Cantidad_stock ? parseInt(productData.Cantidad_stock, 10) : 0,
@@ -165,12 +165,12 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
         proveedor_id: parseInt(productData.proveedor_id, 10),
         rubro_id: parseInt(productData.rubro_id, 10),
         sistema_id: parseInt(productData.sistema_id, 10),
-      };
+      }];
       
       console.log("Enviando producto al backend:", productToSend);
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/productos/importar-productos`, {
+      const response = await fetch(`${apiUrl}/api/productos/importar-productos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productToSend),
