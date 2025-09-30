@@ -170,7 +170,7 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       console.log("Enviando producto al backend:", productToSend);
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}/api/productos/importar-productos`, {
+      const response = await fetch(`${apiUrl}/productos/crear-producto`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productToSend),
