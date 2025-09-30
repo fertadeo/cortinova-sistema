@@ -153,19 +153,19 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
 
     setIsSaving(true);
     try {
-      const productToSend = [{
+      // Enviar como objeto único, no como array
+      const productToSend = {
         id: parseInt(productData.id, 10),
-        Producto: productData.Producto,
-        Cantidad_stock: String(productData.Cantidad_stock),
-        Descripción: productData.Descripción,
-        PrecioCosto: String(productData.PrecioCosto),
-        Precio: String(productData.Precio),
-        Divisa: productData.Divisa,
-        Descuento: "0%",
+        nombreProducto: productData.Producto,
+        cantidad_stock: productData.Cantidad_stock ? parseInt(productData.Cantidad_stock, 10) : 0,
+        descripcion: productData.Descripción,
+        precioCosto: productData.PrecioCosto ? parseFloat(productData.PrecioCosto) : 0,
+        precio: parseFloat(productData.Precio),
+        descuento: "0%",
         proveedor_id: parseInt(productData.proveedor_id, 10),
         rubro_id: parseInt(productData.rubro_id, 10),
         sistema_id: parseInt(productData.sistema_id, 10),
-      }];
+      };
       
       console.log("Enviando producto al backend:", productToSend);
 
@@ -176,7 +176,11 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
         body: JSON.stringify(productToSend),
       });
 
-      if (!response.ok) throw new Error("Error al guardar producto");
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("Error response:", errorData);
+        throw new Error("Error al guardar producto");
+      }
 
       setNotification({
         isVisible: true,
