@@ -18,6 +18,8 @@ interface BudgetResumeProps {
     showMeasuresInPDF?: boolean;
     esEstimativo?: boolean;
     opciones?: BudgetOption[];
+    shouldRound?: boolean;
+    applyDiscount?: boolean;
     productos: Array<{
       nombre: string;
       descripcion: string;
@@ -45,6 +47,11 @@ interface BudgetResumeProps {
 
 const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   const invoiceRef = React.useRef<HTMLDivElement>(null);
+
+  // Función para redondear al millar más cercano
+  const roundToThousand = (num: number): number => {
+    return Math.round(num / 1000) * 1000;
+  };
 
   // Agrupar productos según el tipo de presupuesto
   const agruparProductos = () => {
@@ -80,10 +87,34 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
 
   // Calcular totales por grupo (opción o espacio)
   const calcularTotalPorGrupo = (productos: typeof presupuestoData.productos) => {
-    return productos.reduce((sum, prod) => sum + prod.subtotal, 0);
+    const subtotal = productos.reduce((sum, prod) => sum + prod.subtotal, 0);
+    
+    // Calcular descuento proporcional para este grupo
+    let descuentoGrupo = 0;
+    if (presupuestoData.applyDiscount && presupuestoData.subtotal > 0) {
+      const proporcion = subtotal / presupuestoData.subtotal;
+      descuentoGrupo = presupuestoData.descuento * proporcion;
+    }
+    
+    const totalGrupo = subtotal - descuentoGrupo;
+    
+    // Aplicar redondeo a miles si está activado
+    if (presupuestoData.shouldRound && presupuestoData.applyDiscount) {
+      return {
+        subtotal: subtotal,
+        descuento: subtotal - roundToThousand(totalGrupo),
+        total: roundToThousand(totalGrupo)
+      };
+    }
+    
+    return {
+      subtotal: subtotal,
+      descuento: descuentoGrupo,
+      total: totalGrupo
+    };
   };
 
-  // Calcular descuento proporcional para una opción
+  // Calcular descuento proporcional para una opción (ya no se usa, se calcula en calcularTotalPorGrupo)
   const calcularDescuentoOpcion = (subtotalOpcion: number) => {
     if (presupuestoData.descuento === 0 || presupuestoData.subtotal === 0) {
       return 0;
@@ -290,9 +321,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
             // Render para presupuesto estimativo con opciones
             <>
               {Object.entries(productosAgrupados).map(([nombreOpcion, productos], opcionIndex) => {
-                const subtotalOpcion = calcularTotalPorGrupo(productos);
-                const descuentoOpcion = calcularDescuentoOpcion(subtotalOpcion);
-                const totalOpcionConDescuento = subtotalOpcion - descuentoOpcion;
+                const datosOpcion = calcularTotalPorGrupo(productos);
                 
                 return (
                   <div key={nombreOpcion} className="mb-8">
@@ -392,21 +421,21 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                           <tr className="border-t border-gray-300">
                             <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                             <td className="px-2 py-2 font-semibold text-gray-900 text-right">Subtotal:</td>
-                            <td className="px-2 py-2 font-semibold text-gray-900 text-right">${subtotalOpcion.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            <td className="px-2 py-2 font-semibold text-gray-900 text-right">${datosOpcion.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                           </tr>
                           {/* Descuento de la opción */}
-                          {descuentoOpcion > 0 && (
+                          {datosOpcion.descuento > 0 && (
                             <tr>
                               <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                               <td className="px-2 py-2 font-semibold text-green-600 text-right">Descuento:</td>
-                              <td className="px-2 py-2 font-semibold text-green-600 text-right">-${descuentoOpcion.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                              <td className="px-2 py-2 font-semibold text-green-600 text-right">-${datosOpcion.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                             </tr>
                           )}
                           {/* Total de la opción con descuento */}
                           <tr className="border-t-2 border-blue-300">
                             <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                             <td className="px-2 py-3 font-bold text-blue-900 text-right">Total {nombreOpcion}:</td>
-                            <td className="px-2 py-3 font-bold text-blue-900 text-right">${totalOpcionConDescuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            <td className="px-2 py-3 font-bold text-blue-900 text-right">${datosOpcion.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                           </tr>
                         </tbody>
                       </table>

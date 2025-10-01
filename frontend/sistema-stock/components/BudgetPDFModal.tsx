@@ -13,13 +13,28 @@ interface BudgetPDFModalProps {
       telefono?: string;
       email?: string;
     };
+    showMeasuresInPDF?: boolean;
+    esEstimativo?: boolean;
+    opciones?: any[];
+    shouldRound?: boolean;
+    applyDiscount?: boolean;
     productos: Array<{
       nombre: string;
       descripcion: string;
       precioUnitario: number;
       cantidad: number;
       subtotal: number;
-      espacio?: string; // Agregar campo espacio
+      espacio?: string;
+      opcion?: string;
+      tipoApertura?: string;
+      colorSistema?: string;
+      ladoComando?: string;
+      ladoApertura?: string;
+      detalle?: string;
+      incluirMotorizacion?: boolean;
+      precioMotorizacion?: number;
+      ancho?: number;
+      alto?: number;
     }>;
     subtotal: number;
     descuento: number;

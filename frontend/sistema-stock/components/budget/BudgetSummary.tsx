@@ -42,10 +42,40 @@ export const BudgetSummary = ({
   const calcularTotalesPorOpcion = () => {
     if (!esEstimativo) return null;
     
-    const totalesPorOpcion: Record<string, number> = {};
+    const totalesPorOpcion: Record<string, { subtotal: number; descuento: number; total: number }> = {};
     opciones.filter(op => op.activa).forEach(opcion => {
       const itemsOpcion = items.filter(item => item.opcion === opcion.id);
-      totalesPorOpcion[opcion.id] = itemsOpcion.reduce((acc, item) => acc + Number(item.total), 0);
+      const subtotalOpcion = itemsOpcion.reduce((acc, item) => acc + Number(item.total), 0);
+      
+      // Solo incluir opciones que tengan items
+      if (subtotalOpcion > 0) {
+        // Calcular descuento proporcional para esta opción
+        let descuentoOpcion = 0;
+        if (applyDiscount && subtotal > 0) {
+          const proporcion = subtotalOpcion / subtotal;
+          descuentoOpcion = discount * proporcion;
+        }
+        
+        const totalOpcion = subtotalOpcion - descuentoOpcion;
+        
+        // Aplicar redondeo a miles si está activado
+        if (shouldRound && applyDiscount) {
+          const totalRedondeado = roundToThousand(totalOpcion);
+          const descuentoAjustado = subtotalOpcion - totalRedondeado;
+          
+          totalesPorOpcion[opcion.id] = {
+            subtotal: subtotalOpcion,
+            descuento: descuentoAjustado,
+            total: totalRedondeado
+          };
+        } else {
+          totalesPorOpcion[opcion.id] = {
+            subtotal: subtotalOpcion,
+            descuento: descuentoOpcion,
+            total: totalOpcion
+          };
+        }
+      }
     });
     
     return totalesPorOpcion;
@@ -212,12 +242,25 @@ export const BudgetSummary = ({
               <div className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Totales por opción:
               </div>
-              {opciones.filter(op => op.activa).map(opcion => (
-                <div key={opcion.id} className="flex justify-between text-sm">
-                  <span className="font-medium">{opcion.nombre}:</span>
-                  <span className="font-semibold">${(totalesPorOpcion[opcion.id] || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                </div>
-              ))}
+              {opciones.filter(op => op.activa).map(opcion => {
+                const datosOpcion = totalesPorOpcion?.[opcion.id];
+                if (!datosOpcion) return null;
+                
+                return (
+                  <div key={opcion.id} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">{opcion.nombre}:</span>
+                      <span className="font-semibold">${datosOpcion.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                    </div>
+                    {datosOpcion.descuento > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 ml-2">
+                        <span>Descuento:</span>
+                        <span>-${datosOpcion.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </>
           ) : (
             <>

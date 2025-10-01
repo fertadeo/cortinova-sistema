@@ -570,6 +570,8 @@ export const BudgetGenerator = () => {
         showMeasuresInPDF: showMeasuresInPDF,
         esEstimativo: esEstimativo,
         opciones: opciones,
+        shouldRound: shouldRound,
+        applyDiscount: applyDiscount,
         productos: tableData.map(item => {
           // Calcular subtotal incluyendo motorización
           const subtotalBase = Number(item.price) * Number(item.quantity);
