@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, Spacer } from "@heroui/react";
-import { Client, TableItem, PresupuestoResumen } from '../../types/budget';
+import { Client, TableItem, PresupuestoResumen, BudgetOption } from '../../types/budget';
 import { BudgetClientSection } from "./BudgetClientSection";
 import { BudgetProductSection } from "./BudgetProductSection";
 import { BudgetTable } from "./BudgetTable";
@@ -79,6 +79,13 @@ export const BudgetGenerator = () => {
   const [showResume, setShowResume] = useState(false);
   const [presupuestoGenerado, setPresupuestoGenerado] = useState<PresupuestoResumen | null>(null);
 
+  // Estados de presupuesto estimativo
+  const [esEstimativo, setEsEstimativo] = useState(false);
+  const [opciones, setOpciones] = useState<BudgetOption[]>([
+    { id: 'A', nombre: 'Opción A', activa: true },
+    { id: 'B', nombre: 'Opción B', activa: true }
+  ]);
+
   // Efecto para manejar la precarga desde URL
   useEffect(() => {
     const loadPresetData = async () => {
@@ -122,7 +129,7 @@ export const BudgetGenerator = () => {
               id: Date.now() + Math.random(),
               productId: Date.now(),
               name: `Cortina ${medida.elemento}`,
-              description: `${medida.ancho}cm x ${medida.alto}cm - ${medida.ubicacion}`,
+              description: `Alto: ${medida.alto}cm | Ancho: ${medida.ancho}cm - ${medida.ubicacion}`,
               quantity: medida.cantidad,
               price: 0,
               total: 0,
@@ -417,6 +424,21 @@ export const BudgetGenerator = () => {
     setShowMeasuresInPDF(checked);
   };
 
+  const handleOpcionChange = (itemId: number, opcionId: string) => {
+    setTableData(prevData =>
+      prevData.map(item =>
+        item.id === itemId ? { ...item, opcion: opcionId } : item
+      )
+    );
+  };
+
+  const handleEstimativoChange = (checked: boolean) => {
+    setEsEstimativo(checked);
+    if (!checked) {
+      setTableData(prevData => prevData.map(item => ({ ...item, opcion: undefined })));
+    }
+  };
+
   // Manejador de emisión de presupuesto
   const handleEmitirPresupuesto = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -473,6 +495,7 @@ export const BudgetGenerator = () => {
             precioUnitario: Number(item.price),
             subtotal: subtotalConMotorizacion,
             espacio: item.espacio,
+            opcion: item.opcion,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: item.detalles?.precioMotorizacion || 0,
             tipoTela: item.detalles?.tipoTela || '',
@@ -489,7 +512,7 @@ export const BudgetGenerator = () => {
         }),
         total: finalTotal,
         subtotal: subtotal,
-        descuento: discount, // Agregar este campo para que el backend guarde el descuento redondeado
+        descuento: discount,
         descuentoPorcentaje: applyDiscount && discountType === "percentage" ? Number(discountValue) : 0,
         descuentoMonto: applyDiscount && discountType === "amount" ? Number(discountValue) : 0
       };
@@ -545,6 +568,8 @@ export const BudgetGenerator = () => {
         fecha: new Date().toLocaleDateString(),
         cliente: selectedClient,
         showMeasuresInPDF: showMeasuresInPDF,
+        esEstimativo: esEstimativo,
+        opciones: opciones,
         productos: tableData.map(item => {
           // Calcular subtotal incluyendo motorización
           const subtotalBase = Number(item.price) * Number(item.quantity);
@@ -561,6 +586,7 @@ export const BudgetGenerator = () => {
             cantidad: Number(item.quantity),
             subtotal: subtotalConMotorizacion,
             espacio: item.espacio,
+            opcion: item.opcion,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: item.detalles?.precioMotorizacion || 0,
             tipoApertura: item.detalles?.tipoApertura || '',
@@ -578,7 +604,7 @@ export const BudgetGenerator = () => {
           };
         }),
         subtotal: subtotal,
-        descuento: discount, // Usar el descuento calculado
+        descuento: discount,
         total: finalTotal
       };
 
@@ -630,6 +656,9 @@ export const BudgetGenerator = () => {
         onQuantityChange={handleQuantityChange}
         onRemoveItem={handleRemoveProduct}
         onEditItem={handleEditItem}
+        esEstimativo={esEstimativo}
+        opciones={opciones}
+        onOpcionChange={handleOpcionChange}
       />
       
       <Spacer y={1} />
@@ -641,6 +670,10 @@ export const BudgetGenerator = () => {
         shouldRound={shouldRound}
         showMeasuresInPDF={showMeasuresInPDF}
         onShowMeasuresChange={handleShowMeasuresChange}
+        esEstimativo={esEstimativo}
+        onEstimativoChange={handleEstimativoChange}
+        opciones={opciones}
+        onOpcionesChange={setOpciones}
       />
       
       <Spacer y={6} />
@@ -714,4 +747,4 @@ export const BudgetGenerator = () => {
       )}
     </Card>
   );
-}; 
+};

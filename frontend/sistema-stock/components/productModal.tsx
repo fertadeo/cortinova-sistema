@@ -24,7 +24,7 @@ export type Product = {
   proveedor: {
     id: number;
     nombreProveedores: string;
-  };
+  } | null;
   cantidadDisponible: number;
   precioCosto: number;
   precioLista: number;
@@ -194,7 +194,7 @@ useEffect(() => {
                 </label>
                 <Select
                   id="proveedor-select"
-                  value={editedProduct.proveedor.nombreProveedores}
+                  value={editedProduct.proveedor?.nombreProveedores || ""}
                   onChange={(event) => handleProveedorChange(event.target.value)}
                   aria-label="Seleccionar proveedor"
                 >

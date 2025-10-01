@@ -1,5 +1,5 @@
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Tooltip } from "@heroui/react";
-import { TableItem as BaseTableItem } from '../../types/budget';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, Tooltip, Select, SelectItem } from "@heroui/react";
+import { TableItem as BaseTableItem, BudgetOption } from '../../types/budget';
 import { useState, useEffect } from 'react';
 
 interface LocalTableItem extends Omit<BaseTableItem, 'id' | 'detalles'> {
@@ -36,9 +36,21 @@ interface BudgetTableProps {
   onRemoveItem: (id: number) => void;
   onEditItem: (item: BaseTableItem) => void;
   onItemsChange?: (items: BaseTableItem[]) => void;
+  esEstimativo?: boolean;
+  opciones?: BudgetOption[];
+  onOpcionChange?: (itemId: number, opcionId: string) => void;
 }
 
-export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem, onItemsChange }: BudgetTableProps) => {
+export const BudgetTable = ({ 
+  items, 
+  onQuantityChange, 
+  onRemoveItem, 
+  onEditItem, 
+  onItemsChange,
+  esEstimativo = false,
+  opciones = [],
+  onOpcionChange
+}: BudgetTableProps) => {
   const generateLocalId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const createTableItem = (baseItem: BaseTableItem): LocalTableItem => {
@@ -66,7 +78,6 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
         description: `${item.description} (copia)`,
         detalles: {
           ...item.detalles,
-          // Asegurar que la información de la segunda tela se duplique correctamente
           tela2: item.detalles?.tela2 || null,
           multiplicadorTela2: item.detalles?.multiplicadorTela2 || null,
           cantidadTelaManual2: item.detalles?.cantidadTelaManual2 || null,
@@ -76,7 +87,6 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
       const newItems = [...tableItems, duplicatedItem];
       setTableItems(newItems);
 
-      // Convertir a formato BaseTableItem para el componente padre
       const baseItems = newItems.map(item => ({
         ...item,
         id: item.parentId
@@ -107,13 +117,11 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
       );
       setTableItems(newItems);
       
-      // Notificar al padre solo del item modificado
       const modifiedItem = newItems.find(item => item.localId === localId);
       if (modifiedItem) {
         onQuantityChange(modifiedItem.parentId, quantity);
       }
 
-      // Convertir a formato BaseTableItem para el componente padre
       const baseItems = newItems.map(item => ({
         ...item,
         id: item.parentId
@@ -134,7 +142,6 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
         onRemoveItem(itemToRemove.parentId);
       }
 
-      // Convertir a formato BaseTableItem para el componente padre
       const baseItems = newItems.map(item => ({
         ...item,
         id: item.parentId
@@ -157,14 +164,31 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
     }
   };
 
-  const columns = [
-    { name: "PRODUCTO", uid: "name" },
-    { name: "DESCRIPCIÓN", uid: "description" },
-    { name: "PRECIO UNIDAD", uid: "price" },
-    { name: "CANTIDAD", uid: "quantity" },
-    { name: "SUBTOTAL", uid: "subtotal" },
-    { name: "ACCIONES", uid: "actions" }
-  ];
+  const handleOpcionChange = (localId: string, opcionId: string) => {
+    const item = tableItems.find(i => i.localId === localId);
+    if (item && onOpcionChange) {
+      onOpcionChange(item.parentId, opcionId);
+    }
+  };
+
+  const columns = esEstimativo 
+    ? [
+        { name: "PRODUCTO", uid: "name" },
+        { name: "DESCRIPCIÓN", uid: "description" },
+        { name: "OPCIÓN", uid: "opcion" },
+        { name: "PRECIO UNIDAD", uid: "price" },
+        { name: "CANTIDAD", uid: "quantity" },
+        { name: "SUBTOTAL", uid: "subtotal" },
+        { name: "ACCIONES", uid: "actions" }
+      ]
+    : [
+        { name: "PRODUCTO", uid: "name" },
+        { name: "DESCRIPCIÓN", uid: "description" },
+        { name: "PRECIO UNIDAD", uid: "price" },
+        { name: "CANTIDAD", uid: "quantity" },
+        { name: "SUBTOTAL", uid: "subtotal" },
+        { name: "ACCIONES", uid: "actions" }
+      ];
 
   const renderCell = (item: LocalTableItem, columnKey: React.Key) => {
     switch (columnKey) {
@@ -174,6 +198,25 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
         return (
           <TableCell>
             <div>{item.description}</div>
+          </TableCell>
+        );
+      case "opcion":
+        return (
+          <TableCell>
+            <Select
+              size="sm"
+              className="w-24"
+              selectedKeys={item.opcion ? [item.opcion] : []}
+              onChange={(e) => handleOpcionChange(item.localId, e.target.value)}
+              placeholder="Seleccionar"
+              aria-label="Seleccionar opción"
+            >
+              {opciones.filter(op => op.activa).map(opcion => (
+                <SelectItem key={opcion.id}>
+                  {opcion.id}
+                </SelectItem>
+              ))}
+            </Select>
           </TableCell>
         );
       case "price":
@@ -257,4 +300,4 @@ export const BudgetTable = ({ items, onQuantityChange, onRemoveItem, onEditItem,
       </TableBody>
     </Table>
   );
-}; 
+};

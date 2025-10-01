@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Modal,ModalContent,ModalHeader,ModalFooter,Button,Input,Checkbox,Select,SelectItem,Spinner,ModalBody} from "@heroui/react";
-import GeneralNotification from "./GeneralNotification";
 import { Proveedores } from "@/types/proveedores";
 
 
@@ -8,10 +7,11 @@ import { Proveedores } from "@/types/proveedores";
 interface OneProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProductAdded: () => void; 
+  onProductAdded: () => void;
+  onShowNotification?: (message: string, description: string, type: 'success' | 'error') => void;
 }
 
-const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onProductAdded }) => {
+const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onProductAdded, onShowNotification }) => {
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [proveedores, setProveedores] = useState<Proveedores[]>([]);
   const [sistemas, setSistemas] = useState<{ id: number; nombreSistemas: string }[]>([]);
@@ -32,17 +32,8 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
   const [inputValidity, setInputValidity] = useState({
     Producto: true,
     Precio: true,
-    proveedor_id: true,
-    rubro_id: true,
-    sistema_id: true,
   });
   
-  const [notification, setNotification] = useState({
-    isVisible: false,
-    message: '',
-    description: '',
-    type: 'success' as 'success' | 'error',
-  });
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchProveedores = async () => {
@@ -130,19 +121,19 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       ...prevState,
       [name]: value,
     }));
-    setInputValidity((prevValidity) => ({
-      ...prevValidity,
-      [name]: value.trim() !== "" || name === "Descuento",
-    }));
+    // Solo validar campos que están en inputValidity
+    if (name === "Producto" || name === "Precio") {
+      setInputValidity((prevValidity) => ({
+        ...prevValidity,
+        [name]: value.trim() !== "",
+      }));
+    }
   };
 
   const validateInputs = () => {
     const newValidity = {
       Producto: productData.Producto.trim() !== "",
       Precio: productData.Precio.trim() !== "",
-      proveedor_id: productData.proveedor_id.trim() !== "",
-      rubro_id: productData.rubro_id.trim() !== "",
-      sistema_id: productData.sistema_id.trim() !== "",
     };
     setInputValidity(newValidity);
     return Object.values(newValidity).every((valid) => valid);
@@ -153,19 +144,19 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
 
     setIsSaving(true);
     try {
-      // Enviar como array de un solo producto
-      const productToSend = [{
+      // Enviar como objeto simple de un solo producto
+      const productToSend = {
         id: parseInt(productData.id, 10),
         nombreProducto: productData.Producto,
         cantidad_stock: productData.Cantidad_stock ? parseInt(productData.Cantidad_stock, 10) : 0,
         descripcion: productData.Descripción,
         precioCosto: productData.PrecioCosto ? parseFloat(productData.PrecioCosto) : 0,
         precio: parseFloat(productData.Precio),
-        descuento: "0%",
-        proveedor_id: parseInt(productData.proveedor_id, 10),
-        rubro_id: parseInt(productData.rubro_id, 10),
-        sistema_id: parseInt(productData.sistema_id, 10),
-      }];
+        descuento: 0,
+        proveedor_id: productData.proveedor_id ? parseInt(productData.proveedor_id, 10) : null,
+        rubro_id: productData.rubro_id ? parseInt(productData.rubro_id, 10) : null,
+        sistema_id: productData.sistema_id ? parseInt(productData.sistema_id, 10) : null,
+      };
       
       console.log("Enviando producto al backend:", productToSend);
 
@@ -182,28 +173,29 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
         throw new Error("Error al guardar producto");
       }
 
-      setNotification({
-        isVisible: true,
-        message: 'Producto agregado correctamente',
-        description: '',
-        type: 'success',
-      });
+      // Mostrar notificación de éxito
+      if (onShowNotification) {
+        onShowNotification(
+          'Producto agregado correctamente',
+          'El producto se ha guardado exitosamente.',
+          'success'
+        );
+      }
       
-      setTimeout(() => {
-        handleNotificationClose();
-        onProductAdded();
-        onClose();
-      }, 2000);
+      // Cerrar modal y refrescar productos
+      onProductAdded();
+      onClose();
       
     } catch (error) {
       console.error("Error al enviar producto:", error);
-      setNotification({
-        isVisible: true,
-        message: 'Ocurrió un error',
-        description: 'No se pudo agregar tu producto.',
-        type: 'error',
-      });
-      setTimeout(handleNotificationClose, 3000);
+      // Mostrar notificación de error
+      if (onShowNotification) {
+        onShowNotification(
+          'Ocurrió un error',
+          'No se pudo agregar tu producto.',
+          'error'
+        );
+      }
     } finally {
       setIsSaving(false);
     }
@@ -214,14 +206,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
       ...prevState,
       proveedor_id: id,
     }));
-    setInputValidity((prevValidity) => ({
-      ...prevValidity,
-      proveedor_id: id.trim() !== "",
-    }));
-  };
-
-  const handleNotificationClose = () => {
-    setNotification((prevState) => ({ ...prevState, isVisible: false }));
   };
 
   return (
@@ -430,13 +414,6 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
           </>
         )}
       </ModalContent>
-      <GeneralNotification
-        message={notification.message}
-        description={notification.description}
-        type={notification.type}
-        isVisible={notification.isVisible}
-        onClose={handleNotificationClose}
-      />
     </Modal>
   );
 };

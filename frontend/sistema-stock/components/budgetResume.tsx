@@ -3,6 +3,8 @@ import React from 'react';
 import { Button, Card, CardBody } from "@heroui/react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { BudgetOption } from '../types/budget';
+
 interface BudgetResumeProps {
   presupuestoData: {
     numeroPresupuesto: string;
@@ -14,6 +16,8 @@ interface BudgetResumeProps {
       email?: string;
     };
     showMeasuresInPDF?: boolean;
+    esEstimativo?: boolean;
+    opciones?: BudgetOption[];
     productos: Array<{
       nombre: string;
       descripcion: string;
@@ -21,8 +25,8 @@ interface BudgetResumeProps {
       precioUnitario: number;
       cantidad: number;
       subtotal: number;
-      espacio?: string; // Nuevo campo para el espacio/ambiente
-      // Campos específicos para Dunes
+      espacio?: string;
+      opcion?: string;
       tipoApertura?: string;
       colorSistema?: string;
       ladoComando?: string;
@@ -30,8 +34,8 @@ interface BudgetResumeProps {
       detalle?: string;
       incluirMotorizacion?: boolean;
       precioMotorizacion?: number;
-      ancho?: number; // Medidas del producto
-      alto?: number; // Medidas del producto
+      ancho?: number;
+      alto?: number;
     }>;
     subtotal: number;
     descuento: number;
@@ -42,18 +46,52 @@ interface BudgetResumeProps {
 const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   const invoiceRef = React.useRef<HTMLDivElement>(null);
 
-  // Agrupar productos por espacio
-  const productosPorEspacio = presupuestoData.productos.reduce((acc, producto) => {
-    const espacio = producto.espacio || 'Espacio/Ambiente sin especificar';
-    const espacioConPrefijo = espacio === 'Espacio/Ambiente sin especificar' 
-      ? espacio 
-      : `Espacio: ${espacio}`;
-    if (!acc[espacioConPrefijo]) {
-      acc[espacioConPrefijo] = [];
+  // Agrupar productos según el tipo de presupuesto
+  const agruparProductos = () => {
+    if (presupuestoData.esEstimativo && presupuestoData.opciones) {
+      // Agrupar por opción
+      const productosPorOpcion: Record<string, typeof presupuestoData.productos> = {};
+      
+      presupuestoData.opciones.filter(op => op.activa).forEach(opcion => {
+        const productosDeOpcion = presupuestoData.productos.filter(p => p.opcion === opcion.id);
+        if (productosDeOpcion.length > 0) {
+          productosPorOpcion[opcion.nombre] = productosDeOpcion;
+        }
+      });
+      
+      return productosPorOpcion;
+    } else {
+      // Agrupar por espacio (lógica original)
+      return presupuestoData.productos.reduce((acc, producto) => {
+        const espacio = producto.espacio || 'Espacio/Ambiente sin especificar';
+        const espacioConPrefijo = espacio === 'Espacio/Ambiente sin especificar' 
+          ? espacio 
+          : `Espacio: ${espacio}`;
+        if (!acc[espacioConPrefijo]) {
+          acc[espacioConPrefijo] = [];
+        }
+        acc[espacioConPrefijo].push(producto);
+        return acc;
+      }, {} as Record<string, typeof presupuestoData.productos>);
     }
-    acc[espacioConPrefijo].push(producto);
-    return acc;
-  }, {} as Record<string, typeof presupuestoData.productos>);
+  };
+
+  const productosAgrupados = agruparProductos();
+
+  // Calcular totales por grupo (opción o espacio)
+  const calcularTotalPorGrupo = (productos: typeof presupuestoData.productos) => {
+    return productos.reduce((sum, prod) => sum + prod.subtotal, 0);
+  };
+
+  // Calcular descuento proporcional para una opción
+  const calcularDescuentoOpcion = (subtotalOpcion: number) => {
+    if (presupuestoData.descuento === 0 || presupuestoData.subtotal === 0) {
+      return 0;
+    }
+    // Calcular el descuento proporcional basado en el porcentaje que representa esta opción
+    const proporcion = subtotalOpcion / presupuestoData.subtotal;
+    return presupuestoData.descuento * proporcion;
+  };
 
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) return;
@@ -91,7 +129,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
         }
       });
       
-      const imgData = fullCanvas.toDataURL('image/png', 1.0);
+
       const imgWidth = contentWidth;
       const imgHeight = (fullCanvas.height * imgWidth) / fullCanvas.width;
       
@@ -150,19 +188,11 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
         .replace(/\s+/g, '-')
         .toLowerCase();
       
-      pdf.save(`Presupuesto-${presupuestoData.numeroPresupuesto}-${nombreCliente}.pdf`);
+      const tipoPresupuesto = presupuestoData.esEstimativo ? 'Estimativo' : 'Presupuesto';
+      pdf.save(`${tipoPresupuesto}-${presupuestoData.numeroPresupuesto}-${nombreCliente}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Hubo un error generando el PDF. Por favor intente nuevamente.');
-    }
-  };
-
-  const handleSendToClient = async () => {
-    // Implementación para enviar por email
-    if (presupuestoData.cliente.email) {
-      alert(`Se enviará el presupuesto a: ${presupuestoData.cliente.email}`);
-    } else {
-      alert('El cliente no tiene email registrado');
+      alert('Hubo un error al generar el PDF. Por favor intente nuevamente.');
     }
   };
 
@@ -170,28 +200,15 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
     if (!invoiceRef.current) return;
     
     try {
-      // Generar el PDF
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2,
         logging: false,
-        useCORS: true,
-        imageTimeout: 15000,
-        backgroundColor: '#ffffff',
-        removeContainer: true,
-        foreignObjectRendering: false,
-        allowTaint: true,
-        onclone: (clonedDoc) => {
-          const images = clonedDoc.querySelectorAll('img');
-          images.forEach(img => {
-            img.style.display = 'block';
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
-          });
-        }
+        useCORS: true
       });
-
+      
+      // Crear PDF para preview
       const pdf = new jsPDF({
-        format: 'a4',
+        orientation: 'portrait',
         unit: 'mm'
       });
       
@@ -201,7 +218,8 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
       pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
 
       // Crear el mensaje para WhatsApp
-      const mensaje = `¡Hola ${presupuestoData.cliente.nombre}! Te envío el presupuesto N° ${presupuestoData.numeroPresupuesto}`;
+      const tipoPresupuesto = presupuestoData.esEstimativo ? 'presupuesto estimativo' : 'presupuesto';
+      const mensaje = `¡Hola ${presupuestoData.cliente.nombre}! Te envío el ${tipoPresupuesto} N° ${presupuestoData.numeroPresupuesto}`;
       let telefono = presupuestoData.cliente.telefono?.replace(/\D/g, '') || '';
       
       if (!telefono) {
@@ -245,7 +263,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                  />
                </div>
                              <h1 className="font-bold text-gray-900">
-                 Presupuesto # {presupuestoData.numeroPresupuesto}
+                 {presupuestoData.esEstimativo ? 'Presupuesto Estimativo' : 'Presupuesto'} # {presupuestoData.numeroPresupuesto}
                </h1>
               <p className="text-gray-600">{presupuestoData.fecha}</p>
             </div>
@@ -268,39 +286,168 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
             </div>
           </div>
 
-          <div className="overflow-x-auto mb-8">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="px-4 py-3 font-semibold text-left text-gray-900">Producto</th>
-                  <th className="px-4 py-3 font-semibold text-left text-gray-900">Descripción</th>
-                  {presupuestoData.showMeasuresInPDF && (
-                    <th className="px-4 py-3 font-semibold text-left text-gray-900">Medidas</th>
-                  )}
-                  <th className="px-4 py-3 font-semibold text-left text-gray-900">Precio Unit.</th>
-                  <th className="px-4 py-3 font-semibold text-left text-gray-900">Cantidad</th>
-                  <th className="px-4 py-3 font-semibold text-left text-gray-900">Subtotal</th>
-                </tr>
-              </thead>
-                              <tbody>
-                  {Object.entries(productosPorEspacio).map(([espacio, productos]) => (
+          {presupuestoData.esEstimativo ? (
+            // Render para presupuesto estimativo con opciones
+            <>
+              {Object.entries(productosAgrupados).map(([nombreOpcion, productos], opcionIndex) => {
+                const subtotalOpcion = calcularTotalPorGrupo(productos);
+                const descuentoOpcion = calcularDescuentoOpcion(subtotalOpcion);
+                const totalOpcionConDescuento = subtotalOpcion - descuentoOpcion;
+                
+                return (
+                  <div key={nombreOpcion} className="mb-8">
+                    <div className="mb-4 p-3 bg-blue-100 rounded">
+                      <h2 className="text-xl font-bold text-blue-900">{nombreOpcion}</h2>
+                    </div>
+                    
+                    <div className="overflow-x-auto mb-4">
+                      <table className="w-full" style={{ fontSize: '13px' }}>
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: '15%' }}>Producto</th>
+                            <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: presupuestoData.showMeasuresInPDF ? '30%' : '40%' }}>Descripción</th>
+                            {presupuestoData.showMeasuresInPDF && (
+                              <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: '15%' }}>Medidas</th>
+                            )}
+                            <th className="px-2 py-2 font-semibold text-right text-gray-900" style={{ width: '13%' }}>Precio Unit.</th>
+                            <th className="px-2 py-2 font-semibold text-center text-gray-900" style={{ width: '10%' }}>Cant.</th>
+                            <th className="px-2 py-2 font-semibold text-right text-gray-900" style={{ width: '17%' }}>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productos.map((producto, index) => (
+                            <React.Fragment key={index}>
+                              <tr>
+                                <td className="px-2 py-2 text-gray-900">{producto.nombre}</td>
+                                <td className="px-2 py-2 text-gray-900">{
+                                  (() => {
+                                    // Lógica específica para Dunes
+                                    if (producto.nombre?.toLowerCase().includes('dunes')) {
+                                      const detalles = [];
+                                      
+                                      if (producto.tipoApertura) {
+                                        if (producto.tipoApertura === 'cadena_cordon') {
+                                          detalles.push('Apertura con Cadena y Cordón');
+                                        } else if (producto.tipoApertura === 'baston') {
+                                          detalles.push('Apertura con Bastón');
+                                        }
+                                      }
+                                      
+                                      if (producto.colorSistema) {
+                                        detalles.push(`Color: ${producto.colorSistema}`);
+                                      }
+                                      
+                                      if (producto.ladoComando) {
+                                        detalles.push(`Comando: ${producto.ladoComando}`);
+                                      }
+                                      
+                                      if (producto.ladoApertura) {
+                                        detalles.push(`Apertura: ${producto.ladoApertura}`);
+                                      }
+                                      
+                                      if (producto.detalle && producto.detalle.trim() !== '') {
+                                        detalles.push(`Detalles: ${producto.detalle}`);
+                                      }
+                                      
+                                      return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
+                                    }
+                                    
+                                    const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
+                                    
+                                    if (!descripcionLimpia || descripcionLimpia.trim() === '') {
+                                      return producto.tipoTela || 'Sin descripción';
+                                    }
+                                    
+                                    return descripcionLimpia;
+                                  })()
+                                }</td>
+                                {presupuestoData.showMeasuresInPDF && (
+                                  <td className="px-2 py-2 text-gray-900" style={{ fontSize: '12px', lineHeight: '1.3' }}>
+                                    {(() => {
+                                      if (producto.ancho && producto.alto) {
+                                        return (
+                                          <>
+                                            <div>Alto: {producto.alto}cm</div>
+                                            <div>Ancho: {producto.ancho}cm</div>
+                                          </>
+                                        );
+                                      }
+                                      return 'Sin medidas';
+                                    })()}
+                                  </td>
+                                )}
+                                <td className="px-2 py-2 text-gray-900 text-right">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                <td className="px-2 py-2 text-gray-900 text-center">{producto.cantidad}</td>
+                                <td className="px-2 py-2 text-gray-900 text-right">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                              </tr>
+                              {producto.incluirMotorizacion && (
+                                <tr>
+                                  <td colSpan={presupuestoData.showMeasuresInPDF ? 5 : 4} className="px-2 py-2 font-bold text-gray-900">Motorización</td>
+                                  <td className="px-2 py-2 text-gray-900 text-right">${producto.precioMotorizacion?.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          ))}
+                          {/* Subtotal de la opción */}
+                          <tr className="border-t border-gray-300">
+                            <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                            <td className="px-2 py-2 font-semibold text-gray-900 text-right">Subtotal:</td>
+                            <td className="px-2 py-2 font-semibold text-gray-900 text-right">${subtotalOpcion.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                          </tr>
+                          {/* Descuento de la opción */}
+                          {descuentoOpcion > 0 && (
+                            <tr>
+                              <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                              <td className="px-2 py-2 font-semibold text-green-600 text-right">Descuento:</td>
+                              <td className="px-2 py-2 font-semibold text-green-600 text-right">-${descuentoOpcion.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            </tr>
+                          )}
+                          {/* Total de la opción con descuento */}
+                          <tr className="border-t-2 border-blue-300">
+                            <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                            <td className="px-2 py-3 font-bold text-blue-900 text-right">Total {nombreOpcion}:</td>
+                            <td className="px-2 py-3 font-bold text-blue-900 text-right">${totalOpcionConDescuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            // Render para presupuesto normal (agrupado por espacio)
+            <div className="overflow-x-auto mb-8">
+              <table className="w-full" style={{ fontSize: '13px' }}>
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: '15%' }}>Producto</th>
+                    <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: presupuestoData.showMeasuresInPDF ? '30%' : '40%' }}>Descripción</th>
+                    {presupuestoData.showMeasuresInPDF && (
+                      <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: '15%' }}>Medidas</th>
+                    )}
+                    <th className="px-2 py-2 font-semibold text-right text-gray-900" style={{ width: '13%' }}>Precio Unit.</th>
+                    <th className="px-2 py-2 font-semibold text-center text-gray-900" style={{ width: '10%' }}>Cant.</th>
+                    <th className="px-2 py-2 font-semibold text-right text-gray-900" style={{ width: '17%' }}>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(productosAgrupados).map(([espacio, productos]) => (
                     <React.Fragment key={espacio}>
                       <tr>
-                        <td colSpan={presupuestoData.showMeasuresInPDF ? 6 : 5} className="px-4 py-3 font-bold text-left text-gray-900 bg-gray-50">
+                        <td colSpan={presupuestoData.showMeasuresInPDF ? 6 : 5} className="px-2 py-2 font-bold text-left text-gray-900 bg-gray-50">
                           {espacio}
                         </td>
                       </tr>
                       {productos.map((producto, index) => (
                         <React.Fragment key={index}>
                           <tr>
-                            <td className="px-4 py-3 text-gray-900">{producto.nombre}</td>
-                            <td className="px-4 py-3 text-gray-900">{
+                            <td className="px-2 py-2 text-gray-900">{producto.nombre}</td>
+                            <td className="px-2 py-2 text-gray-900">{
                               (() => {
-                                // Lógica específica para Dunes
                                 if (producto.nombre?.toLowerCase().includes('dunes')) {
                                   const detalles = [];
                                   
-                                  // Agregar tipo de apertura
                                   if (producto.tipoApertura) {
                                     if (producto.tipoApertura === 'cadena_cordon') {
                                       detalles.push('Apertura con Cadena y Cordón');
@@ -309,24 +456,18 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                                     }
                                   }
                                   
-                                  // Agregar color sistema
                                   if (producto.colorSistema) {
                                     detalles.push(`Color: ${producto.colorSistema}`);
                                   }
                                   
-                                  // Agregar lado comando
                                   if (producto.ladoComando) {
                                     detalles.push(`Comando: ${producto.ladoComando}`);
                                   }
                                   
-                                  // Agregar lado apertura
                                   if (producto.ladoApertura) {
                                     detalles.push(`Apertura: ${producto.ladoApertura}`);
                                   }
                                   
-                                
-                                
-                                  // Agregar detalles adicionales
                                   if (producto.detalle && producto.detalle.trim() !== '') {
                                     detalles.push(`Detalles: ${producto.detalle}`);
                                   }
@@ -334,7 +475,6 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                                   return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
                                 }
                                 
-                                // Para otros sistemas, mantener la lógica original
                                 const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
                                 
                                 if (!descripcionLimpia || descripcionLimpia.trim() === '') {
@@ -345,50 +485,55 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                               })()
                             }</td>
                             {presupuestoData.showMeasuresInPDF && (
-                              <td className="px-4 py-3 text-gray-900">
+                              <td className="px-2 py-2 text-gray-900" style={{ fontSize: '12px', lineHeight: '1.3' }}>
                                 {(() => {
-                                  // Usar las medidas directas del producto
                                   if (producto.ancho && producto.alto) {
-                                    return `${producto.ancho} cm x ${producto.alto} cm`;
+                                    return (
+                                      <>
+                                        <div>Alto: {producto.alto}cm</div>
+                                        <div>Ancho: {producto.ancho}cm</div>
+                                      </>
+                                    );
                                   }
                                   return 'Sin medidas';
                                 })()}
                               </td>
                             )}
-                            <td className="px-4 py-3 text-gray-900">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                            <td className="px-4 py-3 text-gray-900">{producto.cantidad}</td>
-                            <td className="px-4 py-3 text-gray-900">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            <td className="px-2 py-2 text-gray-900 text-right">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            <td className="px-2 py-2 text-gray-900 text-center">{producto.cantidad}</td>
+                            <td className="px-2 py-2 text-gray-900 text-right">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                           </tr>
                           {producto.incluirMotorizacion && (
                             <tr>
-                              <td colSpan={presupuestoData.showMeasuresInPDF ? 5 : 4} className="px-4 py-3 font-bold text-gray-900">Motorización</td>
-                              <td className="px-4 py-3 text-gray-900">${producto.precioMotorizacion?.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                              <td colSpan={presupuestoData.showMeasuresInPDF ? 5 : 4} className="px-2 py-2 font-bold text-gray-900">Motorización</td>
+                              <td className="px-2 py-2 text-gray-900 text-right">${producto.precioMotorizacion?.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                             </tr>
                           )}
                         </React.Fragment>
                       ))}
                     </React.Fragment>
                   ))}
-                <tr>
-                  <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                  <td className="px-4 py-3 font-bold text-gray-900">Subtotal</td>
-                  <td className="px-4 py-3 text-gray-900">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                </tr>
-                {presupuestoData.descuento && presupuestoData.descuento > 0 && (
                   <tr>
                     <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                    <td className="px-4 py-3 font-bold text-gray-900">Descuento</td>
-                    <td className="px-4 py-3 text-gray-900">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    <td className="px-2 py-2 font-bold text-gray-900 text-right">Subtotal</td>
+                    <td className="px-2 py-2 text-gray-900 text-right">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                   </tr>
-                )}
-                <tr>
-                  <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                  <td className="px-4 py-3 font-bold text-gray-900">Total</td>
-                  <td className="px-4 py-3 font-bold text-gray-900">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  {presupuestoData.descuento > 0 && (
+                    <tr>
+                      <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                      <td className="px-2 py-2 font-bold text-gray-900 text-right">Descuento</td>
+                      <td className="px-2 py-2 text-gray-900 text-right">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                    <td className="px-2 py-2 font-bold text-gray-900 text-right">Total</td>
+                    <td className="px-2 py-2 font-bold text-gray-900 text-right">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="p-4 text-blue-700 bg-blue-50 rounded-md">
             <p>Este presupuesto tiene una validez de 15 días.</p>

@@ -16,7 +16,7 @@
     id: number;
     nombreProducto: string;
     descripcion: string;
-    proveedor: { id: number; nombreProveedores: string };
+    proveedor: { id: number; nombreProveedores: string } | null;
     cantidadDisponible?: number;
     cantidad_stock: number;
     precio: number;

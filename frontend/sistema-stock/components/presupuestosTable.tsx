@@ -269,7 +269,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       
              // Mostrar información de medidas si está disponible
        if (item.detalles.ancho && item.detalles.alto) {
-         detalles.push(`• Medidas: ${item.detalles.ancho}cm x ${item.detalles.alto}cm`);
+         detalles.push(`• Medidas: Alto: ${item.detalles.alto}cm | Ancho: ${item.detalles.ancho}cm`);
        }
        
                // Mostrar detalles específicos de Dunes
@@ -380,7 +380,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       
       // 5. Mostrar información de medidas si está disponible
       if (item.detalles.ancho && item.detalles.alto) {
-        detalles.push(`• Medidas: ${item.detalles.ancho}cm x ${item.detalles.alto}cm`);
+        detalles.push(`• Medidas: Alto: ${item.detalles.alto}cm | Ancho: ${item.detalles.ancho}cm`);
       }
     }
   }

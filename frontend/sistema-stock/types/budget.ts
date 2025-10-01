@@ -7,6 +7,7 @@ export interface TableItem {
   price: number;
   total: number;
   espacio?: string; // Nuevo campo para el espacio/ambiente
+  opcion?: string; // Nuevo campo para opciones de presupuesto (A, B, C, etc.)
   detalles?: {
     sistema: string;
     detalle: string;
@@ -48,11 +49,19 @@ export interface Product {
   };
 }
 
+export interface BudgetOption {
+  id: string;
+  nombre: string;
+  activa: boolean;
+}
+
 export interface PresupuestoResumen {
   numeroPresupuesto: string;
   fecha: string;
   cliente: Client;
   showMeasuresInPDF?: boolean;
+  esEstimativo?: boolean; // Indica si es presupuesto estimativo con opciones
+  opciones?: BudgetOption[]; // Configuración de opciones disponibles
   productos: {
     nombre: string;
     descripcion: string;
@@ -60,6 +69,7 @@ export interface PresupuestoResumen {
     cantidad: number;
     subtotal: number;
     espacio?: string; // Nuevo campo para el espacio/ambiente
+    opcion?: string; // Nuevo campo para opciones de presupuesto
     incluirMotorizacion?: boolean;
     precioMotorizacion?: number;
     tipoTela?: string;
@@ -74,4 +84,4 @@ export interface PresupuestoResumen {
   subtotal: number;
   descuento: number;
   total: number;
-} 
+}

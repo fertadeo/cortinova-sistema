@@ -304,7 +304,7 @@ const ModalToTable: React.FC<ModalToTableProps> = ({ isOpen, onClose, cliente })
                       <div className="ml-2">
                         <p className="font-medium text-gray-900 dark:text-gray-100">{medida.elemento}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {medida.ancho}cm x {medida.alto}cm - Cantidad: {medida.cantidad}
+                          Alto: {medida.alto}cm | Ancho: {medida.ancho}cm - Cantidad: {medida.cantidad}
                         </p>
                         {medida.detalles && (
                           <p className="text-sm text-gray-500 dark:text-gray-400">{medida.detalles}</p>

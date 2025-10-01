@@ -12,10 +12,11 @@ import { Product } from "./productModal";
 
 type TableProductsProps = {
   userLevel: number; // Nivel del usuario (1: empleado, 2: dueño, 3: programador)
+  onProductCountChange?: (count: number) => void;
 };
 
 const TableProducts = forwardRef((props: TableProductsProps, ref) => {
-  const { userLevel } = props;
+  const { userLevel, onProductCountChange } = props;
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -63,10 +64,10 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
 
       const updatedData = data.map((product: Product) => ({
         ...product,
-        proveedor: {
+        proveedor: product.proveedor ? {
           id: product.proveedor.id,
           nombre: product.proveedor.nombreProveedores
-        },
+        } : null,
         habilitado: product.cantidad_stock > 0,
       }));
 
@@ -84,6 +85,7 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
   useImperativeHandle(ref, () => ({
     refreshProducts: fetchProducts,
     getProducts: () => products,
+    getProductCount: () => filteredProducts.length,
   }));
 
   useEffect(() => {
@@ -97,6 +99,12 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
       setFilteredProducts(products);
     }
   }, [searchTerm, products]);
+
+  useEffect(() => {
+    if (onProductCountChange) {
+      onProductCountChange(filteredProducts.length);
+    }
+  }, [filteredProducts, onProductCountChange]);
 
   // Ordenar productos según el modo seleccionado
   const sortedProducts = [...filteredProducts].sort((a, b) => {

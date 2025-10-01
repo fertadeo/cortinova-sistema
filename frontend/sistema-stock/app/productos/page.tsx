@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import '@/styles/globals.css';
 import TopBar from '@/components/topBar';
-import { Button, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
+import { Button, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Alert } from "@heroui/react";
 import TableProducts from '../../components/tableProducts'; // Importa la tabla correctamente
 import OneProductModal from '@/components/oneProductModal';
 import PricesModal from '@/components/pricesModal';
@@ -77,9 +77,18 @@ const ProductosPage = () => {
   const [showPricesModal, setShowPricesModal] = useState(false)
   const [importLoading, setImportLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [productCount, setProductCount] = useState<number>(0);
 
   // Estado para las notificaciones
   const [notification, setNotification] = useState({
+    isVisible: false,
+    message: '',
+    description: '',
+    type: 'success' as 'success' | 'error',
+  });
+
+  // Estado para el alert de productos
+  const [productAlert, setProductAlert] = useState({
     isVisible: false,
     message: '',
     description: '',
@@ -176,6 +185,24 @@ const ProductosPage = () => {
 
   const handleNotificationClose = () => {
     setNotification(prev => ({ ...prev, isVisible: false }));
+  };
+
+  const handleProductCountChange = (count: number) => {
+    setProductCount(count);
+  };
+
+  const handleShowProductNotification = (message: string, description: string, type: 'success' | 'error') => {
+    setProductAlert({
+      isVisible: true,
+      message,
+      description,
+      type,
+    });
+    
+    // Auto-cerrar después de 3 segundos
+    setTimeout(() => {
+      setProductAlert(prev => ({ ...prev, isVisible: false }));
+    }, 3000);
   };
 
   const handleExportExcel = () => {
@@ -342,7 +369,14 @@ const ProductosPage = () => {
             />
           </div>
         ) : (
-          <TableProducts ref={tableRef} userLevel={2} />
+          <>
+            <div className="mb-3 px-2">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total de productos: <span className="font-bold text-blue-600 dark:text-blue-400">{productCount}</span>
+              </span>
+            </div>
+            <TableProducts ref={tableRef} userLevel={2} onProductCountChange={handleProductCountChange} />
+          </>
         )}
       </div>
 
@@ -350,7 +384,8 @@ const ProductosPage = () => {
       <OneProductModal
         isOpen={showProdModal}
         onClose={handleCloseModal} 
-        onProductAdded={handleProductAdded}  
+        onProductAdded={handleProductAdded}
+        onShowNotification={handleShowProductNotification}
       />
       <PricesModal 
         isOpen={showPricesModal}
@@ -366,6 +401,19 @@ const ProductosPage = () => {
         isVisible={notification.isVisible}
         onClose={handleNotificationClose}
       />
+
+      {/* Alert flotante para productos */}
+      {productAlert.isVisible && (
+        <div className="fixed top-4 right-4 z-50 max-w-md animate-in slide-in-from-top-2 duration-300">
+          <Alert
+            color={productAlert.type === 'success' ? 'success' : 'danger'}
+            title={productAlert.message}
+            description={productAlert.description}
+            onClose={() => setProductAlert(prev => ({ ...prev, isVisible: false }))}
+            variant="flat"
+          />
+        </div>
+      )}
     </div>
   );
 };
