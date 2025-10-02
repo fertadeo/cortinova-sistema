@@ -865,11 +865,30 @@ export default function GenerarPedidoModal({
   // Buscar el producto correspondiente al sistema seleccionado
   const productoSistema = sistemas.find(s => String(s.nombreSistemas) === selectedSistema);
 
+  // Función para obtener el ancho mínimo por sistema
+  const getAnchoMinimo = (sistema: string): number => {
+    const sistemaLower = sistema?.toLowerCase();
+    if (sistemaLower?.includes('roller')) return 100; // 100cm para Roller
+    if (sistemaLower?.includes('barcelona') || sistemaLower?.includes('bandas verticales')) return 150; // 150cm para Banda Vertical
+    return 0; // Sin mínimo para otros sistemas
+  };
+
+  // Función para calcular el ancho efectivo (aplicando mínimos)
+  const getAnchoEfectivo = (sistema: string, anchoIngresado: number): { anchoEfectivo: number; aplicaMinimo: boolean } => {
+    const anchoMinimo = getAnchoMinimo(sistema);
+    if (anchoMinimo > 0 && anchoIngresado < anchoMinimo) {
+      return { anchoEfectivo: anchoMinimo, aplicaMinimo: true };
+    }
+    return { anchoEfectivo: anchoIngresado, aplicaMinimo: false };
+  };
+
   // Calcular precio del sistema
   const calcularPrecioSistema = () => {
     if (!ancho || !alto) return 0;
     
-    const anchoMetros = Number(ancho) / 100;
+    const anchoIngresado = Number(ancho);
+    const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
+    const anchoMetros = anchoEfectivo / 100;
     const altoMetros = Number(alto) / 100;
     
     // Lógica específica para Dunes
@@ -937,6 +956,9 @@ export default function GenerarPedidoModal({
 
   // Función para calcular precio de tela con lógica específica para Propios/Tradicional y Dunes
   const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean, sistema?: string, multiplicador?: number): number => {
+    // Aplicar ancho mínimo si es necesario
+    const { anchoEfectivo } = getAnchoEfectivo(sistema || selectedSistema, ancho);
+    ancho = anchoEfectivo;
     // Lógica específica para Dunes - Tela por m²
     if (sistema && sistema.toLowerCase().includes('dunes')) {
       const telaDunes = sistemaPedidoDetalles?.tela;
@@ -981,6 +1003,8 @@ export default function GenerarPedidoModal({
     if (!ancho || !alto || !cantidad) return 0;
 
     const cantidadNum = Number(cantidad) || 1;
+    const anchoIngresado = Number(ancho);
+    const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
     let total = 0;
 
     // 1. Sistema - calcular según el tipo de sistema
@@ -1601,10 +1625,14 @@ export default function GenerarPedidoModal({
     }
     if (!ancho || !alto) return 0;
     
-    // Para sistemas Propios/Tradicional, usar el ancho original (la función calcularPrecioTela ya maneja el multiplicador)
+    // Aplicar ancho mínimo si es necesario
+    const anchoIngresado = Number(ancho);
+    const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
+    
+    // Para sistemas Propios/Tradicional, usar el ancho efectivo (la función calcularPrecioTela ya maneja el multiplicador)
     // Para otros sistemas, usar el ancho multiplicado
     const anchoACalcular = (selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) 
-      ? Number(ancho) 
+      ? anchoEfectivo 
       : anchoTelaMultiplicado;
     
     return calcularPrecioTela(
@@ -2197,7 +2225,13 @@ export default function GenerarPedidoModal({
 
 
                     {/* Resumen de precios general */}
-                    {selectedSistema && ancho && alto && (
+                    {selectedSistema && ancho && alto && (() => {
+                      // Verificar si se aplica ancho mínimo (declarar fuera de los condicionales)
+                      const anchoIngresado = Number(ancho);
+                      const { anchoEfectivo, aplicaMinimo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
+                      const anchoMinimo = getAnchoMinimo(selectedSistema);
+                      
+                      return (
                             <div className="p-4 mt-4 bg-gray-50 dark:bg-dark-card rounded-lg border dark:border-dark-border">
                                                               <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-dark-text">Resumen de Precios</h3>
                               <div className="space-y-2">
@@ -2256,6 +2290,11 @@ export default function GenerarPedidoModal({
                                       <div className="flex justify-between items-center">
                                         <span className="flex gap-2 items-center">
                                           {productoSeleccionado?.nombreProducto || selectedSistema.toUpperCase()} ({ancho}cm x {alto}cm)
+                                          {aplicaMinimo && (
+                                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                              Ancho mínimo: {anchoMinimo}cm
+                                            </span>
+                                          )}
                                         </span>
                                         <span className="font-medium">
                                           ${((calcularPrecioSistema() || 0) * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2264,29 +2303,46 @@ export default function GenerarPedidoModal({
                                       <div className="flex justify-between items-center text-xs text-gray-500 dark:text-dark-text-secondary">
                                         <span>Fórmula: (ancho/100) × (alto/100) × precio base × cantidad</span>
                                         <span>
-                                          ({Number(ancho)/100} × {Number(alto)/100} × {productoSeleccionado?.precio || 0} × {cantidad})
+                                          ({anchoEfectivo/100} × {Number(alto)/100} × {productoSeleccionado?.precio || 0} × {cantidad})
                                         </span>
                                       </div>
+                                      {aplicaMinimo && (
+                                        <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                                          ⚠️ Se aplica ancho mínimo de {anchoMinimo}cm (ingresado: {ancho}cm)
+                                        </div>
+                                      )}
                                     </>
                                   ) : productoSeleccionado ? (
-                                    <div className="flex justify-between items-center">
-                                      <span className="flex gap-2 items-center">
-                                        {productoSeleccionado.nombreProducto} ({ancho}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
-                                        <button
-                                          type="button"
-                                          className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
-                                          aria-label="Quitar riel/barral"
-                                          onClick={() => {
-                                            setSelectedRielBarral(null);
-                                            setSearchRielBarral("");
-                                          }}
-                                        >
-                                          ×
-                                        </button>
-                                      </span>
-                                      <span className="font-medium">
-                                        ${((Number(ancho) / 100) * Number(productoSeleccionado.precio) * Number(cantidad)).toLocaleString()}
-                                      </span>
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex justify-between items-center">
+                                        <span className="flex gap-2 items-center">
+                                          {productoSeleccionado.nombreProducto} ({ancho}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                          {aplicaMinimo && (
+                                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                              Ancho mínimo: {anchoMinimo}cm
+                                            </span>
+                                          )}
+                                          <button
+                                            type="button"
+                                            className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                            aria-label="Quitar riel/barral"
+                                            onClick={() => {
+                                              setSelectedRielBarral(null);
+                                              setSearchRielBarral("");
+                                            }}
+                                          >
+                                            ×
+                                          </button>
+                                        </span>
+                                        <span className="font-medium">
+                                          ${((anchoEfectivo / 100) * Number(productoSeleccionado.precio) * Number(cantidad)).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      {aplicaMinimo && (
+                                        <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                                          ⚠️ Se aplica ancho mínimo de {anchoMinimo}cm (ingresado: {ancho}cm)
+                                        </div>
+                                      )}
                                     </div>
                                   ) : (
                                     <div className="flex justify-between items-center">
@@ -2314,12 +2370,17 @@ export default function GenerarPedidoModal({
                                       {(() => {
                                         // Para sistemas Propios/Tradicional, mostrar el ancho multiplicado
                                         if (selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) {
-                                          const anchoMultiplicado = Number(ancho) * (multiplicadorTelaLocal || 1);
+                                          const anchoMultiplicado = anchoEfectivo * (multiplicadorTelaLocal || 1);
                                           return `(${ancho}cm x ${multiplicadorTelaLocal || 1} = ${anchoMultiplicado}cm)`;
                                         } else {
                                           return `(${ancho}cm x ${alto}cm)`;
                                         }
                                       })()}
+                                      {aplicaMinimo && (
+                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                          Ancho mínimo: {anchoMinimo}cm
+                                        </span>
+                                      )}
                                       {Number(cantidad) > 1 ? ` x${cantidad}` : ''}
                                       <button
                                         type="button"
@@ -2340,6 +2401,11 @@ export default function GenerarPedidoModal({
                                         : (calcularPrecioTelaMultiplicada() * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
+                                  {aplicaMinimo && (
+                                    <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                                      ⚠️ Se aplica ancho mínimo de {anchoMinimo}cm para el cálculo de tela (ingresado: {ancho}cm)
+                                    </div>
+                                  )}
                                   {multiplicadorTelaLocal && multiplicadorTelaLocal !== 1 && selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
                                     <div className="text-xs text-blue-700 dark:text-primary pl-2">
                                       Cálculo: {ancho}cm x {multiplicadorTelaLocal} = {Number(ancho) * multiplicadorTelaLocal}cm × ${Number(selectedTela.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTelaLocal / 100) * Number(selectedTela.precio)).toFixed(2)}
@@ -2511,7 +2577,8 @@ export default function GenerarPedidoModal({
                           </div>
                         </div>
                       </div>
-                    )}
+                      );
+                    })()}
 
                     {error && (
                       <div className="mt-2 text-sm text-red-500">
