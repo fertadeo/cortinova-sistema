@@ -164,53 +164,58 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
       const imgWidth = contentWidth;
       const imgHeight = (fullCanvas.height * imgWidth) / fullCanvas.width;
       
-      // Calcular cuántas páginas necesitamos
-      const totalPages = Math.ceil(imgHeight / contentHeight);
-      
-      console.log('Generando PDF con paginación:', {
-        imgHeight,
-        contentHeight,
-        totalPages
-      });
-      
-      // Generar cada página
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) {
-          pdf.addPage();
+      // Para presupuestos estimativos, usar paginado inteligente por secciones
+      if (presupuestoData.esEstimativo && presupuestoData.opciones && presupuestoData.opciones.length > 1) {
+        await generatePDFWithSectionBreaks(pdf, fullCanvas, imgWidth, contentHeight, margin, contentWidth);
+      } else {
+        // Paginado estándar para presupuestos normales
+        const totalPages = Math.ceil(imgHeight / contentHeight);
+        
+        console.log('Generando PDF con paginación estándar:', {
+          imgHeight,
+          contentHeight,
+          totalPages
+        });
+        
+        // Generar cada página
+        for (let page = 0; page < totalPages; page++) {
+          if (page > 0) {
+            pdf.addPage();
+          }
+          
+          // Calcular la posición Y para esta página
+          const sourceY = page * contentHeight * (fullCanvas.width / imgWidth);
+          const sourceHeight = Math.min(
+            contentHeight * (fullCanvas.width / imgWidth),
+            fullCanvas.height - sourceY
+          );
+          
+          // Crear un canvas temporal para esta página
+          const pageCanvas = document.createElement('canvas');
+          const ctx = pageCanvas.getContext('2d');
+          pageCanvas.width = fullCanvas.width;
+          pageCanvas.height = sourceHeight;
+          
+          // Dibujar la porción correspondiente de la imagen
+          ctx?.drawImage(
+            fullCanvas,
+            0, sourceY, fullCanvas.width, sourceHeight,
+            0, 0, fullCanvas.width, sourceHeight
+          );
+          
+          // Convertir a imagen y agregar al PDF
+          const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+          pdf.addImage(
+            pageImgData, 
+            'PNG', 
+            margin, 
+            margin, 
+            imgWidth, 
+            Math.min(contentHeight, (sourceHeight * imgWidth) / fullCanvas.width),
+            undefined, 
+            'FAST'
+          );
         }
-        
-        // Calcular la posición Y para esta página
-        const sourceY = page * contentHeight * (fullCanvas.width / imgWidth);
-        const sourceHeight = Math.min(
-          contentHeight * (fullCanvas.width / imgWidth),
-          fullCanvas.height - sourceY
-        );
-        
-        // Crear un canvas temporal para esta página
-        const pageCanvas = document.createElement('canvas');
-        const ctx = pageCanvas.getContext('2d');
-        pageCanvas.width = fullCanvas.width;
-        pageCanvas.height = sourceHeight;
-        
-        // Dibujar la porción correspondiente de la imagen
-        ctx?.drawImage(
-          fullCanvas,
-          0, sourceY, fullCanvas.width, sourceHeight,
-          0, 0, fullCanvas.width, sourceHeight
-        );
-        
-        // Convertir a imagen y agregar al PDF
-        const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
-        pdf.addImage(
-          pageImgData, 
-          'PNG', 
-          margin, 
-          margin, 
-          imgWidth, 
-          Math.min(contentHeight, (sourceHeight * imgWidth) / fullCanvas.width),
-          undefined, 
-          'FAST'
-        );
       }
 
       // Limpiar el nombre del cliente para usar como nombre de archivo

@@ -556,6 +556,11 @@ export default function GenerarPedidoModal({
     setSistemaRecomendado("");
     setPedidoJSON("");
     setSelectedSoporteIntermedio(null);
+    setSoporteDobleProducto(null);
+    setSistemaPedidoDetalles(null);
+    setAccesoriosAdicionales([]);
+    setPrecioColocacion(0);
+    setCantidadTelaManual(null);
   };
 
   // Función para validar si se puede proceder al siguiente paso
@@ -693,6 +698,7 @@ export default function GenerarPedidoModal({
 
     if (isOpen) {
       fetchSistemas();
+      resetInputs(); // Limpiar todos los campos al abrir el modal
     }
   }, [isOpen]);
 
@@ -956,9 +962,7 @@ export default function GenerarPedidoModal({
 
   // Función para calcular precio de tela con lógica específica para Propios/Tradicional y Dunes
   const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean, sistema?: string, multiplicador?: number): number => {
-    // Aplicar ancho mínimo si es necesario
-    const { anchoEfectivo } = getAnchoEfectivo(sistema || selectedSistema, ancho);
-    ancho = anchoEfectivo;
+    // NO aplicar ancho mínimo a las telas - usar el ancho ingresado originalmente
     // Lógica específica para Dunes - Tela por m²
     if (sistema && sistema.toLowerCase().includes('dunes')) {
       const telaDunes = sistemaPedidoDetalles?.tela;
@@ -1011,12 +1015,12 @@ export default function GenerarPedidoModal({
     let precioSistema = 0;
     if (selectedSistema?.toLowerCase().includes('dunes')) {
       precioSistema = calcularPrecioSistema();
-    } else if (selectedSistema?.toLowerCase().includes('veneciana')) {
+    } else if (selectedSistema?.toLowerCase().includes('veneciana') || selectedSistema?.toLowerCase().includes('roller')) {
       precioSistema = calcularPrecioSistema();
     } else {
       // Para otros sistemas (tradicional, propios, etc.)
       if (selectedRielBarral && selectedRielBarral.precio) {
-        precioSistema = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
+        precioSistema = (anchoEfectivo / 100) * Number(selectedRielBarral.precio);
       }
     }
 
@@ -1038,7 +1042,7 @@ export default function GenerarPedidoModal({
     let precioTela2 = 0;
     if (selectedTela2 && (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))) {
       precioTela2 = calcularPrecioTela(
-        Number(ancho),
+        anchoEfectivo,
         Number(alto),
         selectedTela2?.precio ? Number(selectedTela2.precio) : 0,
         false,
@@ -1047,8 +1051,11 @@ export default function GenerarPedidoModal({
       );
     }
 
-    // 3. Soporte intermedio/doble
-    const precioSoporte = getSoporteResumen() ? Number(getSoporteResumen()?.precio || 0) : 0;
+    // 3. Soporte intermedio/doble - calcular por metro lineal (ancho)
+    let precioSoporte = 0;
+    if (getSoporteResumen() && getSoporteResumen()?.precio) {
+      precioSoporte = (anchoEfectivo / 100) * Number(getSoporteResumen()?.precio);
+    }
 
     // 4. Colocación
     const precioColocacionFinal = incluirColocacion ? precioColocacion : 0;
@@ -1276,6 +1283,10 @@ export default function GenerarPedidoModal({
     let soporteIntermedioTotal = 0;
     let colocacionTotal = incluirColocacion ? precioColocacion : 0;
     const cantidadNum = Number(cantidad) || 1;
+    
+    // Aplicar ancho mínimo si es necesario
+    const anchoIngresado = Number(ancho);
+    const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
 
     // Lógica específica para Dunes
     if (selectedSistema?.toLowerCase().includes('dunes')) {
@@ -1303,15 +1314,15 @@ export default function GenerarPedidoModal({
       // Lógica para otros sistemas (mantener la original)
       if (selectedRielBarral && selectedRielBarral.precio) {
         // console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
-        if (selectedSistema?.toLowerCase().includes('veneciana')) {
-          if (Number(ancho) > 0 && Number(alto) > 0) {
+        if (selectedSistema?.toLowerCase().includes('veneciana') || selectedSistema?.toLowerCase().includes('roller')) {
+          if (anchoEfectivo > 0 && Number(alto) > 0) {
             // console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
-            precioUnitario = (Number(ancho) / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio);
+            precioUnitario = (anchoEfectivo / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio);
           } else {
             precioUnitario = 0;
           }
         } else {
-          precioUnitario = (Number(ancho) / 100) * Number(selectedRielBarral.precio);
+          precioUnitario = (anchoEfectivo / 100) * Number(selectedRielBarral.precio);
         }
       } else {
         // console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
@@ -1320,7 +1331,7 @@ export default function GenerarPedidoModal({
       
       // Sumar tela, soporte intermedio y colocación al total (no incluir tela para Veneciana)
       precioTelaTotal = (selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) ? calcularPrecioTela(
-        Number(ancho),
+        anchoEfectivo,
         Number(alto),
         selectedTela?.precio ? Number(selectedTela.precio) : 0,
         selectedTela?.nombreProducto === 'ROLLER',
@@ -1330,7 +1341,7 @@ export default function GenerarPedidoModal({
       // Sumar segunda tela para cortinas tradicionales
       if (selectedTela2 && (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))) {
         precioTela2Total = calcularPrecioTela(
-          Number(ancho),
+          anchoEfectivo,
           Number(alto),
           selectedTela2?.precio ? Number(selectedTela2.precio) : 0,
           false,
@@ -1346,7 +1357,7 @@ export default function GenerarPedidoModal({
         });
       }
       
-      soporteIntermedioTotal = getSoporteResumen() ? Number(getSoporteResumen()?.precio || 0) : 0;
+      soporteIntermedioTotal = getSoporteResumen() ? (anchoEfectivo / 100) * Number(getSoporteResumen()?.precio || 0) : 0;
     }
 
     // El precio unitario debe incluir todos los extras
@@ -1625,14 +1636,13 @@ export default function GenerarPedidoModal({
     }
     if (!ancho || !alto) return 0;
     
-    // Aplicar ancho mínimo si es necesario
+    // NO aplicar ancho mínimo a las telas - usar el ancho ingresado originalmente
     const anchoIngresado = Number(ancho);
-    const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
     
-    // Para sistemas Propios/Tradicional, usar el ancho efectivo (la función calcularPrecioTela ya maneja el multiplicador)
+    // Para sistemas Propios/Tradicional, usar el ancho original con multiplicador
     // Para otros sistemas, usar el ancho multiplicado
     const anchoACalcular = (selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) 
-      ? anchoEfectivo 
+      ? anchoIngresado 
       : anchoTelaMultiplicado;
     
     return calcularPrecioTela(
@@ -2248,6 +2258,16 @@ export default function GenerarPedidoModal({
                                           <div className="flex justify-between items-center">
                                             <span className="flex gap-2 items-center">
                                               {productoDunes.nombreProducto} ({ancho}cm)
+                                              <button
+                                                type="button"
+                                                className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                                aria-label="Quitar producto Dunes"
+                                                onClick={() => {
+                                                  setSistemaPedidoDetalles(null);
+                                                }}
+                                              >
+                                                ×
+                                              </button>
                                             </span>
                                             <span className="font-medium">
                                               ${precioSistema.toLocaleString()}
@@ -2263,6 +2283,16 @@ export default function GenerarPedidoModal({
                                           <div className="flex justify-between items-center">
                                             <span className="flex gap-2 items-center">
                                               {telaDunes.nombreProducto} ({ancho}cm × {alto}cm)
+                                              <button
+                                                type="button"
+                                                className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                                aria-label="Quitar tela Dunes"
+                                                onClick={() => {
+                                                  setSistemaPedidoDetalles(null);
+                                                }}
+                                              >
+                                                ×
+                                              </button>
                                             </span>
                                             <span className="font-medium">
                                               ${precioTela.toLocaleString()}
@@ -2295,6 +2325,21 @@ export default function GenerarPedidoModal({
                                               Ancho mínimo: {anchoMinimo}cm
                                             </span>
                                           )}
+                                          <button
+                                            type="button"
+                                            className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                            aria-label="Quitar sistema Veneciana"
+                                            onClick={() => {
+                                              if (productoSeleccionado && sistemaPedidoDetalles?.productoSeleccionado) {
+                                                setSistemaPedidoDetalles(null);
+                                              } else {
+                                                setSelectedRielBarral(null);
+                                                setSearchRielBarral("");
+                                              }
+                                            }}
+                                          >
+                                            ×
+                                          </button>
                                         </span>
                                         <span className="font-medium">
                                           ${((calcularPrecioSistema() || 0) * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2335,7 +2380,19 @@ export default function GenerarPedidoModal({
                                           </button>
                                         </span>
                                         <span className="font-medium">
-                                          ${((anchoEfectivo / 100) * Number(productoSeleccionado.precio) * Number(cantidad)).toLocaleString()}
+                                          ${(() => {
+                                            const precioBase = Number(productoSeleccionado.precio);
+                                            const anchoMetros = anchoEfectivo / 100;
+                                            const altoMetros = Number(alto) / 100;
+                                            
+                                            // Para Roller y Veneciana, calcular por área (ancho × alto)
+                                            if (selectedSistema?.toLowerCase().includes('roller') || selectedSistema?.toLowerCase().includes('veneciana')) {
+                                              return (precioBase * anchoMetros * altoMetros * Number(cantidad)).toLocaleString();
+                                            } else {
+                                              // Para otros sistemas, calcular por metro lineal (ancho)
+                                              return (precioBase * anchoMetros * Number(cantidad)).toLocaleString();
+                                            }
+                                          })()}
                                         </span>
                                       </div>
                                       {aplicaMinimo && (
@@ -2370,17 +2427,12 @@ export default function GenerarPedidoModal({
                                       {(() => {
                                         // Para sistemas Propios/Tradicional, mostrar el ancho multiplicado
                                         if (selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) {
-                                          const anchoMultiplicado = anchoEfectivo * (multiplicadorTelaLocal || 1);
+                                          const anchoMultiplicado = Number(ancho) * (multiplicadorTelaLocal || 1);
                                           return `(${ancho}cm x ${multiplicadorTelaLocal || 1} = ${anchoMultiplicado}cm)`;
                                         } else {
                                           return `(${ancho}cm x ${alto}cm)`;
                                         }
                                       })()}
-                                      {aplicaMinimo && (
-                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                                          Ancho mínimo: {anchoMinimo}cm
-                                        </span>
-                                      )}
                                       {Number(cantidad) > 1 ? ` x${cantidad}` : ''}
                                       <button
                                         type="button"
@@ -2401,11 +2453,6 @@ export default function GenerarPedidoModal({
                                         : (calcularPrecioTelaMultiplicada() * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
-                                  {aplicaMinimo && (
-                                    <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                                      ⚠️ Se aplica ancho mínimo de {anchoMinimo}cm para el cálculo de tela (ingresado: {ancho}cm)
-                                    </div>
-                                  )}
                                   {multiplicadorTelaLocal && multiplicadorTelaLocal !== 1 && selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
                                     <div className="text-xs text-blue-700 dark:text-primary pl-2">
                                       Cálculo: {ancho}cm x {multiplicadorTelaLocal} = {Number(ancho) * multiplicadorTelaLocal}cm × ${Number(selectedTela.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTelaLocal / 100) * Number(selectedTela.precio)).toFixed(2)}
@@ -2480,12 +2527,32 @@ export default function GenerarPedidoModal({
 
                           {getSoporteResumen() && (
                             <div className="flex justify-between items-center">
-                              <span>
+                              <span className="flex gap-2 items-center">
                                 {getSoporteResumen()?.tipo === 'doble' ? 'Soporte Doble' : 'Soporte Intermedio'} 
                                 ({getSoporteResumen()?.nombre}):
+                                <button
+                                  type="button"
+                                  className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                  aria-label="Quitar soporte"
+                                  onClick={() => {
+                                    if (getSoporteResumen()?.tipo === 'doble') {
+                                      setSoporteDoble(false);
+                                      setSoporteDobleProducto(null);
+                                    } else {
+                                      setSelectedSoporteIntermedio(null);
+                                    }
+                                  }}
+                                >
+                                  ×
+                                </button>
                               </span>
                               <span className="font-medium">
-                                ${Number(getSoporteResumen()?.precio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${(() => {
+                                  const precioBase = Number(getSoporteResumen()?.precio || 0);
+                                  const anchoIngresado = Number(ancho);
+                                  const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
+                                  return ((anchoEfectivo / 100) * precioBase).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                })()}
                               </span>
                             </div>
                           )}
@@ -2500,8 +2567,23 @@ export default function GenerarPedidoModal({
                               </div>
                               <ul className="text-xs text-gray-600 dark:text-dark-text-secondary mt-1">
                                 {agruparAccesorios(accesoriosAdicionales).map((acc, idx) => (
-                                  <li key={idx}>
-                                    {acc.nombreProducto} x{acc.cantidad} = ${acc.precioTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  <li key={idx} className="flex items-center">
+                                    <span className="flex gap-2 items-center">
+                                      {acc.nombreProducto} x{acc.cantidad} = ${acc.precioTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      <button
+                                        type="button"
+                                        className="ml-2 text-sm font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                        aria-label={`Quitar ${acc.nombreProducto}`}
+                                        onClick={() => {
+                                          // Remover todos los accesorios con este nombre
+                                          setAccesoriosAdicionales(prev => 
+                                            prev.filter(item => item.nombreProducto !== acc.nombreProducto)
+                                          );
+                                        }}
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
                                   </li>
                                 ))}
                               </ul>
