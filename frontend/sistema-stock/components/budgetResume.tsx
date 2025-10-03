@@ -124,6 +124,69 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
     return presupuestoData.descuento * proporcion;
   };
 
+  // Función para generar PDF con paginado inteligente por secciones
+  const generatePDFWithSectionBreaks = async (
+    pdf: jsPDF, 
+    fullCanvas: HTMLCanvasElement, 
+    imgWidth: number, 
+    contentHeight: number, 
+    margin: number, 
+    contentWidth: number
+  ) => {
+    console.log('Generando PDF con paginado inteligente para presupuesto estimativo');
+    
+    // Usar paginado estándar pero con mejor control de altura
+    const scale = imgWidth / fullCanvas.width;
+    const totalHeight = fullCanvas.height * scale;
+    
+    // Para presupuestos estimativos, usar páginas más pequeñas para evitar cortes
+    const adjustedContentHeight = contentHeight * 0.85; // Reducir 15% para dar más espacio entre páginas
+    const totalPages = Math.ceil(totalHeight / adjustedContentHeight);
+    
+    console.log('Paginado inteligente:', {
+      totalHeight,
+      adjustedContentHeight,
+      totalPages,
+      scale
+    });
+    
+    for (let page = 0; page < totalPages; page++) {
+      if (page > 0) {
+        pdf.addPage();
+      }
+      
+      // Calcular la posición Y para esta página
+      const sourceY = page * adjustedContentHeight;
+      const sourceHeight = Math.min(adjustedContentHeight, totalHeight - sourceY);
+      
+      // Crear un canvas temporal para esta página
+      const pageCanvas = document.createElement('canvas');
+      const ctx = pageCanvas.getContext('2d');
+      pageCanvas.width = fullCanvas.width;
+      pageCanvas.height = sourceHeight / scale;
+      
+      // Dibujar la porción correspondiente de la imagen
+      ctx?.drawImage(
+        fullCanvas,
+        0, sourceY / scale, fullCanvas.width, sourceHeight / scale,
+        0, 0, fullCanvas.width, sourceHeight / scale
+      );
+      
+      // Convertir a imagen y agregar al PDF
+      const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+      pdf.addImage(
+        pageImgData, 
+        'PNG', 
+        margin, 
+        margin, 
+        imgWidth, 
+        sourceHeight,
+        undefined, 
+        'FAST'
+      );
+    }
+  };
+
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) return;
     
@@ -157,6 +220,30 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
             img.style.maxWidth = '100%';
             img.style.height = 'auto';
           });
+          
+          // Para presupuestos estimativos, agregar CSS para controlar saltos de página
+          if (presupuestoData.esEstimativo && presupuestoData.opciones && presupuestoData.opciones.length > 1) {
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              @media print {
+                .opcion-section {
+                  page-break-before: auto;
+                  page-break-after: avoid;
+                  page-break-inside: avoid;
+                }
+                .opcion-section:not(:first-child) {
+                  page-break-before: always;
+                }
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+            
+            // Agregar clases a las secciones de opciones
+            const opcionElements = clonedDoc.querySelectorAll('.opcion-section-container, .opcion-header, .opcion-title, [class*="opcion"], [class*="Opción"], h2, h3, h4');
+            opcionElements.forEach(element => {
+              element.classList.add('opcion-section');
+            });
+          }
         }
       });
       
@@ -329,9 +416,9 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                 const datosOpcion = calcularTotalPorGrupo(productos);
                 
                 return (
-                  <div key={nombreOpcion} className="mb-8">
-                    <div className="mb-4 p-3 bg-blue-100 rounded">
-                      <h2 className="text-xl font-bold text-blue-900">{nombreOpcion}</h2>
+                  <div key={nombreOpcion} className="mb-8 opcion-section-container">
+                    <div className="mb-4 p-3 bg-blue-100 rounded opcion-header">
+                      <h2 className="text-xl font-bold text-blue-900 opcion-title">{nombreOpcion}</h2>
                     </div>
                     
                     <div className="overflow-x-auto mb-4">
@@ -401,8 +488,8 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                                       if (producto.ancho && producto.alto) {
                                         return (
                                           <>
-                                            <div>Alto: {producto.alto}cm</div>
-                                            <div>Ancho: {producto.ancho}cm</div>
+                                             <div>Ancho: {producto.ancho}cm</div>
+                                             <div>Alto: {producto.alto}cm</div>
                                           </>
                                         );
                                       }
@@ -524,8 +611,8 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                                   if (producto.ancho && producto.alto) {
                                     return (
                                       <>
-                                        <div>Alto: {producto.alto}cm</div>
-                                        <div>Ancho: {producto.ancho}cm</div>
+                                             <div>Ancho: {producto.ancho}cm</div>
+                                             <div>Alto: {producto.alto}cm</div>
                                       </>
                                     );
                                   }
