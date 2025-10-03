@@ -46,6 +46,8 @@ interface Presupuesto {
   items: Item[];
   espacio?: string; // Campo espacio del presupuesto
   presupuesto_json?: string | any; // Campo JSON del presupuesto
+  esEstimativo?: boolean; // Campo para identificar presupuestos estimativos
+  opciones?: Array<{id: string, nombre: string, activa: boolean}>; // Opciones del presupuesto estimativo
 }
 
 interface Item {
@@ -56,6 +58,7 @@ interface Item {
   precio_unitario: number;
   subtotal: number;
   espacio?: string; // Nuevo campo para el espacio/ambiente
+  opcion?: string; // Campo para opciones de presupuesto estimativo (A, B, C, etc.)
   detalles?: {
     sistema: string;
     detalle: string;
@@ -103,10 +106,13 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       cantidad: number;
       subtotal: number;
       espacio?: string; // Nuevo campo para el espacio/ambiente
+      opcion?: string; // Campo para opciones de presupuesto estimativo
     }>;
     subtotal: number;
     descuento: number;
     total: number;
+    esEstimativo?: boolean; // Campo para identificar presupuestos estimativos
+    opciones?: Array<{id: string, nombre: string, activa: boolean}>; // Opciones del presupuesto estimativo
   } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [presupuestoToConfirm, setPresupuestoToConfirm] = useState<Presupuesto | null>(null);
@@ -162,44 +168,57 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
            (presupuesto: Presupuesto) => {
              
              
-             // Extraer el campo espacio del presupuesto_json para cada item
+             // Extraer información del presupuesto_json para cada item
              let itemsConEspacio = presupuesto.items;
+             let esEstimativo = false;
+             let opciones = [];
+             
              if (presupuesto.presupuesto_json) {
                try {
                  const presupuestoJson = typeof presupuesto.presupuesto_json === 'string' 
                    ? JSON.parse(presupuesto.presupuesto_json) 
                    : presupuesto.presupuesto_json;
                  
+                 // Verificar si es presupuesto estimativo
+                 esEstimativo = presupuestoJson.esEstimativo || false;
+                 opciones = presupuestoJson.opciones || [];
+                 
                  if (presupuestoJson.productos && Array.isArray(presupuestoJson.productos)) {
                    itemsConEspacio = presupuesto.items.map((item, index) => {
                      const productoJson = presupuestoJson.productos[index];
                      const espacio = productoJson?.espacio || 'Espacio/Ambiente sin especificar';
+                     const opcion = productoJson?.opcion || '';
                      return {
                        ...item,
-                       espacio: espacio
+                       espacio: espacio,
+                       opcion: opcion
                      };
                    });
                  }
                } catch (error) {
                  console.error('Error al parsear presupuesto_json:', error);
-                 // Si hay error, asignar "Sin especificar" a todos los items
+                 // Si hay error, asignar valores por defecto
                  itemsConEspacio = presupuesto.items.map((item) => ({
                    ...item,
-                   espacio: 'Sin especificar'
+                   espacio: 'Sin especificar',
+                   opcion: ''
                  }));
                }
              } else {
-               // Si no hay presupuesto_json, asignar "Sin especificar" a todos los items
+               // Si no hay presupuesto_json, asignar valores por defecto
                itemsConEspacio = presupuesto.items.map((item) => ({
                  ...item,
-                 espacio: 'Espacio/Ambiente sin especificar'
+                 espacio: 'Espacio/Ambiente sin especificar',
+                 opcion: ''
                }));
              }
             
             return {
               ...presupuesto,
               items: itemsConEspacio,
-              estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado
+              estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado,
+              esEstimativo: esEstimativo,
+              opciones: opciones
             };
           }
         );
@@ -244,7 +263,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     const detalles = [];
     
     // Información básica del producto
-    detalles.push(`${item.cantidad}x ${item.nombre}`);
+    let nombreProducto = `${item.cantidad}x ${item.nombre}`;
+    if (item.opcion) {
+      nombreProducto += ` (Opción ${item.opcion})`;
+    }
+    detalles.push(nombreProducto);
     
     // Lógica específica para Dunes
     if (item.detalles?.sistema?.toLowerCase().includes('dunes')) {
@@ -420,20 +443,22 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           telefono: presupuesto.cliente_telefono || 'Sin teléfono',
           email: presupuesto.cliente_email || undefined
         },
-                 productos: presupuesto.items?.map(item => {
-                  
-           return {
-             nombre: item.nombre,
-             descripcion: item.descripcion,
-             precioUnitario: Number(item.precio_unitario),
-             cantidad: item.cantidad,
-             subtotal: Number(item.subtotal),
-             espacio: item.espacio || 'Sin especificar'
-           };
-         }) || [],
+        productos: presupuesto.items?.map(item => {
+          return {
+            nombre: item.nombre,
+            descripcion: item.descripcion,
+            precioUnitario: Number(item.precio_unitario),
+            cantidad: item.cantidad,
+            subtotal: Number(item.subtotal),
+            espacio: item.espacio || 'Sin especificar',
+            opcion: item.opcion || undefined
+          };
+        }) || [],
         subtotal: Number(presupuesto.subtotal),
         descuento: Number(presupuesto.descuento),
-        total: Number(presupuesto.total)
+        total: Number(presupuesto.total),
+        esEstimativo: presupuesto.esEstimativo || false,
+        opciones: presupuesto.opciones || []
       };
       
       setFormattedPresupuesto(formattedData);
@@ -587,7 +612,6 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
   const columns = [
     { name: "N° PRESUPUESTO", uid: "numero_presupuesto" },
-    { name: "FECHA", uid: "fecha" },
     { name: "CLIENTE", uid: "cliente" },
     { name: "PRODUCTOS", uid: "productos" },
     { name: "TOTAL", uid: "total" },
@@ -600,17 +624,19 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       case "numero_presupuesto":
         return (
           <div className="font-medium">
-            {formatearNumeroPresupuesto(presupuesto.numero_presupuesto)}
-          </div>
-        );
-      case "fecha":
-        return (
-          <div>
-            {new Date(presupuesto.fecha).toLocaleDateString('es-AR', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric'
-            })}
+            <div className="flex items-center gap-2">
+              {formatearNumeroPresupuesto(presupuesto.numero_presupuesto)}
+              {presupuesto.esEstimativo && (
+                <Chip 
+                  size="sm" 
+                  color="primary" 
+                  variant="flat"
+                  className="text-xs"
+                >
+                  Estimativo
+                </Chip>
+              )}
+            </div>
           </div>
         );
       case "cliente":

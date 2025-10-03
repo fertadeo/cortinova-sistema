@@ -476,6 +476,8 @@ export const BudgetGenerator = () => {
         estado: "Emitido",
         numeroPresupuesto: presupuestoId,
         clienteId: selectedClient.id,
+        esEstimativo: esEstimativo,
+        opciones: opciones,
         productos: tableData.map(item => {
           console.log('Item detalles antes de enviar:', item.detalles);
           console.log('Item espacio:', item.espacio);
