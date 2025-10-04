@@ -559,7 +559,7 @@ export default function GenerarPedidoModal({
     setSoporteDobleProducto(null);
     setSistemaPedidoDetalles(null);
     setAccesoriosAdicionales([]);
-    setPrecioColocacion(0);
+    // NO resetear precioColocacion aquí - se obtiene del API
     setCantidadTelaManual(null);
   };
 
@@ -935,21 +935,7 @@ export default function GenerarPedidoModal({
     const precioBase = Number(productoSeleccionado.precio);
     // console.log('🎯 Usando precio del producto seleccionado:', precioBase);
     
-    // Para Roller y Veneciana, calcular por área (ancho × alto)
-    if (selectedSistema?.toLowerCase().includes('roller') || selectedSistema?.toLowerCase().includes('veneciana')) {
-      const precioCalculado = precioBase * anchoMetros * altoMetros;
-      // console.log('🏗️ Cálculo por m² (Roller/Veneciana):', {
-      //   sistema: selectedSistema,
-      //   precioBase: precioBase,
-      //   anchoMetros: anchoMetros,
-      //   altoMetros: altoMetros,
-      //   area: anchoMetros * altoMetros,
-      //   precioCalculado: precioCalculado
-      // });
-      return precioCalculado;
-    }
-    
-    // Para otros sistemas, calcular por metro lineal (ancho)
+    // Para todos los sistemas, calcular por metro lineal (ancho) con mínimos aplicados
     const precioCalculado = precioBase * anchoMetros;
     // console.log('📏 Cálculo por metro lineal:', {
     //   sistema: selectedSistema,
@@ -1064,8 +1050,12 @@ export default function GenerarPedidoModal({
     const precioMotorizacionFinal = incluirMotorizacion ? precioMotorizacion : 0;
 
     // 6. Accesorios adicionales
+    // Para cortinas tradicionales, los accesorios se multiplican por la cantidad del producto principal
+    const esTradicional = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+    const multiplicadorAccesorios = esTradicional ? cantidadNum : 1;
+    
     const totalAccesoriosAdicionales = accesoriosAdicionales.reduce(
-      (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1)),
+      (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1) * multiplicadorAccesorios),
       0
     );
 
@@ -1129,24 +1119,59 @@ export default function GenerarPedidoModal({
   useEffect(() => {
     const fetchPrecioColocacion = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/4`);
-        if (!response.ok) throw new Error('Error al obtener precio de colocación');
-        const data = await response.json();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
+        console.log('🔧 [COLOCACIÓN] API URL:', apiUrl);
         
-        // Validar que el producto sea el correcto
+        const url = `${apiUrl}/productos/4`;
+        console.log('🔧 [COLOCACIÓN] URL completa:', url);
+        
+        const response = await fetch(url);
+        console.log('🔧 [COLOCACIÓN] Status response:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('🔧 [COLOCACIÓN] Error response:', errorText);
+          throw new Error(`Error al obtener precio de colocación: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('🔧 [COLOCACIÓN] Data recibida:', data);
+        
+        // Validar que el producto sea el correcto (más flexible)
         const nombreProducto = data.nombreProducto?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if (!nombreProducto?.includes('colocacion')) {
-          console.error('El producto no corresponde a colocación');
-          return;
+        console.log('🔧 [COLOCACIÓN] Nombre producto normalizado:', nombreProducto);
+        
+        if (!nombreProducto?.includes('colocacion') && !nombreProducto?.includes('instalacion') && !nombreProducto?.includes('instalación')) {
+          console.warn('🔧 [COLOCACIÓN] El producto ID 4 no parece ser de colocación/instalación:', data.nombreProducto);
+          // No retornar, continuar con el precio aunque no coincida exactamente el nombre
         }
 
-        const precio = Number(data.precio);
-        if (!isNaN(precio)) {
+        const precioString = data.precio;
+        console.log('🔧 [COLOCACIÓN] Precio como string:', precioString, 'Tipo:', typeof precioString);
+        
+        const precio = Number(precioString);
+        console.log('🔧 [COLOCACIÓN] Precio convertido a número:', precio, 'isNaN:', isNaN(precio));
+        
+        if (!isNaN(precio) && precio > 0) {
           setPrecioColocacion(precio);
+          console.log('✅ [COLOCACIÓN] Precio de colocación establecido en estado:', precio);
+          
+          // Verificar que el estado se actualizó correctamente
+          setTimeout(() => {
+            console.log('🔧 [COLOCACIÓN] Estado después de 100ms:', precioColocacion);
+          }, 100);
+        } else {
+          console.warn('⚠️ [COLOCACIÓN] Precio inválido o cero:', precio);
+          // Establecer un precio por defecto si no se puede obtener del API
+          setPrecioColocacion(5000); // $5000 por defecto
+          console.log('🔧 [COLOCACIÓN] Estableciendo precio por defecto: 5000');
         }
 
       } catch (error) {
-        console.error('Error al obtener precio de colocación:', error);
+        console.error('❌ [COLOCACIÓN] Error al obtener precio de colocación:', error);
+        // En caso de error, establecer un precio por defecto
+        setPrecioColocacion(5000); // $5000 por defecto
+        console.log('🔧 [COLOCACIÓN] Error en fetch, estableciendo precio por defecto: 5000');
       }
     };
 
@@ -1314,15 +1339,12 @@ export default function GenerarPedidoModal({
       // Lógica para otros sistemas (mantener la original)
       if (selectedRielBarral && selectedRielBarral.precio) {
         // console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
-        if (selectedSistema?.toLowerCase().includes('veneciana') || selectedSistema?.toLowerCase().includes('roller')) {
-          if (anchoEfectivo > 0 && Number(alto) > 0) {
-            // console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
-            precioUnitario = (anchoEfectivo / 100) * (Number(alto) / 100) * Number(selectedRielBarral.precio);
-          } else {
-            precioUnitario = 0;
-          }
-        } else {
+        // Para todos los sistemas, calcular por metro lineal (ancho) con mínimos aplicados
+        if (anchoEfectivo > 0) {
+          // console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
           precioUnitario = (anchoEfectivo / 100) * Number(selectedRielBarral.precio);
+        } else {
+          precioUnitario = 0;
         }
       } else {
         // console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
@@ -1593,23 +1615,27 @@ export default function GenerarPedidoModal({
   const agruparAccesorios = (accesorios: any[]) => {
     const accesoriosAgrupados = new Map();
     
+    // Para cortinas tradicionales, los accesorios se multiplican por la cantidad del producto principal
+    const esTradicional = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+    const multiplicadorAccesorios = esTradicional ? (Number(cantidad) || 1) : 1;
+    
     accesorios.forEach(acc => {
       const nombre = acc.nombreProducto;
       const precio = Number(acc.precio);
-      const cantidad = acc.cantidad || 1;
+      const cantidadAccesorio = (acc.cantidad || 1) * multiplicadorAccesorios;
       
       if (accesoriosAgrupados.has(nombre)) {
         // Si ya existe, sumar cantidades
         const existente = accesoriosAgrupados.get(nombre);
-        existente.cantidad += cantidad;
+        existente.cantidad += cantidadAccesorio;
         existente.precioTotal = existente.precioUnitario * existente.cantidad;
       } else {
         // Si es nuevo, agregarlo
         accesoriosAgrupados.set(nombre, {
           nombreProducto: nombre,
           precioUnitario: precio,
-          cantidad: cantidad,
-          precioTotal: precio * cantidad
+          cantidad: cantidadAccesorio,
+          precioTotal: precio * cantidadAccesorio
         });
       }
     });
@@ -1617,8 +1643,12 @@ export default function GenerarPedidoModal({
     return Array.from(accesoriosAgrupados.values());
   };
 
+  // Calcular total de accesorios (esta es la versión para el resumen)
+  const esTradicionalResumen = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+  const multiplicadorAccesoriosResumen = esTradicionalResumen ? (Number(cantidad) || 1) : 1;
+  
   const totalAccesoriosAdicionales = accesoriosAdicionales.reduce(
-    (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1)),
+    (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1) * multiplicadorAccesoriosResumen),
     0
   );
 
@@ -2346,9 +2376,9 @@ export default function GenerarPedidoModal({
                                         </span>
                                       </div>
                                       <div className="flex justify-between items-center text-xs text-gray-500 dark:text-dark-text-secondary">
-                                        <span>Fórmula: (ancho/100) × (alto/100) × precio base × cantidad</span>
+                                        <span>Fórmula: (ancho efectivo/100) × precio base × cantidad</span>
                                         <span>
-                                          ({anchoEfectivo/100} × {Number(alto)/100} × {productoSeleccionado?.precio || 0} × {cantidad})
+                                          ({anchoEfectivo/100} × {productoSeleccionado?.precio || 0} × {cantidad})
                                         </span>
                                       </div>
                                       {aplicaMinimo && (
@@ -2385,13 +2415,8 @@ export default function GenerarPedidoModal({
                                             const anchoMetros = anchoEfectivo / 100;
                                             const altoMetros = Number(alto) / 100;
                                             
-                                            // Para Roller y Veneciana, calcular por área (ancho × alto)
-                                            if (selectedSistema?.toLowerCase().includes('roller') || selectedSistema?.toLowerCase().includes('veneciana')) {
-                                              return (precioBase * anchoMetros * altoMetros * Number(cantidad)).toLocaleString();
-                                            } else {
-                                              // Para otros sistemas, calcular por metro lineal (ancho)
-                                              return (precioBase * anchoMetros * Number(cantidad)).toLocaleString();
-                                            }
+                                            // Para todos los sistemas, calcular por metro lineal (ancho) con mínimos aplicados
+                                            return (precioBase * anchoMetros * Number(cantidad)).toLocaleString();
                                           })()}
                                         </span>
                                       </div>
@@ -2618,7 +2643,9 @@ export default function GenerarPedidoModal({
                               )}
                             </div>
                             {incluirColocacion && (
-                              <span className="font-medium">${precioColocacion.toLocaleString()}</span>
+                              <span className="font-medium">
+                                ${precioColocacion.toLocaleString()}{Number(cantidad) > 1 ? ` x${cantidad}` : ''} = ${(precioColocacion * (Number(cantidad) || 1)).toLocaleString()}
+                              </span>
                             )}
                           </div>
                           <div className="flex justify-between items-center pt-2">
