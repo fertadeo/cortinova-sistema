@@ -377,7 +377,7 @@ export default function GenerarPedidoModal({
   const [espacioPersonalizado, setEspacioPersonalizado] = useState(medidasPrecargadas?.ubicacionPersonalizada || "");
 
   // Lista de espacios predefinidos (reutilizar las mismas opciones que en medidas)
-  const ESPACIOS = ["Comedor", "Cocina", "Dormitorio", "Living", "Baño", "Oficina", "Otro"];
+  const ESPACIOS = ["Comedor", "Cocina", "Dormitorio", "Living", "Baño", "Oficina", "Garage", "Galeria", "Otro"];
   
   // Event listener para ESC
   useEffect(() => {
@@ -1301,90 +1301,19 @@ export default function GenerarPedidoModal({
   };
 
   const handleSubmit = () => {
-    // Calcular el precio unitario según la lógica del resumen
-    let precioUnitario = 0;
-    let precioTelaTotal = 0;
-    let precioTela2Total = 0;
-    let soporteIntermedioTotal = 0;
-    let colocacionTotal = incluirColocacion ? precioColocacion : 0;
     const cantidadNum = Number(cantidad) || 1;
     
-    // Aplicar ancho mínimo si es necesario
-    const anchoIngresado = Number(ancho);
-    const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
-
-    // Lógica específica para Dunes
-    if (selectedSistema?.toLowerCase().includes('dunes')) {
-      // console.log('🏗️ [DUNES] Calculando precio para sistema Dunes');
-      
-      // Usar la función calcularPrecioSistema que ya maneja Dunes correctamente
-      precioUnitario = calcularPrecioSistema();
-      
-      // Usar la función calcularPrecioTela que ya maneja Dunes correctamente
-      precioTelaTotal = calcularPrecioTela(
-        Number(ancho),
-        Number(alto),
-        0, // No usar selectedTela.precio para Dunes
-        false,
-        selectedSistema
-      );
-      
-      // console.log('💰 [DUNES] Precios calculados:', {
-      //   precioSistema: precioUnitario,
-      //   precioTela: precioTelaTotal,
-      //   precioColocacion: colocacionTotal,
-      //   cantidad: cantidadNum
-      // });
-    } else {
-      // Lógica para otros sistemas (mantener la original)
-      if (selectedRielBarral && selectedRielBarral.precio) {
-        // console.log('selectedRielBarral:', selectedRielBarral, 'selectedSistema:', selectedSistema);
-        // Para todos los sistemas, calcular por metro lineal (ancho) con mínimos aplicados
-        if (anchoEfectivo > 0) {
-          // console.log('Precio base del producto (selectedRielBarral.precio):', selectedRielBarral.precio);
-          precioUnitario = (anchoEfectivo / 100) * Number(selectedRielBarral.precio);
-        } else {
-          precioUnitario = 0;
-        }
-      } else {
-        // console.log('⚠️ No hay producto seleccionado, precio unitario será 0');
-        precioUnitario = 0;
-      }
-      
-      // Sumar tela, soporte intermedio y colocación al total (no incluir tela para Veneciana)
-      precioTelaTotal = (selectedTela && !selectedSistema.toLowerCase().includes('veneciana')) ? calcularPrecioTela(
-        anchoEfectivo,
-        Number(alto),
-        selectedTela?.precio ? Number(selectedTela.precio) : 0,
-        selectedTela?.nombreProducto === 'ROLLER',
-        selectedSistema
-      ) : 0;
-      
-      // Sumar segunda tela para cortinas tradicionales
-      if (selectedTela2 && (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))) {
-        precioTela2Total = calcularPrecioTela(
-          anchoEfectivo,
-          Number(alto),
-          selectedTela2?.precio ? Number(selectedTela2.precio) : 0,
-          false,
-          selectedSistema,
-          multiplicadorTela2
-        );
-        
-        console.log('🧵 [SEGUNDA TELA] Cálculo en handleSubmit:', {
-          selectedTela2: selectedTela2.nombreProducto,
-          precioTela2: selectedTela2.precio,
-          multiplicadorTela2: multiplicadorTela2,
-          precioTela2Total: precioTela2Total
-        });
-      }
-      
-      soporteIntermedioTotal = getSoporteResumen() ? (anchoEfectivo / 100) * Number(getSoporteResumen()?.precio || 0) : 0;
-    }
-
-    // El precio unitario debe incluir todos los extras
-    const precioUnitarioCompleto = precioUnitario + precioTelaTotal + precioTela2Total + soporteIntermedioTotal + colocacionTotal;
-    const precioTotal = precioUnitarioCompleto * cantidadNum + totalAccesoriosAdicionales;
+    // Usar exactamente la misma función que se usa en el resumen para garantizar consistencia
+    // Esto elimina la lógica duplicada y asegura que todos los sistemas usen el mismo cálculo
+    const precioTotal = calcularPrecioTotal();
+    
+    // Calcular el precio unitario dividiendo el total por la cantidad
+    const precioUnitarioCompleto = precioTotal / cantidadNum;
+    
+    console.log('🎯 PRECIO ENVIADO AL BUDGETTABLE:', {
+      precioTotal: precioTotal,
+      precioTotalFormateado: precioTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    });
     
     // console.log('💰 [PRECIO FINAL] Desglose completo:', {
     //   precioUnitario: precioUnitario,
@@ -1398,33 +1327,13 @@ export default function GenerarPedidoModal({
     //   precioTotal: precioTotal
     // });
 
-    // console.log('selectedSoporteIntermedio:', selectedSoporteIntermedio);
-    // console.log('accesoriosAdicionales:', accesoriosAdicionales);
-    
-    // Log detallado de todos los datos del pedido para cortina tradicional
-    // console.log('=== DETALLE COMPLETO DEL PEDIDO TRADICIONAL ===');
-    // console.log('Sistema:', selectedSistema);
-    // console.log('Medidas:', { ancho: Number(ancho), alto: Number(alto) });
-    // console.log('Cantidad:', cantidad);
-    // console.log('Tela seleccionada:', selectedTela);
-    // console.log('Soporte intermedio:', selectedSoporteIntermedio);
-    // console.log('Accesorios adicionales:', accesoriosAdicionales);
-    // console.log('Colocación incluida:', incluirColocacion);
-    // console.log('Precio colocación:', precioColocacion);
-    // console.log('Precio unitario completo:', precioUnitarioCompleto);
-    // console.log('Precio total:', precioTotal);
-    // console.log('Detalles del sistema:', {
-    //   sistemaRecomendado,
-    //   articuloSeleccionado: selectedArticulo,
-    //   caidaPorDelante,
-    //   colorSistema,
-    //   ladoComando,
-    //   tipoTela,
-    //   soporteIntermedio,
-    //   soporteDoble,
-    //   detalle
-    // });
-    // console.log('=== FIN DETALLE COMPLETO ===');
+    console.log('📊 RESUMEN DEL PEDIDO:', {
+      sistema: selectedSistema,
+      medidas: { ancho: Number(ancho), alto: Number(alto) },
+      cantidad: cantidadNum,
+      precioUnitarioCompleto: precioUnitarioCompleto,
+      precioTotal: precioTotal
+    });
     
     // Calcular información de tela para sistemas tradicionales
     let multiplicadorTelaInfo = null;
@@ -1480,8 +1389,6 @@ export default function GenerarPedidoModal({
         ...(selectedSistema?.toLowerCase().includes('dunes') && {
           productoDunes: sistemaPedidoDetalles?.producto,
           telaDunes: sistemaPedidoDetalles?.tela,
-          precioSistemaDunes: precioUnitario,
-          precioTelaDunes: precioTelaTotal,
           // Incluir todos los detalles del formulario de Dunes
           colorSistema: sistemaPedidoDetalles?.colorSistema,
           ladoComando: sistemaPedidoDetalles?.ladoComando,
@@ -1927,7 +1834,7 @@ export default function GenerarPedidoModal({
                                   role="option"
                                   aria-selected={selectedRielBarral?.id === item.id}
                                 >
-                                  <div className="font-medium text-gray-900 dark:text-dark-text">{item.nombreProducto}</div>
+                                  <div className="font-medium text-gray-900 dark:text-dark-text">{item.nombreProducto} ${Number(item.precio).toLocaleString()}</div>
                                   <div className="text-sm text-gray-600 dark:text-dark-text-secondary">
                                     {item.descripcion && <span className="text-gray-500 dark:text-dark-text-secondary">{item.descripcion}</span>}
                                     {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
@@ -1993,7 +1900,7 @@ export default function GenerarPedidoModal({
                                   role="option"
                                   aria-selected={selectedRielBarral?.id === item.id}
                                 >
-                                  <div className="font-medium text-gray-900 dark:text-dark-text">{item.nombreProducto}</div>
+                                  <div className="font-medium text-gray-900 dark:text-dark-text">{item.nombreProducto} ${Number(item.precio).toLocaleString()}</div>
                                   <div className="text-sm text-gray-600 dark:text-dark-text-secondary">
                                     {item.descripcion && <span className="text-gray-500 dark:text-dark-text-secondary">{item.descripcion}</span>}
                                     {item.precio && <span className="ml-2">Precio: ${item.precio}</span>}
@@ -2287,7 +2194,7 @@ export default function GenerarPedidoModal({
                                           {/* Producto Dunes */}
                                           <div className="flex justify-between items-center">
                                             <span className="flex gap-2 items-center">
-                                              {productoDunes.nombreProducto} ({ancho}cm)
+                                              {productoDunes.nombreProducto} ${Number(productoDunes.precio).toLocaleString()} ({ancho}cm)
                                               <button
                                                 type="button"
                                                 className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
@@ -2349,7 +2256,7 @@ export default function GenerarPedidoModal({
                                     <>
                                       <div className="flex justify-between items-center">
                                         <span className="flex gap-2 items-center">
-                                          {productoSeleccionado?.nombreProducto || selectedSistema.toUpperCase()} ({ancho}cm x {alto}cm)
+                                          {productoSeleccionado?.nombreProducto ? `${productoSeleccionado.nombreProducto} $${Number(productoSeleccionado.precio).toLocaleString()}` : selectedSistema.toUpperCase()} ({ancho}cm x {alto}cm)
                                           {aplicaMinimo && (
                                             <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                                               Ancho mínimo: {anchoMinimo}cm
@@ -2391,7 +2298,7 @@ export default function GenerarPedidoModal({
                                     <div className="flex flex-col gap-1">
                                       <div className="flex justify-between items-center">
                                         <span className="flex gap-2 items-center">
-                                          {productoSeleccionado.nombreProducto} ({ancho}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                          {productoSeleccionado.nombreProducto} ${Number(productoSeleccionado.precio).toLocaleString()} ({ancho}cm){Number(cantidad) > 1 ? ` x${cantidad}` : ''}
                                           {aplicaMinimo && (
                                             <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                                               Ancho mínimo: {anchoMinimo}cm

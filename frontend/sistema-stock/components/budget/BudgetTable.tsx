@@ -105,13 +105,9 @@ export const BudgetTable = ({
           ? {
               ...item,
               quantity: newQuantity,
-              total: (() => {
-                const baseTotal = item.price * newQuantity;
-                const motorizacion = item.detalles?.incluirMotorizacion 
-                  ? (item.detalles.precioMotorizacion || 0) * newQuantity 
-                  : 0;
-                return baseTotal + motorizacion;
-              })()
+              // El price viene directamente del modal, no se recalcula
+              // Solo se multiplica por la nueva cantidad para mantener proporcionalidad
+              total: item.price * newQuantity
             }
           : item
       );
@@ -241,7 +237,7 @@ export const BudgetTable = ({
         return <TableCell>${item.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>;
       case "actions":
         return (
-          <TableCell className="flex justify-end gap-2 pr-0.5">
+          <TableCell className="hidden md:block flex justify-end gap-2 pr-0.5">
             <Button 
               color="success"
               variant="flat"

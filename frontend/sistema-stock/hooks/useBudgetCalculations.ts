@@ -14,11 +14,8 @@ export const useBudgetCalculations = () => {
   ) => {
     const subtotal = items.reduce((acc, item) => {
       const itemTotal = item.total;
-      // Agregar motorización al total del item si está habilitada
-      const motorizacion = item.detalles?.incluirMotorizacion 
-        ? (item.detalles.precioMotorizacion || 0) * item.quantity 
-        : 0;
-      return acc + itemTotal + motorizacion;
+      // El total del item ya incluye motorización, no sumarla otra vez
+      return acc + itemTotal;
     }, 0);
     
     let discount = 0;

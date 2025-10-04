@@ -229,15 +229,20 @@ export const BudgetGenerator = () => {
     
     console.log('=== FIN PEDIDO RECIBIDO ===');
     
-    // Usar los precios calculados y pasados desde el modal
-    const precioUnitario = pedido.precioUnitario;
-    const precioTotal = pedido.precioTotal;
+    // Usar exactamente el precio total que se muestra en el resumen del modal
+    // Este precio ya incluye sistema, tela, colocación, motorización y accesorios
+    const precioTotalDelModal = pedido.precioTotal;
     
-    // Calcular el total incluyendo motorización
-    const motorizacion = pedido.detalles?.incluirMotorizacion 
-      ? (pedido.detalles.precioMotorizacion || 0) * (pedido.detalles?.cantidad || 1)
-      : 0;
-    const totalConMotorizacion = precioTotal + motorizacion;
+    // Calcular el precio unitario dividiendo por la cantidad
+    // Esto permite que al cambiar cantidad en la tabla, se recalcule proporcionalmente
+    const cantidadDelPedido = pedido.detalles?.cantidad || 1;
+    const precioUnitarioCalculado = precioTotalDelModal / cantidadDelPedido;
+    
+    console.log('🎯 PRECIO EXACTO DEL MODAL:', {
+      precioTotalDelModal: precioTotalDelModal,
+      cantidadDelPedido: cantidadDelPedido,
+      precioUnitarioCalculado: precioUnitarioCalculado
+    });
     
     console.log('Motorización:', {
       incluirMotorizacion: pedido.detalles?.incluirMotorizacion,
@@ -245,10 +250,9 @@ export const BudgetGenerator = () => {
       cantidad: pedido.detalles?.cantidad
     });
     console.log('Cálculos:', {
-      precioUnitario: precioUnitario,
-      precioTotal: precioTotal,
-      motorizacion: motorizacion,
-      totalConMotorizacion: totalConMotorizacion
+      precioTotalDelModal: precioTotalDelModal,
+      cantidadDelPedido: cantidadDelPedido,
+      precioUnitarioCalculado: precioUnitarioCalculado
     });
     // Si el pedido viene de una medida precargada, actualizar ese item
     if (pedido.medidaId) {
@@ -275,9 +279,9 @@ export const BudgetGenerator = () => {
           }
           return telaPrincipal;
         })(),
-              quantity: pedido.detalles?.cantidad || 1,
-              price: precioTotal / (pedido.detalles?.cantidad || 1),
-              total: totalConMotorizacion,
+              quantity: cantidadDelPedido,
+              price: precioUnitarioCalculado,
+              total: precioTotalDelModal,
               espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio, // Usar espacio personalizado si es "Otro"
               detalles: {
                 sistema: pedido.sistema || "",
@@ -345,9 +349,9 @@ export const BudgetGenerator = () => {
           }
           return telaPrincipal;
         })(),
-        quantity: pedido.detalles?.cantidad || 1,
-        price: precioTotal / (pedido.detalles?.cantidad || 1),
-        total: totalConMotorizacion,
+        quantity: cantidadDelPedido,
+        price: precioUnitarioCalculado,
+        total: precioTotalDelModal,
         espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio, // Usar espacio personalizado si es "Otro"
         detalles: {
           sistema: pedido.sistema || "",
