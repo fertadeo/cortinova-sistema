@@ -50,6 +50,7 @@ interface Presupuesto {
   opciones?: Array<{id: string, nombre: string, activa: boolean}>; // Opciones del presupuesto estimativo
   shouldRound?: boolean; // Campo para redondeo a miles
   applyDiscount?: boolean; // Campo para indicar si se aplicó descuento
+  showMeasuresInPDF?: boolean; // Campo para mostrar medidas en PDF
 }
 
 interface Item {
@@ -176,6 +177,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
              let opciones = [];
              let shouldRound = false;
              let applyDiscount = false;
+             let showMeasuresInPDF = false;
              let subtotalCalculado = presupuesto.subtotal;
              let descuentoCalculado = presupuesto.descuento;
              let totalCalculado = presupuesto.total;
@@ -191,6 +193,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                  opciones = presupuestoJson.opciones || [];
                  shouldRound = presupuestoJson.shouldRound || false;
                  applyDiscount = presupuestoJson.applyDiscount || false;
+                 showMeasuresInPDF = presupuestoJson.showMeasuresInPDF || false;
                  
                  // Usar los valores ya calculados del JSON (con redondeo aplicado)
                  subtotalCalculado = presupuestoJson.subtotal || presupuesto.subtotal;
@@ -214,10 +217,21 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                      const productoJson = presupuestoJson.productos[index];
                      const espacio = productoJson?.espacio || 'Espacio/Ambiente sin especificar';
                      const opcion = productoJson?.opcion || '';
+                     
+                     // Extraer medidas del producto del JSON
+                     const ancho = productoJson?.ancho;
+                     const alto = productoJson?.alto;
+                     
                      return {
                        ...item,
                        espacio: espacio,
-                       opcion: opcion
+                       opcion: opcion,
+                       // Actualizar detalles con las medidas del JSON
+                       detalles: {
+                         ...item.detalles,
+                         ancho: ancho,
+                         alto: alto
+                       } as any
                      };
                    });
                  }
@@ -247,6 +261,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
               opciones: opciones,
               shouldRound: shouldRound,
               applyDiscount: applyDiscount,
+              showMeasuresInPDF: showMeasuresInPDF,
               // Usar los valores ya calculados del JSON (con redondeo aplicado)
               subtotal: subtotalCalculado,
               descuento: descuentoCalculado,
@@ -472,8 +487,14 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         esEstimativo: presupuesto.esEstimativo,
         shouldRound: presupuesto.shouldRound,
         applyDiscount: presupuesto.applyDiscount,
+        showMeasuresInPDF: presupuesto.showMeasuresInPDF,
         descuento: presupuesto.descuento,
-        total: presupuesto.total
+        total: presupuesto.total,
+        items: presupuesto.items?.map(item => ({
+          nombre: item.nombre,
+          ancho: item.detalles?.ancho,
+          alto: item.detalles?.alto
+        }))
       });
       
       const formattedData = {
@@ -492,7 +513,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             cantidad: item.cantidad,
             subtotal: Number(item.subtotal),
             espacio: item.espacio || 'Sin especificar',
-            opcion: item.opcion || undefined
+            opcion: item.opcion || undefined,
+            // Incluir medidas del producto
+            ancho: item.detalles?.ancho,
+            alto: item.detalles?.alto
           };
         }) || [],
         subtotal: Number(presupuesto.subtotal), // Ya viene del JSON con redondeo aplicado
@@ -500,10 +524,19 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         total: Number(presupuesto.total), // Ya viene del JSON con redondeo aplicado
         esEstimativo: presupuesto.esEstimativo || false,
         opciones: presupuesto.opciones || [],
-        showMeasuresInPDF: false, // Por defecto no mostrar medidas en PDF
+        showMeasuresInPDF: presupuesto.showMeasuresInPDF || false, // Usar valor real del presupuesto
         applyDiscount: presupuesto.applyDiscount || Number(presupuesto.descuento) > 0, // Usar valor real o indicar si se aplicó descuento
         shouldRound: presupuesto.shouldRound || false // Usar valor real del presupuesto
       };
+      
+      console.log('🔍 [DEBUG] Datos formateados para PDF:', {
+        showMeasuresInPDF: formattedData.showMeasuresInPDF,
+        productos: formattedData.productos.map(p => ({
+          nombre: p.nombre,
+          ancho: p.ancho,
+          alto: p.alto
+        }))
+      });
       
       setFormattedPresupuesto(formattedData);
       setIsPDFModalOpen(true);

@@ -482,6 +482,12 @@ export const BudgetGenerator = () => {
         clienteId: selectedClient.id,
         esEstimativo: esEstimativo,
         opciones: opciones,
+        showMeasuresInPDF: showMeasuresInPDF,
+        shouldRound: shouldRound,
+        applyDiscount: applyDiscount,
+        subtotal: subtotal,
+        descuento: discount,
+        total: finalTotal,
         productos: tableData.map(item => {
           console.log('Item detalles antes de enviar:', item.detalles);
           console.log('Item espacio:', item.espacio);
@@ -510,17 +516,15 @@ export const BudgetGenerator = () => {
             ladoComando: item.detalles?.ladoComando || '',
             ladoApertura: item.detalles?.ladoApertura || '',
             detalle: item.detalles?.detalle || '',
+            // Incluir medidas del producto en el JSON
+            ancho: item.detalles?.ancho,
+            alto: item.detalles?.alto,
             // Información de segunda tela
             tela2: (item.detalles as any)?.tela2 || null,
             multiplicadorTela2: (item.detalles as any)?.multiplicadorTela2 || null,
             cantidadTelaManual2: (item.detalles as any)?.cantidadTelaManual2 || null
           };
-        }),
-        total: finalTotal,
-        subtotal: subtotal,
-        descuento: discount,
-        descuentoPorcentaje: applyDiscount && discountType === "percentage" ? Number(discountValue) : 0,
-        descuentoMonto: applyDiscount && discountType === "amount" ? Number(discountValue) : 0
+        })
       };
 
       console.log('PresupuestoData completo con espacios:', presupuestoData.productos.map(p => ({ nombre: p.nombre, espacio: p.espacio })));
