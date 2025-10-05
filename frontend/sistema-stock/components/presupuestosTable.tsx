@@ -222,17 +222,35 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                      const ancho = productoJson?.ancho;
                      const alto = productoJson?.alto;
                      
-                     return {
+                     console.log('🔍 [DEBUG] Item original:', {
+                       nombre: item.nombre,
+                       detalles: item.detalles
+                     });
+                     
+                     console.log('🔍 [DEBUG] Producto JSON:', {
+                       nombre: productoJson?.nombre,
+                       ancho: ancho,
+                       alto: alto
+                     });
+                     
+                     const itemActualizado = {
                        ...item,
                        espacio: espacio,
                        opcion: opcion,
-                       // Actualizar detalles con las medidas del JSON
+                       // Actualizar detalles preservando todos los campos existentes y agregando las medidas del JSON
                        detalles: {
                          ...item.detalles,
                          ancho: ancho,
                          alto: alto
-                       } as any
+                       }
                      };
+                     
+                     console.log('🔍 [DEBUG] Item actualizado:', {
+                       nombre: itemActualizado.nombre,
+                       detalles: itemActualizado.detalles
+                     });
+                     
+                     return itemActualizado;
                    });
                  }
                } catch (error) {
