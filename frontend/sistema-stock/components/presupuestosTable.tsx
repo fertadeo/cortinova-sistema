@@ -242,7 +242,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                          ...item.detalles,
                          ancho: ancho,
                          alto: alto
-                       }
+                       } as any
                      };
                      
                      console.log('🔍 [DEBUG] Item actualizado:', {
