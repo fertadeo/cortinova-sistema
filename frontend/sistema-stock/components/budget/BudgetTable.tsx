@@ -237,12 +237,13 @@ export const BudgetTable = ({
         return <TableCell>${item.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>;
       case "actions":
         return (
-          <TableCell className="hidden md:block flex justify-end gap-2 pr-0.5">
+          <TableCell className="hidden md:block justify-end gap-2 pr-0.5">
             <Button 
               color="success"
               variant="flat"
               size="sm"
               onClick={() => handleEdit(item)}
+              className="hidden"
             >
               Modificar pedido
             </Button>

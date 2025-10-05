@@ -68,7 +68,7 @@ export const Login = () => {
     <section className="flex flex-col items-center h-screen font-serif antialiased md:flex-row">
       <div className="relative hidden w-full h-screen lg:block md:w-1/2 xl:w-2/3">
         <Image
-          src="/images/portrait-cortinova.jpg"
+          src="/images/portrait-cortinova2.jpg"
           alt="Background Empresa"
           fill
           objectFit="cover"

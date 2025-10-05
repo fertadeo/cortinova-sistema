@@ -48,6 +48,8 @@ interface Presupuesto {
   presupuesto_json?: string | any; // Campo JSON del presupuesto
   esEstimativo?: boolean; // Campo para identificar presupuestos estimativos
   opciones?: Array<{id: string, nombre: string, activa: boolean}>; // Opciones del presupuesto estimativo
+  shouldRound?: boolean; // Campo para redondeo a miles
+  applyDiscount?: boolean; // Campo para indicar si se aplicó descuento
 }
 
 interface Item {
@@ -172,6 +174,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
              let itemsConEspacio = presupuesto.items;
              let esEstimativo = false;
              let opciones = [];
+             let shouldRound = false;
+             let applyDiscount = false;
+             let subtotalCalculado = presupuesto.subtotal;
+             let descuentoCalculado = presupuesto.descuento;
+             let totalCalculado = presupuesto.total;
              
              if (presupuesto.presupuesto_json) {
                try {
@@ -182,6 +189,25 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                  // Verificar si es presupuesto estimativo
                  esEstimativo = presupuestoJson.esEstimativo || false;
                  opciones = presupuestoJson.opciones || [];
+                 shouldRound = presupuestoJson.shouldRound || false;
+                 applyDiscount = presupuestoJson.applyDiscount || false;
+                 
+                 // Usar los valores ya calculados del JSON (con redondeo aplicado)
+                 subtotalCalculado = presupuestoJson.subtotal || presupuesto.subtotal;
+                 descuentoCalculado = presupuestoJson.descuento || presupuesto.descuento;
+                 totalCalculado = presupuestoJson.total || presupuesto.total;
+                 
+                 console.log('🔍 [DEBUG] Valores extraídos del JSON:', {
+                   esEstimativo,
+                   shouldRound,
+                   applyDiscount,
+                   subtotalDB: presupuesto.subtotal,
+                   subtotalJSON: presupuestoJson.subtotal,
+                   descuentoDB: presupuesto.descuento,
+                   descuentoJSON: presupuestoJson.descuento,
+                   totalDB: presupuesto.total,
+                   totalJSON: presupuestoJson.total
+                 });
                  
                  if (presupuestoJson.productos && Array.isArray(presupuestoJson.productos)) {
                    itemsConEspacio = presupuesto.items.map((item, index) => {
@@ -218,7 +244,13 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
               items: itemsConEspacio,
               estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado,
               esEstimativo: esEstimativo,
-              opciones: opciones
+              opciones: opciones,
+              shouldRound: shouldRound,
+              applyDiscount: applyDiscount,
+              // Usar los valores ya calculados del JSON (con redondeo aplicado)
+              subtotal: subtotalCalculado,
+              descuento: descuentoCalculado,
+              total: totalCalculado
             };
           }
         );
@@ -435,6 +467,15 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
   const handleViewPDF = (presupuesto: Presupuesto) => {
     if (presupuesto) {
+      console.log('🔍 [DEBUG] Presupuesto para PDF:', {
+        id: presupuesto.id,
+        esEstimativo: presupuesto.esEstimativo,
+        shouldRound: presupuesto.shouldRound,
+        applyDiscount: presupuesto.applyDiscount,
+        descuento: presupuesto.descuento,
+        total: presupuesto.total
+      });
+      
       const formattedData = {
         numeroPresupuesto: presupuesto.numero_presupuesto,
         fecha: new Date(presupuesto.fecha).toLocaleDateString(),
@@ -454,11 +495,14 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             opcion: item.opcion || undefined
           };
         }) || [],
-        subtotal: Number(presupuesto.subtotal),
-        descuento: Number(presupuesto.descuento),
-        total: Number(presupuesto.total),
+        subtotal: Number(presupuesto.subtotal), // Ya viene del JSON con redondeo aplicado
+        descuento: Number(presupuesto.descuento), // Ya viene del JSON con redondeo aplicado
+        total: Number(presupuesto.total), // Ya viene del JSON con redondeo aplicado
         esEstimativo: presupuesto.esEstimativo || false,
-        opciones: presupuesto.opciones || []
+        opciones: presupuesto.opciones || [],
+        showMeasuresInPDF: false, // Por defecto no mostrar medidas en PDF
+        applyDiscount: presupuesto.applyDiscount || Number(presupuesto.descuento) > 0, // Usar valor real o indicar si se aplicó descuento
+        shouldRound: presupuesto.shouldRound || false // Usar valor real del presupuesto
       };
       
       setFormattedPresupuesto(formattedData);
@@ -693,7 +737,12 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const formattedTotal = totalNumber.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         return (
           <div className="font-medium text-right">
-            ${formattedTotal}
+            <div>${formattedTotal}</div>
+            {presupuesto.descuento > 0 && (
+              <div className="text-xs text-green-600">
+                Descuento: -${Number(presupuesto.descuento).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </div>
+            )}
           </div>
         );
       case "estado":
@@ -738,7 +787,13 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                           {presupuestoToConfirm.cliente_email && (
                             <p>Email: {presupuestoToConfirm.cliente_email}</p>
                           )}
-                          <p>Total: ${Number(presupuestoToConfirm.total).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                          <div className="space-y-1">
+                            <p>Subtotal: ${Number(presupuestoToConfirm.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                            {presupuestoToConfirm.descuento > 0 && (
+                              <p className="text-green-600">Descuento: -${Number(presupuestoToConfirm.descuento).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                            )}
+                            <p className="font-bold text-lg">Total: ${Number(presupuestoToConfirm.total).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                          </div>
                           <div className="mt-4">
                             <p className="font-medium mb-3">Productos:</p>
                             <div className="space-y-3">
@@ -1094,7 +1149,13 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="font-medium text-gray-900 dark:text-gray-100">Presupuesto: {formatearNumeroPresupuesto(presupuestoToDelete.numero_presupuesto)}</p>
                   <p className="text-gray-700 dark:text-gray-300">Cliente: {presupuestoToDelete.cliente_nombre}</p>
-                  <p className="text-gray-700 dark:text-gray-300">Total: ${Number(presupuestoToDelete.total).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                  <div className="text-gray-700 dark:text-gray-300">
+                    <p>Subtotal: ${Number(presupuestoToDelete.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                    {presupuestoToDelete.descuento > 0 && (
+                      <p className="text-green-600">Descuento: -${Number(presupuestoToDelete.descuento).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                    )}
+                    <p className="font-bold">Total: ${Number(presupuestoToDelete.total).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                  </div>
                 </div>
               )}
             </ModalBody>

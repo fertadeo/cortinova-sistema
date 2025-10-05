@@ -47,6 +47,14 @@ interface BudgetResumeProps {
 
 const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
   const invoiceRef = React.useRef<HTMLDivElement>(null);
+  
+  console.log('🔍 [DEBUG] BudgetResume recibió:', {
+    esEstimativo: presupuestoData.esEstimativo,
+    shouldRound: presupuestoData.shouldRound,
+    applyDiscount: presupuestoData.applyDiscount,
+    descuento: presupuestoData.descuento,
+    total: presupuestoData.total
+  });
 
   // Función para redondear al millar más cercano
   const roundToThousand = (num: number): number => {
@@ -85,6 +93,12 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
 
   const productosAgrupados = agruparProductos();
 
+  // Función para detectar si un número está "cerca" de un valor redondo (múltiplo de 1000)
+  const isNearRoundNumber = (num: number, tolerance: number = 100): boolean => {
+    const rounded = roundToThousand(num);
+    return Math.abs(num - rounded) <= tolerance;
+  };
+
   // Calcular totales por grupo (opción o espacio)
   const calcularTotalPorGrupo = (productos: typeof presupuestoData.productos) => {
     const subtotal = productos.reduce((sum, prod) => sum + prod.subtotal, 0);
@@ -98,12 +112,44 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
     
     const totalGrupo = subtotal - descuentoGrupo;
     
-    // Aplicar redondeo a miles si está activado
-    if (presupuestoData.shouldRound && presupuestoData.applyDiscount) {
+    // Detectar automáticamente si necesita redondeo
+    // 1. Si el total del presupuesto completo es redondo (múltiplo de 1000)
+    // 2. Si hay descuento aplicado
+    // 3. Si el total de este grupo NO es redondo
+    const totalPresupuestoRedondo = isNearRoundNumber(presupuestoData.total);
+    const totalGrupoRedondo = isNearRoundNumber(totalGrupo);
+    const necesitaRedondeo = presupuestoData.applyDiscount && 
+                            totalPresupuestoRedondo && 
+                            !totalGrupoRedondo;
+    
+    console.log('🔍 [DEBUG] calcularTotalPorGrupo:', {
+      subtotal,
+      descuentoGrupo,
+      totalGrupo,
+      totalPresupuesto: presupuestoData.total,
+      totalPresupuestoRedondo,
+      totalGrupoRedondo,
+      necesitaRedondeo,
+      shouldRound: presupuestoData.shouldRound,
+      applyDiscount: presupuestoData.applyDiscount
+    });
+    
+    // Aplicar redondeo si está activado explícitamente O si se detecta automáticamente
+    if ((presupuestoData.shouldRound && presupuestoData.applyDiscount) || necesitaRedondeo) {
+      const totalRedondeado = roundToThousand(totalGrupo);
+      const descuentoAjustado = subtotal - totalRedondeado;
+      
+      console.log('🔍 [DEBUG] Aplicando redondeo:', {
+        totalOriginal: totalGrupo,
+        totalRedondeado,
+        descuentoAjustado,
+        razon: presupuestoData.shouldRound ? 'shouldRound activado' : 'detección automática'
+      });
+      
       return {
         subtotal: subtotal,
-        descuento: subtotal - roundToThousand(totalGrupo),
-        total: roundToThousand(totalGrupo)
+        descuento: descuentoAjustado,
+        total: totalRedondeado
       };
     }
     
