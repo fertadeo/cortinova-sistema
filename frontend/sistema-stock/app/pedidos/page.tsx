@@ -500,7 +500,7 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
   );
 };
 
-// Función mejorada para formatear los detalles según el sistema (optimizada para producción)
+// Función optimizada para confección - solo muestra detalles relevantes y no vacíos
 const formatearDetallesSegunSistema = (detalles: any) => {
   // Validar que detalles no sea undefined o null
   if (!detalles) {
@@ -510,26 +510,36 @@ const formatearDetallesSegunSistema = (detalles: any) => {
   const sistema = detalles.sistema?.toLowerCase() || '';
   const info: { [key: string]: any } = {};
   
+  // Función auxiliar para validar si un valor es relevante
+  const esValorRelevante = (valor: any): boolean => {
+    if (valor === null || valor === undefined) return false;
+    if (typeof valor === 'string') return valor.trim() !== '';
+    if (typeof valor === 'number') return valor > 0;
+    if (typeof valor === 'boolean') return valor === true;
+    if (Array.isArray(valor)) return valor.length > 0;
+    return true;
+  };
+  
   // 📐 MEDIDAS (Prioritario para producción)
-  if (detalles.ancho && detalles.alto && detalles.ancho > 0 && detalles.alto > 0) {
+  if (esValorRelevante(detalles.ancho) && esValorRelevante(detalles.alto)) {
     info['📐 Medidas'] = `${detalles.ancho} × ${detalles.alto} cm`;
-  } else if (detalles.ancho && detalles.ancho > 0) {
-    // Si solo hay ancho, mostrar solo ancho
+  } else if (esValorRelevante(detalles.ancho)) {
     info['📐 Ancho'] = `${detalles.ancho} cm`;
-  } else if (detalles.alto && detalles.alto > 0) {
-    // Si solo hay alto, mostrar solo alto
+  } else if (esValorRelevante(detalles.alto)) {
     info['📐 Alto'] = `${detalles.alto} cm`;
   }
   
-  // 🏷️ SISTEMA
-  info['🏷️ Sistema'] = detalles?.sistema || 'No especificado';
+  // 🏷️ SISTEMA (solo si no es vacío)
+  if (esValorRelevante(detalles.sistema)) {
+    info['🏷️ Sistema'] = detalles.sistema;
+  }
   
   // 🧵 TELA/MATERIAL
-  if (detalles.tipoTela) {
+  if (esValorRelevante(detalles.tipoTela)) {
     info['🧵 Tela'] = detalles.tipoTela;
     
     // Mostrar información específica de tela tradicional si está disponible
-    if (detalles.multiplicadorTela && detalles.metrosTotalesTela) {
+    if (esValorRelevante(detalles.multiplicadorTela) && esValorRelevante(detalles.metrosTotalesTela)) {
       info['📏 Multiplicador de tela'] = `x${detalles.multiplicadorTela}`;
       info['📐 Metros totales de tela'] = `${detalles.metrosTotalesTela.toFixed(2)} metros`;
     }
@@ -538,19 +548,19 @@ const formatearDetallesSegunSistema = (detalles: any) => {
   // ⚙️ CONFIGURACIÓN ESPECÍFICA POR SISTEMA
   if (sistema.includes('roller')) {
     // === CORTINA ROLLER ===
-    if (detalles.colorSistema) {
+    if (esValorRelevante(detalles.colorSistema)) {
       info['🎨 Color sistema'] = detalles.colorSistema;
     }
-    if (detalles.ladoComando) {
+    if (esValorRelevante(detalles.ladoComando)) {
       info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
-    if (detalles.caidaPorDelante && detalles.caidaPorDelante !== 'No') {
+    if (esValorRelevante(detalles.caidaPorDelante) && detalles.caidaPorDelante !== 'No') {
       info['📍 Caída por delante'] = `✅ ${detalles.caidaPorDelante}`;
     }
-    if (detalles.soporteIntermedio) {
+    if (detalles.soporteIntermedio === true) {
       info['🔧 Soporte intermedio'] = '✅ SÍ';
     }
-    if (detalles.soporteDoble) {
+    if (detalles.soporteDoble === true) {
       info['🔧 Soporte doble'] = '✅ SÍ';
     }
     
@@ -558,7 +568,7 @@ const formatearDetallesSegunSistema = (detalles: any) => {
     // === CORTINA TRADICIONAL ===
     
     // Detectar tipo de confección por los accesorios
-    if (detalles.accesoriosAdicionales?.length > 0) {
+    if (esValorRelevante(detalles.accesoriosAdicionales)) {
       const tieneRiel = detalles.accesoriosAdicionales.some((acc: any) => 
         acc.nombreProducto?.toLowerCase().includes('riel')
       );
@@ -576,38 +586,38 @@ const formatearDetallesSegunSistema = (detalles: any) => {
     }
     
     // Información de caída por delante
-    if (detalles.caidaPorDelante && detalles.caidaPorDelante !== 'No') {
+    if (esValorRelevante(detalles.caidaPorDelante) && detalles.caidaPorDelante !== 'No') {
       info['📍 Caída por delante'] = `✅ ${detalles.caidaPorDelante}`;
     }
     
   } else if (sistema.includes('barcelona') || sistema.includes('bandas')) {
     // === BANDAS VERTICALES ===
-    if (detalles.colorSistema) {
+    if (esValorRelevante(detalles.colorSistema)) {
       info['🎨 Color sistema'] = detalles.colorSistema;
     }
-    if (detalles.ladoComando) {
+    if (esValorRelevante(detalles.ladoComando)) {
       info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
     
   } else if (sistema.includes('dubai')) {
     // === DUBAI ===
-    if (detalles.colorSistema) {
+    if (esValorRelevante(detalles.colorSistema)) {
       info['🎨 Color sistema'] = detalles.colorSistema;
     }
-    if (detalles.ladoComando) {
+    if (esValorRelevante(detalles.ladoComando)) {
       info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
-    if (detalles.caidaPorDelante && detalles.caidaPorDelante !== 'No') {
+    if (esValorRelevante(detalles.caidaPorDelante) && detalles.caidaPorDelante !== 'No') {
       info['📍 Caída por delante'] = `✅ ${detalles.caidaPorDelante}`;
     }
-    if (detalles.soporteIntermedio) {
+    if (detalles.soporteIntermedio === true) {
       info['🔧 Soporte intermedio'] = '✅ SÍ';
     }
     
   } else if (sistema.includes('dunes')) {
     // === DUNES ===
     // Tipo de apertura (prioritario para Dunes)
-    if (detalles.tipoApertura) {
+    if (esValorRelevante(detalles.tipoApertura)) {
       if (detalles.tipoApertura === 'cadena_cordon') {
         info['🔧 Tipo de Apertura'] = 'Apertura con Cadena y Cordón';
       } else if (detalles.tipoApertura === 'baston') {
@@ -616,7 +626,7 @@ const formatearDetallesSegunSistema = (detalles: any) => {
     }
     
     // También verificar por el nombre del producto si no está el tipoApertura
-    if (detalles.productoDunes?.nombreProducto) {
+    if (esValorRelevante(detalles.productoDunes?.nombreProducto)) {
       if (detalles.productoDunes.nombreProducto.toLowerCase().includes('cadena')) {
         info['🔧 Tipo de Apertura'] = 'Apertura con Cadena y Cordón';
       } else if (detalles.productoDunes.nombreProducto.toLowerCase().includes('baston')) {
@@ -624,39 +634,39 @@ const formatearDetallesSegunSistema = (detalles: any) => {
       }
     }
     
-    if (detalles.colorSistema) {
+    if (esValorRelevante(detalles.colorSistema)) {
       info['🎨 Color sistema'] = detalles.colorSistema;
     }
-    if (detalles.ladoComando) {
+    if (esValorRelevante(detalles.ladoComando)) {
       info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
-    if (detalles.ladoApertura) {
+    if (esValorRelevante(detalles.ladoApertura)) {
       info['🎛️ Lado Apertura'] = `Lado ${detalles.ladoApertura}`;
     }
     
   } else if (sistema.includes('romana')) {
     // === ROMANA ===
-    if (detalles.ladoComando) {
+    if (esValorRelevante(detalles.ladoComando)) {
       info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
     
   } else {
     // === OTROS SISTEMAS (Fit, Venecianas, etc.) ===
-    if (detalles.colorSistema) {
+    if (esValorRelevante(detalles.colorSistema)) {
       info['🎨 Color'] = detalles.colorSistema;
     }
-    if (detalles.ladoComando) {
+    if (esValorRelevante(detalles.ladoComando)) {
       info['🎛️ Comando'] = `Lado ${detalles.ladoComando}`;
     }
   }
   
   // 🛠️ ACCESORIOS INCLUIDOS
-  if (detalles.accesorios?.length > 0) {
+  if (esValorRelevante(detalles.accesorios)) {
     info['🛠️ Accesorios incluidos'] = detalles.accesorios.join(', ');
   }
   
   // 🛠️ ACCESORIOS ADICIONALES (con cantidades, sin precios)
-  if (detalles.accesoriosAdicionales?.length > 0) {
+  if (esValorRelevante(detalles.accesoriosAdicionales)) {
     const accesoriosDetallados = detalles.accesoriosAdicionales.map((acc: any) => {
       if (typeof acc === 'string') {
         return acc;
@@ -670,14 +680,14 @@ const formatearDetallesSegunSistema = (detalles: any) => {
   }
   
   // 📝 DETALLES E INSTRUCCIONES ESPECIALES
-  if (detalles.detalle?.trim()) {
+  if (esValorRelevante(detalles.detalle)) {
     info['📝 Observaciones'] = detalles.detalle;
   }
   
   // 🏗️ INFORMACIÓN DE COLOCACIÓN
   if (detalles.incluirColocacion === true || detalles.incluirColocacion === 'true') {
     info['🏗️ Colocación'] = '✅ Incluida';
-  } else if (detalles.colocacion && detalles.colocacion !== 'false' && detalles.colocacion !== false) {
+  } else if (esValorRelevante(detalles.colocacion) && detalles.colocacion !== 'false' && detalles.colocacion !== false) {
     info['🏗️ Colocación'] = detalles.colocacion;
   }
   

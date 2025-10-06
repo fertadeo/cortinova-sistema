@@ -61,34 +61,20 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
     return Math.round(num / 1000) * 1000;
   };
 
-  // Agrupar productos según el tipo de presupuesto
+  // Agrupar productos por espacio
   const agruparProductos = () => {
-    if (presupuestoData.esEstimativo && presupuestoData.opciones) {
-      // Agrupar por opción
-      const productosPorOpcion: Record<string, typeof presupuestoData.productos> = {};
-      
-      presupuestoData.opciones.filter(op => op.activa).forEach(opcion => {
-        const productosDeOpcion = presupuestoData.productos.filter(p => p.opcion === opcion.id);
-        if (productosDeOpcion.length > 0) {
-          productosPorOpcion[opcion.nombre] = productosDeOpcion;
-        }
-      });
-      
-      return productosPorOpcion;
-    } else {
-      // Agrupar por espacio (lógica original)
-      return presupuestoData.productos.reduce((acc, producto) => {
-        const espacio = producto.espacio || 'Espacio/Ambiente sin especificar';
-        const espacioConPrefijo = espacio === 'Espacio/Ambiente sin especificar' 
-          ? espacio 
-          : `Espacio: ${espacio}`;
-        if (!acc[espacioConPrefijo]) {
-          acc[espacioConPrefijo] = [];
-        }
-        acc[espacioConPrefijo].push(producto);
-        return acc;
-      }, {} as Record<string, typeof presupuestoData.productos>);
-    }
+    // Siempre agrupar por espacio, independientemente de si es estimativo
+    return presupuestoData.productos.reduce((acc, producto) => {
+      const espacio = producto.espacio || 'Espacio/Ambiente sin especificar';
+      const espacioConPrefijo = espacio === 'Espacio/Ambiente sin especificar' 
+        ? espacio 
+        : `Espacio: ${espacio}`;
+      if (!acc[espacioConPrefijo]) {
+        acc[espacioConPrefijo] = [];
+      }
+      acc[espacioConPrefijo].push(producto);
+      return acc;
+    }, {} as Record<string, typeof presupuestoData.productos>);
   };
 
   const productosAgrupados = agruparProductos();
@@ -455,135 +441,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
             </div>
           </div>
 
-          {presupuestoData.esEstimativo ? (
-            // Render para presupuesto estimativo con opciones
-            <>
-              {Object.entries(productosAgrupados).map(([nombreOpcion, productos], opcionIndex) => {
-                const datosOpcion = calcularTotalPorGrupo(productos);
-                
-                return (
-                  <div key={nombreOpcion} className="mb-8 opcion-section-container">
-                    <div className="mb-4 p-3 bg-blue-100 rounded opcion-header">
-                      <h2 className="text-xl font-bold text-blue-900 opcion-title">{nombreOpcion}</h2>
-                    </div>
-                    
-                    <div className="overflow-x-auto mb-4">
-                      <table className="w-full" style={{ fontSize: '13px' }}>
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: '15%' }}>Producto</th>
-                            <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: presupuestoData.showMeasuresInPDF ? '30%' : '40%' }}>Descripción</th>
-                            {presupuestoData.showMeasuresInPDF && (
-                              <th className="px-2 py-2 font-semibold text-left text-gray-900" style={{ width: '15%' }}>Medidas</th>
-                            )}
-                            <th className="px-2 py-2 font-semibold text-right text-gray-900" style={{ width: '13%' }}>Precio Unit.</th>
-                            <th className="px-2 py-2 font-semibold text-center text-gray-900" style={{ width: '10%' }}>Cant.</th>
-                            <th className="px-2 py-2 font-semibold text-right text-gray-900" style={{ width: '17%' }}>Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {productos.map((producto, index) => (
-                            <React.Fragment key={index}>
-                              <tr>
-                                <td className="px-2 py-2 text-gray-900">{producto.nombre}</td>
-                                <td className="px-2 py-2 text-gray-900">{
-                                  (() => {
-                                    // Lógica específica para Dunes
-                                    if (producto.nombre?.toLowerCase().includes('dunes')) {
-                                      const detalles = [];
-                                      
-                                      if (producto.tipoApertura) {
-                                        if (producto.tipoApertura === 'cadena_cordon') {
-                                          detalles.push('Apertura con Cadena y Cordón');
-                                        } else if (producto.tipoApertura === 'baston') {
-                                          detalles.push('Apertura con Bastón');
-                                        }
-                                      }
-                                      
-                                      if (producto.colorSistema) {
-                                        detalles.push(`Color: ${producto.colorSistema}`);
-                                      }
-                                      
-                                      if (producto.ladoComando) {
-                                        detalles.push(`Comando: ${producto.ladoComando}`);
-                                      }
-                                      
-                                      if (producto.ladoApertura) {
-                                        detalles.push(`Apertura: ${producto.ladoApertura}`);
-                                      }
-                                      
-                                      if (producto.detalle && producto.detalle.trim() !== '') {
-                                        detalles.push(`Detalles: ${producto.detalle}`);
-                                      }
-                                      
-                                      return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
-                                    }
-                                    
-                                    const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
-                                    
-                                    if (!descripcionLimpia || descripcionLimpia.trim() === '') {
-                                      return producto.tipoTela || 'Sin descripción';
-                                    }
-                                    
-                                    return descripcionLimpia;
-                                  })()
-                                }</td>
-                                {presupuestoData.showMeasuresInPDF && (
-                                  <td className="px-2 py-2 text-gray-900" style={{ fontSize: '12px', lineHeight: '1.3' }}>
-                                    {(() => {
-                                      if (producto.ancho && producto.alto) {
-                                        return (
-                                          <>
-                                             <div>Ancho: {producto.ancho}cm</div>
-                                             <div>Alto: {producto.alto}cm</div>
-                                          </>
-                                        );
-                                      }
-                                      return 'Sin medidas';
-                                    })()}
-                                  </td>
-                                )}
-                                <td className="px-2 py-2 text-gray-900 text-right">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                <td className="px-2 py-2 text-gray-900 text-center">{producto.cantidad}</td>
-                                <td className="px-2 py-2 text-gray-900 text-right">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                              </tr>
-                              {producto.incluirMotorizacion && (
-                                <tr>
-                                  <td colSpan={presupuestoData.showMeasuresInPDF ? 5 : 4} className="px-2 py-2 font-bold text-gray-900">Motorización</td>
-                                  <td className="px-2 py-2 text-gray-900 text-right">${producto.precioMotorizacion?.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                </tr>
-                              )}
-                            </React.Fragment>
-                          ))}
-                          {/* Subtotal de la opción */}
-                          <tr className="border-t border-gray-300">
-                            <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                            <td className="px-2 py-2 font-semibold text-gray-900 text-right">Subtotal:</td>
-                            <td className="px-2 py-2 font-semibold text-gray-900 text-right">${datosOpcion.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                          </tr>
-                          {/* Descuento de la opción */}
-                          {datosOpcion.descuento > 0 && (
-                            <tr>
-                              <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                              <td className="px-2 py-2 font-semibold text-green-600 text-right">Descuento:</td>
-                              <td className="px-2 py-2 font-semibold text-green-600 text-right">-${datosOpcion.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                            </tr>
-                          )}
-                          {/* Total de la opción con descuento */}
-                          <tr className="border-t-2 border-blue-300">
-                            <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                            <td className="px-2 py-3 font-bold text-blue-900 text-right">Total {nombreOpcion}:</td>
-                            <td className="px-2 py-3 font-bold text-blue-900 text-right">${datosOpcion.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
-            </>
-          ) : (
-            // Render para presupuesto normal (agrupado por espacio)
+          {/* Render para todos los presupuestos (agrupado por espacio) */}
             <div className="overflow-x-auto mb-8">
               <table className="w-full" style={{ fontSize: '13px' }}>
                 <thead>
@@ -680,27 +538,31 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                       ))}
                     </React.Fragment>
                   ))}
-                  <tr>
-                    <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                    <td className="px-2 py-2 font-bold text-gray-900 text-right">Subtotal</td>
-                    <td className="px-2 py-2 text-gray-900 text-right">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                  </tr>
-                  {presupuestoData.descuento > 0 && (
-                    <tr>
-                      <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                      <td className="px-2 py-2 font-bold text-gray-900 text-right">Descuento</td>
-                      <td className="px-2 py-2 text-gray-900 text-right">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                    </tr>
+                  {/* Mostrar totales solo si NO es estimativo */}
+                  {!presupuestoData.esEstimativo && (
+                    <>
+                      <tr>
+                        <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                        <td className="px-2 py-2 font-bold text-gray-900 text-right">Subtotal</td>
+                        <td className="px-2 py-2 text-gray-900 text-right">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                      </tr>
+                      {presupuestoData.descuento > 0 && (
+                        <tr>
+                          <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                          <td className="px-2 py-2 font-bold text-gray-900 text-right">Descuento</td>
+                          <td className="px-2 py-2 text-gray-900 text-right">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
+                        <td className="px-2 py-2 font-bold text-gray-900 text-right">Total</td>
+                        <td className="px-2 py-2 font-bold text-gray-900 text-right">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                      </tr>
+                    </>
                   )}
-                  <tr>
-                    <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
-                    <td className="px-2 py-2 font-bold text-gray-900 text-right">Total</td>
-                    <td className="px-2 py-2 font-bold text-gray-900 text-right">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                  </tr>
                 </tbody>
               </table>
             </div>
-          )}
 
           <div className="p-4 text-blue-700 bg-blue-50 rounded-md">
             <p>Este presupuesto tiene una validez de 15 días.</p>

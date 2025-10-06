@@ -1039,9 +1039,17 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
           precioUnitario: item.precio_unitario,
           subtotal: item.subtotal,
           espacio: item.espacio, // Incluir el campo espacio en el pedido
-          detalles: item.detalles || {}
+          // Incluir medidas del producto en los detalles del pedido
+          detalles: {
+            ...item.detalles,
+            ancho: item.detalles?.ancho,
+            alto: item.detalles?.alto
+          }
         })) || [],
+        // Usar el total con descuento aplicado del presupuesto
         total: presupuestoCompleto.total,
+        subtotal: presupuestoCompleto.subtotal,
+        descuento: presupuestoCompleto.descuento,
         fecha_pedido: new Date().toISOString()
       };
         

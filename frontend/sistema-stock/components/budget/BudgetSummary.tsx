@@ -38,48 +38,7 @@ export const BudgetSummary = ({
     return acc + (isNaN(itemTotal) ? 0 : itemTotal);
   }, 0);
 
-  // Calcular totales por opción si es estimativo
-  const calcularTotalesPorOpcion = () => {
-    if (!esEstimativo) return null;
-    
-    const totalesPorOpcion: Record<string, { subtotal: number; descuento: number; total: number }> = {};
-    opciones.filter(op => op.activa).forEach(opcion => {
-      const itemsOpcion = items.filter(item => item.opcion === opcion.id);
-      const subtotalOpcion = itemsOpcion.reduce((acc, item) => acc + Number(item.total), 0);
-      
-      // Solo incluir opciones que tengan items
-      if (subtotalOpcion > 0) {
-        // Calcular descuento proporcional para esta opción
-        let descuentoOpcion = 0;
-        if (applyDiscount && subtotal > 0) {
-          const proporcion = subtotalOpcion / subtotal;
-          descuentoOpcion = discount * proporcion;
-        }
-        
-        const totalOpcion = subtotalOpcion - descuentoOpcion;
-        
-        // Aplicar redondeo a miles si está activado
-        if (shouldRound && applyDiscount) {
-          const totalRedondeado = roundToThousand(totalOpcion);
-          const descuentoAjustado = subtotalOpcion - totalRedondeado;
-          
-          totalesPorOpcion[opcion.id] = {
-            subtotal: subtotalOpcion,
-            descuento: descuentoAjustado,
-            total: totalRedondeado
-          };
-        } else {
-          totalesPorOpcion[opcion.id] = {
-            subtotal: subtotalOpcion,
-            descuento: descuentoOpcion,
-            total: totalOpcion
-          };
-        }
-      }
-    });
-    
-    return totalesPorOpcion;
-  };
+  // Ya no se necesita calcular totales por opción
 
   // Calcular el descuento base
   const calculateBaseDiscount = () => {
@@ -123,45 +82,11 @@ export const BudgetSummary = ({
   };
 
   const { discount, total, adjustedDiscountValue } = calculateFinalValues();
-  const totalesPorOpcion = calcularTotalesPorOpcion();
 
   // Efecto para notificar cambios en el descuento
   useEffect(() => {
     onDiscountChange(applyDiscount, discountType, discountValue, shouldRound);
   }, [applyDiscount, discountType, discountValue, shouldRound]);
-
-  // Agregar nueva opción
-  const agregarOpcion = () => {
-    const nextLetter = String.fromCharCode(65 + opciones.length); // A, B, C...
-    const nuevaOpcion: BudgetOption = {
-      id: nextLetter,
-      nombre: `Opción ${nextLetter}`,
-      activa: true
-    };
-    onOpcionesChange([...opciones, nuevaOpcion]);
-  };
-
-  // Actualizar nombre de opción
-  const actualizarNombreOpcion = (id: string, nuevoNombre: string) => {
-    const opcionesActualizadas = opciones.map(op => 
-      op.id === id ? { ...op, nombre: nuevoNombre } : op
-    );
-    onOpcionesChange(opcionesActualizadas);
-  };
-
-  // Toggle activar/desactivar opción
-  const toggleOpcion = (id: string) => {
-    const opcionesActualizadas = opciones.map(op => 
-      op.id === id ? { ...op, activa: !op.activa } : op
-    );
-    onOpcionesChange(opcionesActualizadas);
-  };
-
-  // Eliminar opción
-  const eliminarOpcion = (id: string) => {
-    const opcionesActualizadas = opciones.filter(op => op.id !== id);
-    onOpcionesChange(opcionesActualizadas);
-  };
 
   return (
     <div className="flex justify-start gap-4 mt-4">
@@ -190,9 +115,14 @@ export const BudgetSummary = ({
               checked={esEstimativo}
               onChange={(e) => onEstimativoChange(e.target.checked)}
             >
-              <strong>Presupuesto Estimativo</strong>
+              <strong>Presupuesto Estimativo <br />  (no muestra el total)</strong>
             </Checkbox>
           </div>
+          {esEstimativo && (
+            <div className="p-2 text-xs text-orange-700 bg-orange-100 rounded dark:bg-orange-900/30 dark:text-orange-400">
+              ℹ️ El presupuesto se generará sin mostrar el total del precio
+            </div>
+          )}
           
           {applyDiscount && (
             <>
@@ -237,115 +167,32 @@ export const BudgetSummary = ({
         </div>
         
         <div className="pt-2 space-y-2 border-t">
-          {esEstimativo && totalesPorOpcion ? (
+          <div className="flex justify-between text-base">
+            <span>Total:</span>
+            <span className="font-semibold">${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+          </div>
+          
+          {applyDiscount && (
             <>
-              <div className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Totales por opción:
+              <div className="flex justify-between text-base text-green-600">
+                <span>
+                  Descuento {discountType === "percentage" 
+                    ? shouldRound 
+                      ? `(${((discount / subtotal) * 100).toFixed(2)}%)` 
+                      : `(${discountValue}%)`
+                    : `($${discountValue})`
+                  }:
+                </span>
+                <span>-${discount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
               </div>
-              {opciones.filter(op => op.activa).map(opcion => {
-                const datosOpcion = totalesPorOpcion?.[opcion.id];
-                if (!datosOpcion) return null;
-                
-                return (
-                  <div key={opcion.id} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{opcion.nombre}:</span>
-                      <span className="font-semibold">${datosOpcion.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                    </div>
-                    {datosOpcion.descuento > 0 && (
-                      <div className="flex justify-between text-xs text-green-600 ml-2">
-                        <span>Descuento:</span>
-                        <span>-${datosOpcion.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          ) : (
-            <>
-              <div className="flex justify-between text-base">
-                <span>Total:</span>
-                <span className="font-semibold">${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+              <div className="flex justify-between pt-2 text-lg font-bold text-green-700 border-t">
+                <span>Total con descuento:</span>
+                <span>${total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
               </div>
-              
-              {applyDiscount && (
-                <>
-                  <div className="flex justify-between text-base text-green-600">
-                    <span>
-                      Descuento {discountType === "percentage" 
-                        ? shouldRound 
-                          ? `(${((discount / subtotal) * 100).toFixed(2)}%)` 
-                          : `(${discountValue}%)`
-                        : `($${discountValue})`
-                      }:
-                    </span>
-                    <span>-${discount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 text-lg font-bold text-green-700 border-t">
-                    <span>Total con descuento:</span>
-                    <span>${total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                  </div>
-                </>
-              )}
             </>
           )}
         </div>
       </div>
-
-      {/* Panel de gestión de opciones */}
-      {esEstimativo && (
-        <div className="p-4 w-96 bg-blue-50 dark:bg-dark-card rounded-lg shadow-sm">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Opciones del Presupuesto</h3>
-            <Button 
-              size="sm" 
-              color="primary" 
-              onClick={agregarOpcion}
-              isDisabled={opciones.length >= 5}
-            >
-              + Agregar
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            {opciones.map(opcion => (
-              <div key={opcion.id} className="flex gap-2 items-center p-2 bg-white dark:bg-gray-800 rounded border">
-                <Checkbox
-                  size="sm"
-                  isSelected={opcion.activa}
-                  onChange={() => toggleOpcion(opcion.id)}
-                />
-                <Input
-                  size="sm"
-                  className="flex-1"
-                  value={opcion.nombre}
-                  onChange={(e) => actualizarNombreOpcion(opcion.id, e.target.value)}
-                  placeholder="Nombre de la opción"
-                />
-                <span className="px-2 py-1 text-xs font-bold text-white bg-blue-600 rounded">
-                  {opcion.id}
-                </span>
-                {opciones.length > 1 && (
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    color="danger"
-                    variant="light"
-                    onClick={() => eliminarOpcion(opcion.id)}
-                  >
-                    ✕
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
-            <p>💡 Asigna productos a cada opción usando la columna -Opción- en la tabla.</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

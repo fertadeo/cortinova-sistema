@@ -43,8 +43,22 @@ interface LocalTableItem {
   espacio?: string; // Agregar campo espacio
 }
 
-const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean): number => {
-  const area = ((ancho / 100) * (alto / 100));
+const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean, sistema?: string): number => {
+  let area = ((ancho / 100) * (alto / 100));
+  
+  // Aplicar mínimos específicos por sistema
+  if (sistema) {
+    const sistemaLower = sistema.toLowerCase();
+    if (sistemaLower.includes('roller')) {
+      // Roller: mínimo 1 metro cuadrado
+      area = Math.max(area, 1.0);
+    } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+      // Bandas verticales: mínimo 1.5 metros cuadrados
+      area = Math.max(area, 1.5);
+    }
+    // Otros sistemas: sin mínimo (mantener área original)
+  }
+  
   return area * precioTela;
 };
 
@@ -81,10 +95,6 @@ export const BudgetGenerator = () => {
 
   // Estados de presupuesto estimativo
   const [esEstimativo, setEsEstimativo] = useState(false);
-  const [opciones, setOpciones] = useState<BudgetOption[]>([
-    { id: 'A', nombre: 'Opción A', activa: true },
-    { id: 'B', nombre: 'Opción B', activa: true }
-  ]);
 
   // Efecto para manejar la precarga desde URL
   useEffect(() => {
@@ -428,19 +438,8 @@ export const BudgetGenerator = () => {
     setShowMeasuresInPDF(checked);
   };
 
-  const handleOpcionChange = (itemId: number, opcionId: string) => {
-    setTableData(prevData =>
-      prevData.map(item =>
-        item.id === itemId ? { ...item, opcion: opcionId } : item
-      )
-    );
-  };
-
   const handleEstimativoChange = (checked: boolean) => {
     setEsEstimativo(checked);
-    if (!checked) {
-      setTableData(prevData => prevData.map(item => ({ ...item, opcion: undefined })));
-    }
   };
 
   // Manejador de emisión de presupuesto
@@ -481,7 +480,6 @@ export const BudgetGenerator = () => {
         numeroPresupuesto: presupuestoId,
         clienteId: selectedClient.id,
         esEstimativo: esEstimativo,
-        opciones: opciones,
         showMeasuresInPDF: showMeasuresInPDF,
         shouldRound: shouldRound,
         applyDiscount: applyDiscount,
@@ -507,7 +505,6 @@ export const BudgetGenerator = () => {
             precioUnitario: Number(item.price),
             subtotal: subtotalConMotorizacion,
             espacio: item.espacio,
-            opcion: item.opcion,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: item.detalles?.precioMotorizacion || 0,
             tipoTela: item.detalles?.tipoTela || '',
@@ -579,7 +576,6 @@ export const BudgetGenerator = () => {
         cliente: selectedClient,
         showMeasuresInPDF: showMeasuresInPDF,
         esEstimativo: esEstimativo,
-        opciones: opciones,
         shouldRound: shouldRound,
         applyDiscount: applyDiscount,
         productos: tableData.map(item => {
@@ -598,7 +594,6 @@ export const BudgetGenerator = () => {
             cantidad: Number(item.quantity),
             subtotal: subtotalConMotorizacion,
             espacio: item.espacio,
-            opcion: item.opcion,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: item.detalles?.precioMotorizacion || 0,
             tipoApertura: item.detalles?.tipoApertura || '',
@@ -668,9 +663,6 @@ export const BudgetGenerator = () => {
         onQuantityChange={handleQuantityChange}
         onRemoveItem={handleRemoveProduct}
         onEditItem={handleEditItem}
-        esEstimativo={esEstimativo}
-        opciones={opciones}
-        onOpcionChange={handleOpcionChange}
       />
       
       <Spacer y={1} />
@@ -684,8 +676,8 @@ export const BudgetGenerator = () => {
         onShowMeasuresChange={handleShowMeasuresChange}
         esEstimativo={esEstimativo}
         onEstimativoChange={handleEstimativoChange}
-        opciones={opciones}
-        onOpcionesChange={setOpciones}
+        opciones={[]}
+        onOpcionesChange={() => {}}
       />
       
       <Spacer y={6} />

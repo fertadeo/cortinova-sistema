@@ -206,19 +206,36 @@ const getSistemaNombreById = (id: number | string): string | null => {
   return sistema ? sistema[0] : null;
 };
 
-// Función para calcular el área de tela necesaria
-const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = true): number => {
+// Función para calcular el área de tela necesaria con mínimos específicos por sistema
+const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = true, sistema?: string): number => {
   // Convertir cm a metros
   const anchoMetros = Number(ancho) / 100;
   const altoMetros = Number(alto) / 100;
   
+  let area: number;
+  
   if (telaRotable) {
     // Para telas que se pueden rotar, usamos el área mínima posible
-    return Math.min(anchoMetros, altoMetros) * Math.max(anchoMetros, altoMetros);
+    area = Math.min(anchoMetros, altoMetros) * Math.max(anchoMetros, altoMetros);
   } else {
     // Para telas con patrón direccional, respetamos las dimensiones originales
-    return anchoMetros * altoMetros;
+    area = anchoMetros * altoMetros;
   }
+  
+  // Aplicar mínimos específicos por sistema
+  if (sistema) {
+    const sistemaLower = sistema.toLowerCase();
+    if (sistemaLower.includes('roller')) {
+      // Roller: mínimo 1 metro cuadrado
+      return Math.max(area, 1.0);
+    } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+      // Bandas verticales: mínimo 1.5 metros cuadrados
+      return Math.max(area, 1.5);
+    }
+  }
+  
+  // Otros sistemas: sin mínimo
+  return area;
 };
 
 // Función helper para procesar los sistemas únicos con su garantía
@@ -346,6 +363,9 @@ export default function GenerarPedidoModal({
 
   // Agregar este estado
   const [incluirColocacion, setIncluirColocacion] = useState(true);
+
+  // Estado para el redondeo de precios
+  const [aplicarRedondeo, setAplicarRedondeo] = useState(false);
 
   // Nuevo estado para manejar los detalles específicos del sistema
   const [sistemaPedidoDetalles, setSistemaPedidoDetalles] = useState<any>(null);
@@ -981,12 +1001,17 @@ export default function GenerarPedidoModal({
       return anchoMetros * multiplicadorFinal * precioTela;
     }
     
-    // Para otros sistemas, mantener la lógica original
-    const area = calcularAreaTela(ancho, alto, esRotable);
+    // Para otros sistemas, mantener la lógica original con mínimos específicos por sistema
+    const area = calcularAreaTela(ancho, alto, esRotable, sistema);
     return area * precioTela;
   };
 
   const nuevoPrecioSistema = calcularPrecioSistema();
+
+  // Función para redondear a la centena más cercana (de 100 en 100)
+  const redondearACentena = (valor: number): number => {
+    return Math.round(valor / 100) * 100;
+  };
 
   // Calcular precio total basado en los items del resumen
   const calcularPrecioTotal = () => {
@@ -1061,6 +1086,11 @@ export default function GenerarPedidoModal({
 
     // Calcular total: (sistema + tela + tela2 + soporte + colocación + motorización) * cantidad + accesorios
     total = (precioSistema + precioTela + precioTela2 + precioSoporte + precioColocacionFinal + precioMotorizacionFinal) * cantidadNum + totalAccesoriosAdicionales;
+
+    // Aplicar redondeo si está activado
+    if (aplicarRedondeo) {
+      total = redondearACentena(total);
+    }
 
     // Actualizar estados para el resumen
     setPrecioSistema(precioSistema);
@@ -2144,7 +2174,15 @@ export default function GenerarPedidoModal({
                             <>
                               <div className="flex justify-between items-center">
                                 <span>Metros cuadrados:</span>
-                                <span>{((Number(ancho) / 100) * (Number(alto) / 100)).toFixed(2)} m²</span>
+                                <span>
+                                  {(() => {
+                                    const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
+                                    const areaConMinimo = Math.max(areaReal, 1.0);
+                                    return areaConMinimo > areaReal 
+                                      ? `${areaConMinimo.toFixed(2)} m² (mínimo aplicado)`
+                                      : `${areaReal.toFixed(2)} m²`;
+                                  })()}
+                                </span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span>Precio sistema:</span>
@@ -2365,6 +2403,28 @@ export default function GenerarPedidoModal({
                                           return `(${ancho}cm x ${alto}cm)`;
                                         }
                                       })()}
+                                      {(() => {
+                                        // Mostrar información de mínimo aplicado para Roller y Bandas Verticales
+                                        const sistemaLower = selectedSistema?.toLowerCase() || '';
+                                        if (sistemaLower.includes('roller') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                          const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
+                                          let areaMinima = 0;
+                                          if (sistemaLower.includes('roller')) {
+                                            areaMinima = 1.0;
+                                          } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                            areaMinima = 1.5;
+                                          }
+                                          
+                                          if (areaMinima > 0 && areaReal < areaMinima) {
+                                            return (
+                                              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                                                Mínimo: {areaMinima}m²
+                                              </span>
+                                            );
+                                          }
+                                        }
+                                        return null;
+                                      })()}
                                       {Number(cantidad) > 1 ? ` x${cantidad}` : ''}
                                       <button
                                         type="button"
@@ -2390,6 +2450,34 @@ export default function GenerarPedidoModal({
                                       Cálculo: {ancho}cm x {multiplicadorTelaLocal} = {Number(ancho) * multiplicadorTelaLocal}cm × ${Number(selectedTela.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTelaLocal / 100) * Number(selectedTela.precio)).toFixed(2)}
                                     </div>
                                   )}
+                                  {(() => {
+                                    // Mostrar cálculo detallado para Roller y Bandas Verticales cuando se aplica mínimo
+                                    const sistemaLower = selectedSistema?.toLowerCase() || '';
+                                    if (sistemaLower.includes('roller') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                      const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
+                                      let areaMinima = 0;
+                                      if (sistemaLower.includes('roller')) {
+                                        areaMinima = 1.0;
+                                      } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                        areaMinima = 1.5;
+                                      }
+                                      
+                                      if (areaMinima > 0 && areaReal < areaMinima) {
+                                        return (
+                                          <div className="text-xs text-orange-700 bg-orange-50 p-2 rounded mt-1">
+                                            ⚠️ Cálculo: {ancho}cm × {alto}cm = {areaReal.toFixed(2)}m² → Mínimo aplicado: {areaMinima}m² × ${Number(selectedTela.precio).toFixed(2)}/m² = ${(areaMinima * Number(selectedTela.precio)).toFixed(2)}
+                                          </div>
+                                        );
+                                      } else if (areaMinima > 0) {
+                                        return (
+                                          <div className="text-xs text-green-700 dark:text-green-400 pl-2">
+                                            Cálculo: {ancho}cm × {alto}cm = {areaReal.toFixed(2)}m² × ${Number(selectedTela.precio).toFixed(2)}/m² = ${(areaReal * Number(selectedTela.precio)).toFixed(2)}
+                                          </div>
+                                        );
+                                      }
+                                    }
+                                    return null;
+                                  })()}
                                 </div>
                               );
                             }
@@ -2585,10 +2673,27 @@ export default function GenerarPedidoModal({
                               <span className="font-medium">${precioMotorizacion.toLocaleString()}</span>
                             )}
                           </div>
+
+                          {/* Checkbox para redondeo */}
+                          <div className="flex justify-between items-center">
+                            <div className="flex gap-2 items-center">
+                              <Checkbox
+                                isSelected={aplicarRedondeo}
+                                onValueChange={setAplicarRedondeo}
+                              >
+                                Redondear total (de 100 en 100)
+                              </Checkbox>
+                            </div>
+                            {aplicarRedondeo && (
+                              <span className="text-xs text-blue-600 dark:text-blue-400">
+                                Ej: $186.912 → $186.900
+                              </span>
+                            )}
+                          </div>
                           <div className="flex justify-between items-center pt-3 mt-2 border-t">
                             <span className="font-bold">Total:</span>
                             <span className="font-bold">
-                              ${calcularPrecioTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ${calcularPrecioTotal().toLocaleString()}
                             </span>
                           </div>
                         </div>
