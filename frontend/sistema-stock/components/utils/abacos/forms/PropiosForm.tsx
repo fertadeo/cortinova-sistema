@@ -746,9 +746,9 @@ export default function PropiosForm({
                         <input
                           type="number"
                           min={1}
-                          defaultValue={1}
+                          placeholder="1"
                           className="w-16 border border-gray-300 dark:border-dark-border rounded px-2 py-1 text-sm bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
-                          onChange={e => accesorio._cantidad = Number(e.target.value)}
+                          onChange={e => accesorio._cantidad = Number(e.target.value) || 1}
                         />
                         <button
                           className="text-blue-600 dark:text-primary hover:text-blue-800 dark:hover:text-primary/80 text-xl px-2"

@@ -232,7 +232,7 @@ export const TelasSearch = ({
             ))}
             {/* Campo manual */}
             <div className="flex items-center gap-1 ml-4">
-              <label htmlFor="cantidadTelaManual" className="text-sm text-blue-700 dark:text-primary">o ingrese manualmente los metros cuadrados de tela:</label>
+              <label htmlFor="cantidadTelaManual" className="text-sm text-blue-700 dark:text-primary">o ingrese manualmente los metros de tela:</label>
               <input
                 type="number"
                 id="cantidadTelaManual"
@@ -253,7 +253,7 @@ export const TelasSearch = ({
                 className="w-24 border border-gray-300 dark:border-dark-border rounded px-2 py-1 text-sm bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
                 placeholder="0"
               />
-              <span className="text-xs text-gray-500 dark:text-dark-text-secondary">m²</span>
+              <span className="text-xs text-gray-500 dark:text-dark-text-secondary">m</span>
             </div>
           </div>
         </div>
