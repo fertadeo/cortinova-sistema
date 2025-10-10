@@ -1052,14 +1052,20 @@ export default function GenerarPedidoModal({
     // 2.1 Segunda tela - solo para cortinas tradicionales (riel/barral)
     let precioTela2 = 0;
     if (selectedTela2 && (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))) {
-      precioTela2 = calcularPrecioTela(
-        anchoEfectivo,
-        Number(alto),
-        selectedTela2?.precio ? Number(selectedTela2.precio) : 0,
-        false,
-        selectedSistema,
-        multiplicadorTela2
-      );
+      // Si hay cantidad manual ingresada, usar esa directamente
+      if (cantidadTelaManual2 && cantidadTelaManual2 > 0) {
+        precioTela2 = cantidadTelaManual2 * (selectedTela2?.precio ? Number(selectedTela2.precio) : 0);
+      } else {
+        // Si no, usar la lógica normal del cálculo
+        precioTela2 = calcularPrecioTela(
+          anchoEfectivo,
+          Number(alto),
+          selectedTela2?.precio ? Number(selectedTela2.precio) : 0,
+          false,
+          selectedSistema,
+          multiplicadorTela2
+        );
+      }
     }
 
     // 3. Soporte intermedio/doble - calcular por metro lineal (ancho)
@@ -1075,17 +1081,14 @@ export default function GenerarPedidoModal({
     const precioMotorizacionFinal = incluirMotorizacion ? precioMotorizacion : 0;
 
     // 6. Accesorios adicionales
-    // Para cortinas tradicionales, los accesorios se multiplican por la cantidad del producto principal
-    const esTradicional = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
-    const multiplicadorAccesorios = esTradicional ? cantidadNum : 1;
-    
+    // Calcular el precio base de los accesorios (sin multiplicar por cantidad)
     const totalAccesoriosAdicionales = accesoriosAdicionales.reduce(
-      (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1) * multiplicadorAccesorios),
+      (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1)),
       0
     );
 
-    // Calcular total: (sistema + tela + tela2 + soporte + colocación + motorización) * cantidad + accesorios
-    total = (precioSistema + precioTela + precioTela2 + precioSoporte + precioColocacionFinal + precioMotorizacionFinal) * cantidadNum + totalAccesoriosAdicionales;
+    // Calcular total: (sistema + tela + tela2 + soporte + colocación + motorización + accesorios) * cantidad
+    total = (precioSistema + precioTela + precioTela2 + precioSoporte + precioColocacionFinal + precioMotorizacionFinal + totalAccesoriosAdicionales) * cantidadNum;
 
     // Aplicar redondeo si está activado
     if (aplicarRedondeo) {
@@ -1552,14 +1555,10 @@ export default function GenerarPedidoModal({
   const agruparAccesorios = (accesorios: any[]) => {
     const accesoriosAgrupados = new Map();
     
-    // Para cortinas tradicionales, los accesorios se multiplican por la cantidad del producto principal
-    const esTradicional = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
-    const multiplicadorAccesorios = esTradicional ? (Number(cantidad) || 1) : 1;
-    
     accesorios.forEach(acc => {
       const nombre = acc.nombreProducto;
       const precio = Number(acc.precio);
-      const cantidadAccesorio = (acc.cantidad || 1) * multiplicadorAccesorios;
+      const cantidadAccesorio = acc.cantidad || 1;
       
       if (accesoriosAgrupados.has(nombre)) {
         // Si ya existe, sumar cantidades
@@ -1581,11 +1580,9 @@ export default function GenerarPedidoModal({
   };
 
   // Calcular total de accesorios (esta es la versión para el resumen)
-  const esTradicionalResumen = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
-  const multiplicadorAccesoriosResumen = esTradicionalResumen ? (Number(cantidad) || 1) : 1;
-  
+  // Para el resumen, mostramos el precio base de los accesorios (sin multiplicar por cantidad)
   const totalAccesoriosAdicionales = accesoriosAdicionales.reduce(
-    (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1) * multiplicadorAccesoriosResumen),
+    (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1)),
     0
   );
 
@@ -2445,9 +2442,13 @@ export default function GenerarPedidoModal({
                                         : (calcularPrecioTelaMultiplicada() * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
-                                  {multiplicadorTelaLocal && multiplicadorTelaLocal !== 1 && selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
+                                  {selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
                                     <div className="text-xs text-blue-700 dark:text-primary pl-2">
-                                      Cálculo: {ancho}cm x {multiplicadorTelaLocal} = {Number(ancho) * multiplicadorTelaLocal}cm × ${Number(selectedTela.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTelaLocal / 100) * Number(selectedTela.precio)).toFixed(2)}
+                                      {cantidadTelaManual && cantidadTelaManual > 0 ? (
+                                        <>Cálculo: {cantidadTelaManual}m × ${Number(selectedTela.precio).toFixed(2)}/m = ${(cantidadTelaManual * Number(selectedTela.precio)).toFixed(2)}</>
+                                      ) : (
+                                        <>Cálculo: {ancho}cm x {multiplicadorTelaLocal} = {Number(ancho) * multiplicadorTelaLocal}cm × ${Number(selectedTela.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTelaLocal / 100) * Number(selectedTela.precio)).toFixed(2)}</>
+                                      )}
                                     </div>
                                   )}
                                   {(() => {
@@ -2533,9 +2534,13 @@ export default function GenerarPedidoModal({
                                         : (precioTela2Calculado * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
-                                  {multiplicadorTela2 && multiplicadorTela2 !== 1 && selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
+                                  {selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
                                     <div className="text-xs text-blue-700 dark:text-primary pl-2">
-                                      Cálculo: {ancho}cm x {multiplicadorTela2} = {Number(ancho) * multiplicadorTela2}cm × ${Number(selectedTela2.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTela2 / 100) * Number(selectedTela2.precio)).toFixed(2)}
+                                      {cantidadTelaManual2 && cantidadTelaManual2 > 0 ? (
+                                        <>Cálculo: {cantidadTelaManual2}m × ${Number(selectedTela2.precio).toFixed(2)}/m = ${(cantidadTelaManual2 * Number(selectedTela2.precio)).toFixed(2)}</>
+                                      ) : (
+                                        <>Cálculo: {ancho}cm x {multiplicadorTela2} = {Number(ancho) * multiplicadorTela2}cm × ${Number(selectedTela2.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTela2 / 100) * Number(selectedTela2.precio)).toFixed(2)}</>
+                                      )}
                                     </div>
                                   )}
                                 </div>
