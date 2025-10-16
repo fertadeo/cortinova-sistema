@@ -937,6 +937,38 @@ export default function GenerarPedidoModal({
       return 0;
     }
     
+    // Lógica específica para Venecianas - calcular por metro cuadrado (ancho × alto)
+    if (selectedSistema?.toLowerCase().includes('veneciana')) {
+      // Obtener el producto seleccionado
+      let productoSeleccionado = selectedRielBarral;
+      
+      // Para sistemas Venecianas, verificar si hay producto en sistemaPedidoDetalles
+      if (sistemaPedidoDetalles?.productoSeleccionado) {
+        productoSeleccionado = sistemaPedidoDetalles.productoSeleccionado;
+      }
+      
+      if (!productoSeleccionado || !productoSeleccionado.precio) {
+        // console.log('⚠️ No hay producto seleccionado para Venecianas');
+        return 0;
+      }
+      
+      const precioBase = Number(productoSeleccionado.precio);
+      const areaMetrosCuadrados = anchoMetros * altoMetros;
+      const precioCalculado = precioBase * areaMetrosCuadrados;
+      
+      // console.log('🪟 Cálculo Venecianas por metro cuadrado:', {
+      //   sistema: selectedSistema,
+      //   producto: productoSeleccionado.nombreProducto,
+      //   precioBase: precioBase,
+      //   anchoMetros: anchoMetros,
+      //   altoMetros: altoMetros,
+      //   areaMetrosCuadrados: areaMetrosCuadrados,
+      //   precioCalculado: precioCalculado
+      // });
+      
+      return precioCalculado;
+    }
+    
     // Obtener el producto seleccionado (puede venir de selectedRielBarral o de sistemaPedidoDetalles)
     let productoSeleccionado = selectedRielBarral;
     
@@ -955,7 +987,7 @@ export default function GenerarPedidoModal({
     const precioBase = Number(productoSeleccionado.precio);
     // console.log('🎯 Usando precio del producto seleccionado:', precioBase);
     
-    // Para todos los sistemas, calcular por metro lineal (ancho) con mínimos aplicados
+    // Para otros sistemas (Roller, Barcelona, etc.), calcular por metro lineal (ancho) con mínimos aplicados
     const precioCalculado = precioBase * anchoMetros;
     // console.log('📏 Cálculo por metro lineal:', {
     //   sistema: selectedSistema,
@@ -2318,9 +2350,9 @@ export default function GenerarPedidoModal({
                                         </span>
                                       </div>
                                       <div className="flex justify-between items-center text-xs text-gray-500 dark:text-dark-text-secondary">
-                                        <span>Fórmula: (ancho efectivo/100) × precio base × cantidad</span>
+                                        <span>Fórmula: (ancho/100 × alto/100) × precio base × cantidad</span>
                                         <span>
-                                          ({anchoEfectivo/100} × {productoSeleccionado?.precio || 0} × {cantidad})
+                                          ({(Number(ancho)/100).toFixed(2)} × {(Number(alto)/100).toFixed(2)}) × {productoSeleccionado?.precio || 0} × {cantidad}
                                         </span>
                                       </div>
                                       {aplicaMinimo && (
