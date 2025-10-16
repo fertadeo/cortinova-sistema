@@ -460,12 +460,8 @@ export default function GenerarPedidoModal({
             precio: dataSoporteDoble.precio
           });
           
-          // Seleccionar por defecto el primer soporte intermedio
-          setSelectedSoporteIntermedio({ 
-            id: dataIntermedio1.id, 
-            nombre: dataIntermedio1.nombreProducto, 
-            precio: dataIntermedio1.precio 
-          });
+          // No seleccionar ningún soporte intermedio por defecto
+          setSelectedSoporteIntermedio(null);
         } catch (e) {
           console.error('Error al obtener soportes:', e);
           setSoportesIntermedios([]);
