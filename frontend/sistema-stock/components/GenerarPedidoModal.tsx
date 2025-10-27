@@ -1199,7 +1199,7 @@ export default function GenerarPedidoModal({
         console.log('🔧 [COLOCACIÓN] Data recibida:', data);
         
         // Validar que el producto sea el correcto (más flexible)
-        const nombreProducto = data.nombreProducto?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const nombreProducto = data.nombreProducto?.toLowerCase()?.normalize("NFD")?.replace(/[\u0300-\u036f]/g, "");
         console.log('🔧 [COLOCACIÓN] Nombre producto normalizado:', nombreProducto);
         
         if (!nombreProducto?.includes('colocacion') && !nombreProducto?.includes('instalacion') && !nombreProducto?.includes('instalación')) {

@@ -339,9 +339,9 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
 
       // Limpiar el nombre del cliente para usar como nombre de archivo
       const nombreCliente = presupuestoData.cliente.nombre
-        .replace(/[^a-zA-Z0-9\s]/g, '')
-        .replace(/\s+/g, '-')
-        .toLowerCase();
+        ?.replace(/[^a-zA-Z0-9\s]/g, '')
+        ?.replace(/\s+/g, '-')
+        ?.toLowerCase() || 'cliente';
       
       const tipoPresupuesto = presupuestoData.esEstimativo ? 'Estimativo' : 'Presupuesto';
       pdf.save(`${tipoPresupuesto}-${presupuestoData.numeroPresupuesto}-${nombreCliente}.pdf`);
@@ -500,7 +500,7 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                                   return detalles.length > 0 ? detalles.join(' | ') : 'Sistema Dunes';
                                 }
                                 
-                                const descripcionLimpia = producto.descripcion.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '');
+                                const descripcionLimpia = producto.descripcion?.replace(/^\s*\d+\s*cm\s*x\s*\d+\s*cm\s*-\s*/i, '') || '';
                                 
                                 if (!descripcionLimpia || descripcionLimpia.trim() === '') {
                                   return producto.tipoTela || 'Sin descripción';
