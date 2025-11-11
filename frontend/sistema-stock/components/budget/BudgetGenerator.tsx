@@ -490,23 +490,23 @@ export const BudgetGenerator = () => {
           console.log('Item detalles antes de enviar:', item.detalles);
           console.log('Item espacio:', item.espacio);
           
-          // Calcular subtotal incluyendo motorización
-          const subtotalBase = Number(item.price) * Number(item.quantity);
-          const motorizacion = item.detalles?.incluirMotorizacion 
-            ? (item.detalles.precioMotorizacion || 0) * Number(item.quantity) 
+          const cantidad = Number(item.quantity);
+          const precioUnitario = Number(item.price);
+          const precioMotorizacionUnitario = item.detalles?.incluirMotorizacion 
+            ? (item.detalles.precioMotorizacion || 0) 
             : 0;
-          const subtotalConMotorizacion = subtotalBase + motorizacion;
+          const subtotalTotal = precioUnitario * cantidad;
           
           return {
             id: item.productId || Date.now(),
             nombre: item.name,
             descripcion: item.description,
-            cantidad: Number(item.quantity),
-            precioUnitario: Number(item.price),
-            subtotal: subtotalConMotorizacion,
+            cantidad: cantidad,
+            precioUnitario: precioUnitario,
+            subtotal: subtotalTotal,
             espacio: item.espacio,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
-            precioMotorizacion: item.detalles?.precioMotorizacion || 0,
+            precioMotorizacion: precioMotorizacionUnitario,
             tipoTela: item.detalles?.tipoTela || '',
             tipoApertura: item.detalles?.tipoApertura || '',
             colorSistema: item.detalles?.colorSistema || '',
@@ -579,23 +579,23 @@ export const BudgetGenerator = () => {
         shouldRound: shouldRound,
         applyDiscount: applyDiscount,
         productos: tableData.map(item => {
-          // Calcular subtotal incluyendo motorización
-          const subtotalBase = Number(item.price) * Number(item.quantity);
-          const motorizacion = item.detalles?.incluirMotorizacion 
-            ? (item.detalles.precioMotorizacion || 0) * Number(item.quantity) 
+          const cantidad = Number(item.quantity);
+          const precioUnitario = Number(item.price);
+          const precioMotorizacionUnitario = item.detalles?.incluirMotorizacion 
+            ? (item.detalles.precioMotorizacion || 0) 
             : 0;
-          const subtotalConMotorizacion = subtotalBase + motorizacion;
+          const subtotalTotal = precioUnitario * cantidad;
           
           return {
             nombre: item.name,
             descripcion: item.description,
             tipoTela: item.detalles?.tipoTela || '',
-            precioUnitario: Number(item.price),
-            cantidad: Number(item.quantity),
-            subtotal: subtotalConMotorizacion,
+            precioUnitario: precioUnitario,
+            cantidad: cantidad,
+            subtotal: subtotalTotal,
             espacio: item.espacio,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
-            precioMotorizacion: item.detalles?.precioMotorizacion || 0,
+            precioMotorizacion: precioMotorizacionUnitario,
             tipoApertura: item.detalles?.tipoApertura || '',
             colorSistema: item.detalles?.colorSistema || '',
             ladoComando: item.detalles?.ladoComando || '',

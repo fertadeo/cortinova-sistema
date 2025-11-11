@@ -79,6 +79,13 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
 
   const productosAgrupados = agruparProductos();
 
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('es-AR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  };
+
   // Función para detectar si un número está "cerca" de un valor redondo (múltiplo de 1000)
   const isNearRoundNumber = (num: number, tolerance: number = 100): boolean => {
     const rounded = roundToThousand(num);
@@ -464,8 +471,21 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                           {espacio}
                         </td>
                       </tr>
-                      {productos.map((producto, index) => (
-                        <React.Fragment key={index}>
+                      {productos.map((producto, index) => {
+                        const cantidad = Number(producto.cantidad) || 0;
+                        const precioMotorizacionUnitario = producto.precioMotorizacion || 0;
+                        const tieneMotorizacion = (precioMotorizacionUnitario > 0);
+                        const subtotalProducto = producto.subtotal || 0;
+                        const subtotalMotorizacion = tieneMotorizacion ? precioMotorizacionUnitario * cantidad : 0;
+                        const subtotalBaseCalculado = Math.max(subtotalProducto - subtotalMotorizacion, 0);
+                        const precioUnitarioBase = cantidad > 0 
+                          ? subtotalBaseCalculado / cantidad 
+                          : Math.max(producto.precioUnitario - precioMotorizacionUnitario, 0);
+                        const precioUnitarioMostrar = tieneMotorizacion ? precioUnitarioBase : producto.precioUnitario;
+                        const subtotalMostrar = tieneMotorizacion ? precioUnitarioBase * cantidad : subtotalProducto;
+
+                        return (
+                          <React.Fragment key={index}>
                           <tr>
                             <td className="px-2 py-2 text-gray-900">{producto.nombre}</td>
                             <td className="px-2 py-2 text-gray-900">{
@@ -524,18 +544,25 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                                 })()}
                               </td>
                             )}
-                            <td className="px-2 py-2 text-gray-900 text-right">${producto.precioUnitario.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            <td className="px-2 py-2 text-gray-900 text-right">${formatCurrency(Math.max(precioUnitarioMostrar, 0))}</td>
                             <td className="px-2 py-2 text-gray-900 text-center">{producto.cantidad}</td>
-                            <td className="px-2 py-2 text-gray-900 text-right">${producto.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                            <td className="px-2 py-2 text-gray-900 text-right">${formatCurrency(Math.max(subtotalMostrar, 0))}</td>
                           </tr>
-                          {producto.incluirMotorizacion && (
+                          {tieneMotorizacion && subtotalMotorizacion > 0 && (
                             <tr>
-                              <td colSpan={presupuestoData.showMeasuresInPDF ? 5 : 4} className="px-2 py-2 font-bold text-gray-900">Motorización</td>
-                              <td className="px-2 py-2 text-gray-900 text-right">${producto.precioMotorizacion?.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                              <td className="px-2 py-2 text-gray-900">Motorización</td>
+                              <td className="px-2 py-2 text-gray-700">Sistema motorizado</td>
+                              {presupuestoData.showMeasuresInPDF && (
+                                <td className="px-2 py-2 text-gray-500">-</td>
+                              )}
+                              <td className="px-2 py-2 text-gray-900 text-right">${formatCurrency(precioMotorizacionUnitario)}</td>
+                              <td className="px-2 py-2 text-gray-900 text-center">{producto.cantidad}</td>
+                              <td className="px-2 py-2 text-gray-900 text-right">${formatCurrency(subtotalMotorizacion)}</td>
                             </tr>
                           )}
-                        </React.Fragment>
-                      ))}
+                          </React.Fragment>
+                        );
+                      })}
                     </React.Fragment>
                   ))}
                   {/* Mostrar totales solo si NO es estimativo */}
@@ -544,19 +571,19 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
                       <tr>
                         <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                         <td className="px-2 py-2 font-bold text-gray-900 text-right">Subtotal</td>
-                        <td className="px-2 py-2 text-gray-900 text-right">${presupuestoData.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                        <td className="px-2 py-2 text-gray-900 text-right">${formatCurrency(presupuestoData.subtotal)}</td>
                       </tr>
                       {presupuestoData.descuento > 0 && (
                         <tr>
                           <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                           <td className="px-2 py-2 font-bold text-gray-900 text-right">Descuento</td>
-                          <td className="px-2 py-2 text-gray-900 text-right">-${presupuestoData.descuento.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                          <td className="px-2 py-2 text-gray-900 text-right">-${formatCurrency(presupuestoData.descuento)}</td>
                         </tr>
                       )}
                       <tr>
                         <td colSpan={presupuestoData.showMeasuresInPDF ? 4 : 3}></td>
                         <td className="px-2 py-2 font-bold text-gray-900 text-right">Total</td>
-                        <td className="px-2 py-2 font-bold text-gray-900 text-right">${presupuestoData.total.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                        <td className="px-2 py-2 font-bold text-gray-900 text-right">${formatCurrency(presupuestoData.total)}</td>
                       </tr>
                     </>
                   )}

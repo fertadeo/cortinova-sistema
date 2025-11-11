@@ -77,6 +77,10 @@ interface Item {
     accesoriosAdicionales?: any[];
     incluirColocacion?: boolean;
     precioColocacion?: number;
+    incluirMotorizacion?: boolean;
+    precioMotorizacion?: number;
+    subtotalMotorizacion?: number;
+    subtotalBase?: number;
     [key: string]: any; // Para campos adicionales
   };
 }
@@ -110,6 +114,8 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
       subtotal: number;
       espacio?: string; // Nuevo campo para el espacio/ambiente
       opcion?: string; // Campo para opciones de presupuesto estimativo
+      incluirMotorizacion?: boolean;
+      precioMotorizacion?: number;
     }>;
     subtotal: number;
     descuento: number;
@@ -233,6 +239,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                        alto: alto
                      });
                      
+                     const incluirMotorizacion = Boolean(productoJson?.incluirMotorizacion && (productoJson?.precioMotorizacion || 0) > 0);
+                     const precioMotorizacion = incluirMotorizacion ? Number(productoJson?.precioMotorizacion || 0) : 0;
+                     const subtotalMotorizacion = incluirMotorizacion ? precioMotorizacion * Number(item.cantidad || 0) : 0;
+                     const subtotalBase = Math.max(Number(item.subtotal) - subtotalMotorizacion, 0);
+
                      const itemActualizado = {
                        ...item,
                        espacio: espacio,
@@ -241,7 +252,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                        detalles: {
                          ...item.detalles,
                          ancho: ancho,
-                         alto: alto
+                         alto: alto,
+                         incluirMotorizacion,
+                         precioMotorizacion,
+                         subtotalMotorizacion,
+                         subtotalBase
                        } as any
                      };
                      
@@ -323,7 +338,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
   };
 
   // Función para formatear la información detallada del producto
-  const formatearDetallesProducto = (item: Item) => {
+const formatCurrency = (value: number) =>
+  Number(value || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+const formatearDetallesProducto = (item: Item) => {
     
     const detalles = [];
     
@@ -473,10 +491,30 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
     }
   }
   
-     // Agregar precio solo para sistemas que no sean Dunes
-   if (!item.detalles?.sistema?.toLowerCase().includes('dunes')) {
-     detalles.push(`• Precio: $${Number(item.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`);
-   }
+  const cantidad = Number(item.cantidad) || 0;
+  const incluirMotorizacion = Boolean(item.detalles?.incluirMotorizacion && (item.detalles?.precioMotorizacion || 0) > 0);
+  const precioMotorizacionUnitario = incluirMotorizacion ? Number(item.detalles?.precioMotorizacion || 0) : 0;
+  const subtotalMotorizacion = incluirMotorizacion
+    ? (item.detalles?.subtotalMotorizacion !== undefined
+        ? Number(item.detalles?.subtotalMotorizacion)
+        : precioMotorizacionUnitario * cantidad)
+    : 0;
+  const subtotalTotal = Number(item.subtotal) || 0;
+  const subtotalBase = Math.max(
+    item.detalles?.subtotalBase !== undefined
+      ? Number(item.detalles?.subtotalBase)
+      : subtotalTotal - subtotalMotorizacion,
+    0
+  );
+  const precioUnitarioBase = cantidad > 0 ? subtotalBase / cantidad : subtotalBase;
+
+  detalles.push(`• Precio base: $${formatCurrency(precioUnitarioBase)} (Subtotal $${formatCurrency(subtotalBase)})`);
+
+  if (incluirMotorizacion) {
+    detalles.push(`• Motorización: $${formatCurrency(precioMotorizacionUnitario)} (Subtotal $${formatCurrency(subtotalMotorizacion)})`);
+  }
+
+  detalles.push(`• Subtotal total: $${formatCurrency(subtotalTotal)}`);
    
    return detalles;
   };
@@ -532,6 +570,8 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
             subtotal: Number(item.subtotal),
             espacio: item.espacio || 'Sin especificar',
             opcion: item.opcion || undefined,
+            incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
+            precioMotorizacion: item.detalles?.precioMotorizacion || 0,
             // Incluir medidas del producto
             ancho: item.detalles?.ancho,
             alto: item.detalles?.alto
