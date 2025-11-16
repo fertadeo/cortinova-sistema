@@ -145,7 +145,8 @@ export const BudgetGenerator = () => {
           }
 
           // Parsear presupuesto_json si existe
-          let presupuestoJson = null;
+          // Tipamos como any porque la estructura puede variar entre versiones de presupuesto
+          let presupuestoJson: any = null;
           if (presupuesto.presupuesto_json) {
             try {
               presupuestoJson = typeof presupuesto.presupuesto_json === 'string' 
