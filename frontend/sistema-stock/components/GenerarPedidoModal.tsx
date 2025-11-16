@@ -58,7 +58,7 @@ interface GenerarPedidoModalProps {
     price: number;
   }>;
   total: number;
-  onPedidoCreated: (pedido: any) => void;
+  onPedidoCreated: (pedido: any, editingItemId?: number) => void;
   medidasPrecargadas?: {
     ancho: number;
     alto: number;
@@ -67,6 +67,16 @@ interface GenerarPedidoModalProps {
     ubicacionPersonalizada?: string;
     medidaId: number;
   };
+  itemToEdit?: {
+    id: number;
+    name: string;
+    description: string;
+    quantity: number;
+    price: number;
+    total: number;
+    espacio?: string;
+    detalles?: any;
+  } | null;
 }
 
 // Actualizar la interfaz para el JSON
@@ -106,6 +116,41 @@ const normalizarNombreSistema = (tipo: string): string => {
   // console.log('Sistemas disponibles en abacoData:', Object.keys(abacoData));
 
   return tipoMapeado;
+};
+
+// Función helper para extraer el nombre del sistema eliminando "Cortina" si está presente
+const extraerNombreSistema = (nombre: string): string => {
+  // Eliminar "Cortina" del inicio del nombre (case insensitive)
+  const nombreLimpio = nombre.replace(/^cortina\s+/i, '').trim();
+  return nombreLimpio;
+};
+
+// Función helper para buscar sistema por nombre, manejando variaciones con "Cortina"
+const buscarSistemaPorNombre = (sistemaBuscado: string, sistemas: Sistema[]): Sistema | null => {
+  // Normalizar el nombre buscado: eliminar "Cortina" si está presente
+  const sistemaNormalizado = extraerNombreSistema(sistemaBuscado);
+  const sistemaBuscadoLower = sistemaNormalizado.toLowerCase();
+  
+  // Intentar encontrar el sistema exacto primero
+  let sistemaEncontrado = sistemas.find(s => {
+    const nombreSistema = String(s.nombreSistemas).toLowerCase();
+    return nombreSistema === sistemaBuscadoLower;
+  });
+  
+  // Si no se encuentra exacto, buscar por coincidencia parcial
+  if (!sistemaEncontrado) {
+    sistemaEncontrado = sistemas.find(s => {
+      const nombreSistema = String(s.nombreSistemas).toLowerCase();
+      // Buscar si el sistema normalizado está contenido en el nombre del sistema
+      // o viceversa (por ejemplo "Roller" vs "ROLLER" o "BARCELONA - BANDAS VERTICALES")
+      return nombreSistema.includes(sistemaBuscadoLower) || 
+             sistemaBuscadoLower.includes(nombreSistema) ||
+             nombreSistema.split(' - ')[0] === sistemaBuscadoLower ||
+             sistemaBuscadoLower.split(' - ')[0] === nombreSistema.split(' - ')[0];
+    });
+  }
+  
+  return sistemaEncontrado || null;
 };
 
 // Actualizar la función determinarSistema
@@ -282,7 +327,8 @@ export default function GenerarPedidoModal({
   productos,
   total,
   onPedidoCreated,
-  medidasPrecargadas
+  medidasPrecargadas,
+  itemToEdit
 }: GenerarPedidoModalProps) {
   // Estado para controlar el paso actual
   const [currentStep, setCurrentStep] = useState(1);
@@ -329,6 +375,9 @@ export default function GenerarPedidoModal({
 
   const [sistemaRecomendado, setSistemaRecomendado] = useState<string>("");
   const [pedidoJSON, setPedidoJSON] = useState<string>("");
+
+  // Estado para controlar cuándo se pueden precargar los campos después del sistema
+  const [sistemaCargado, setSistemaCargado] = useState(false);
 
   // Agregar nuevos estados para el buscador de telas
   const [searchTela, setSearchTela] = useState("");
@@ -429,6 +478,97 @@ export default function GenerarPedidoModal({
     }
   }, [medidasPrecargadas]);
 
+  // EFECTO 1: Precargar datos básicos y establecer el sistema
+  // Este efecto precarga datos que no dependen del sistema (medidas, cantidad, espacio)
+  // y establece el sistema, lo que dispara la carga de productos filtrados
+  useEffect(() => {
+    if (itemToEdit && isOpen && sistemas.length > 0) {
+      console.log('🔄 Precargando datos básicos del item a editar:', itemToEdit);
+      
+      // Resetear el flag cuando empieza la precarga
+      setSistemaCargado(false);
+      
+      // Precargar medidas básicas primero (no dependen del sistema)
+      if (itemToEdit.detalles?.ancho) {
+        setAncho(itemToEdit.detalles.ancho.toString());
+      }
+      if (itemToEdit.detalles?.alto) {
+        setAlto(itemToEdit.detalles.alto.toString());
+      }
+      
+      // Precargar cantidad
+      setCantidad(itemToEdit.quantity.toString());
+      
+      // Precargar espacio
+      if (itemToEdit.espacio) {
+        setEspacio(itemToEdit.espacio);
+        const espaciosPredefinidos = ["Comedor", "Cocina", "Dormitorio", "Living", "Baño", "Oficina", "Garage", "Galeria", "Otro"];
+        if (!espaciosPredefinidos.includes(itemToEdit.espacio)) {
+          setEspacio("Otro");
+          setEspacioPersonalizado(itemToEdit.espacio);
+        }
+      }
+      
+      // Establecer sistema PRIMERO - esto dispara la carga de productos filtrados
+      // Buscar el sistema por ID primero (más confiable), luego por nombre como fallback
+      let sistemaEncontrado: Sistema | null = null;
+      let sistemaParaSeleccionar: string | null = null;
+      
+      if (itemToEdit.detalles?.sistemaId) {
+        // Buscar sistema por ID (más confiable y preciso)
+        sistemaEncontrado = sistemas.find(s => {
+          const sistemaIdGuardado = Number(itemToEdit.detalles.sistemaId);
+          const sistemaIdActual = typeof s.id === 'number' ? s.id : Number(s.id);
+          return sistemaIdActual === sistemaIdGuardado;
+        }) || null;
+        
+        if (sistemaEncontrado) {
+          sistemaParaSeleccionar = String(sistemaEncontrado.nombreSistemas);
+          console.log('✅ Sistema establecido por ID:', sistemaParaSeleccionar, 'ID:', sistemaEncontrado.id);
+        } else {
+          console.warn('⚠️ Sistema no encontrado por ID:', itemToEdit.detalles.sistemaId, 'intentando por nombre...');
+        }
+      }
+      
+      // Si no se encontró por ID, intentar por nombre desde detalles.sistema
+      if (!sistemaEncontrado && itemToEdit.detalles?.sistema) {
+        const sistemaGuardado = itemToEdit.detalles.sistema;
+        console.log('🔍 Buscando sistema por nombre desde detalles.sistema:', sistemaGuardado);
+        sistemaEncontrado = buscarSistemaPorNombre(sistemaGuardado, sistemas);
+        
+        if (sistemaEncontrado) {
+          sistemaParaSeleccionar = String(sistemaEncontrado.nombreSistemas);
+          console.log('✅ Sistema establecido por nombre (detalles.sistema):', sistemaParaSeleccionar, 'ID:', sistemaEncontrado.id);
+        }
+      }
+      
+      // Si aún no se encontró, intentar extraer desde itemToEdit.name (que puede tener "Cortina ROLLER")
+      if (!sistemaEncontrado && itemToEdit.name) {
+        const sistemaDesdeNombre = extraerNombreSistema(itemToEdit.name);
+        console.log('🔍 Buscando sistema por nombre desde item.name:', itemToEdit.name, '-> extraído:', sistemaDesdeNombre);
+        sistemaEncontrado = buscarSistemaPorNombre(sistemaDesdeNombre, sistemas);
+        
+        if (sistemaEncontrado) {
+          sistemaParaSeleccionar = String(sistemaEncontrado.nombreSistemas);
+          console.log('✅ Sistema establecido por nombre (item.name):', sistemaParaSeleccionar, 'ID:', sistemaEncontrado.id);
+        }
+      }
+      
+      // Si se encontró un sistema, establecerlo
+      if (sistemaParaSeleccionar) {
+        setSelectedSistema(sistemaParaSeleccionar);
+      } else {
+        // Si no se encuentra, intentar usar el valor guardado directamente (por si acaso)
+        const sistemaFallback = itemToEdit.detalles?.sistema || extraerNombreSistema(itemToEdit.name || '');
+        if (sistemaFallback) {
+          console.warn('⚠️ Sistema no encontrado en la lista, usando valor guardado:', sistemaFallback);
+          setSelectedSistema(sistemaFallback);
+        }
+      }
+      // No continuar aquí, esperar a que sistemaCargado sea true
+    }
+  }, [itemToEdit, isOpen, sistemas]);
+
   // Estado para soportes intermedios y soporte doble
   const [soportesIntermedios, setSoportesIntermedios] = useState<any[]>([]);
   const [selectedSoporteIntermedio, setSelectedSoporteIntermedio] = useState<any>(null);
@@ -439,6 +579,9 @@ export default function GenerarPedidoModal({
     if (isOpen && selectedSistema?.toLowerCase().includes('roller')) {
       const fetchSoportes = async () => {
         try {
+          // Preservar el valor actual de selectedSoporteIntermedio si estamos editando
+          const soporteIntermedioActual = selectedSoporteIntermedio;
+          
           // Buscar soportes intermedios por ID (236 y 237)
           const resIntermedio1 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/236`);
           const resIntermedio2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/237`);
@@ -449,10 +592,12 @@ export default function GenerarPedidoModal({
           const resSoporteDoble = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/238`);
           const dataSoporteDoble = await resSoporteDoble.json();
           
-          setSoportesIntermedios([
+          const soportesIntermediosList = [
             { id: dataIntermedio1.id, nombre: dataIntermedio1.nombreProducto, precio: dataIntermedio1.precio },
             { id: dataIntermedio2.id, nombre: dataIntermedio2.nombreProducto, precio: dataIntermedio2.precio }
-          ]);
+          ];
+          
+          setSoportesIntermedios(soportesIntermediosList);
           
           setSoporteDobleProducto({
             id: dataSoporteDoble.id,
@@ -460,12 +605,32 @@ export default function GenerarPedidoModal({
             precio: dataSoporteDoble.precio
           });
           
-          // No seleccionar ningún soporte intermedio por defecto
-          setSelectedSoporteIntermedio(null);
+          // Si estamos editando y ya hay un soporte intermedio precargado, preservarlo
+          // o buscar el correspondiente en la lista recién cargada
+          if (itemToEdit && soporteIntermedioActual) {
+            // Buscar el soporte en la lista recién cargada por ID
+            const soporteEncontrado = soportesIntermediosList.find(
+              s => s.id === soporteIntermedioActual.id || 
+                   Number(s.id) === Number(soporteIntermedioActual.id)
+            );
+            if (soporteEncontrado) {
+              setSelectedSoporteIntermedio(soporteEncontrado);
+              console.log('✅ Soporte intermedio preservado después de cargar lista:', soporteEncontrado.nombre);
+            } else {
+              // Si no se encuentra, mantener el valor actual
+              setSelectedSoporteIntermedio(soporteIntermedioActual);
+            }
+          } else if (!itemToEdit) {
+            // Solo resetear si NO estamos editando
+            setSelectedSoporteIntermedio(null);
+          }
         } catch (e) {
           console.error('Error al obtener soportes:', e);
           setSoportesIntermedios([]);
-          setSelectedSoporteIntermedio(null);
+          // Solo resetear si NO estamos editando
+          if (!itemToEdit) {
+            setSelectedSoporteIntermedio(null);
+          }
           setSoporteDobleProducto(null);
         }
       };
@@ -577,6 +742,7 @@ export default function GenerarPedidoModal({
     setAccesoriosAdicionales([]);
     // NO resetear precioColocacion aquí - se obtiene del API
     setCantidadTelaManual(null);
+    setSistemaCargado(false); // Resetear el flag de sistema cargado
   };
 
   // Función para validar si se puede proceder al siguiente paso
@@ -714,9 +880,12 @@ export default function GenerarPedidoModal({
 
     if (isOpen) {
       fetchSistemas();
-      resetInputs(); // Limpiar todos los campos al abrir el modal
+      // Solo resetear inputs si NO estamos editando un item
+      if (!itemToEdit) {
+        resetInputs(); // Limpiar todos los campos al abrir el modal
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, itemToEdit]);
 
   // Actualizar el useEffect
   useEffect(() => {
@@ -1411,8 +1580,13 @@ export default function GenerarPedidoModal({
     
 
     
+    // Obtener el ID del sistema seleccionado
+    const sistemaSeleccionado = sistemas.find(s => String(s.nombreSistemas) === selectedSistema);
+    const sistemaId = sistemaSeleccionado ? (typeof sistemaSeleccionado.id === 'number' ? sistemaSeleccionado.id : Number(sistemaSeleccionado.id)) : null;
+    
     const pedido = {
       sistema: selectedSistema,
+      sistemaId: sistemaId, // Guardar ID del sistema para identificación precisa
       espacio: espacio, // Agregar el espacio seleccionado
       espacioPersonalizado: espacio === "Otro" ? espacioPersonalizado : "", // Agregar espacio personalizado
       detalles: {
@@ -1423,17 +1597,31 @@ export default function GenerarPedidoModal({
         sistemaRecomendado,
         articuloSeleccionado: selectedArticulo,
         tela: selectedSistema.toLowerCase().includes('veneciana') ? null : selectedTela,
-        caidaPorDelante,
+        caidaPorDelante, // Checkbox booleano (no necesita ID)
         colorSistema,
         ladoComando,
         tipoTela,
-        soporteIntermedio,
-        soporteDoble,
+        // IMPORTANTE: Si hay producto de soporte guardado, el booleano debe ser true
+        soporteIntermedio: soporteIntermedio || Boolean(selectedSoporteIntermedio),
+        soporteDoble: soporteDoble || Boolean(soporteDobleProducto),
         detalle,
         incluirColocacion,
         precioColocacion: incluirColocacion ? precioColocacion : 0,
+        // IMPORTANTE: Guardar el objeto completo y el ID de soporte intermedio
         soporteIntermedioTipo: selectedSoporteIntermedio,
+        soporteIntermedioId: selectedSoporteIntermedio?.id || null,
+        // IMPORTANTE: Guardar el objeto completo y el ID de soporte doble
         soporteDobleProducto: soporteDobleProducto,
+        soporteDobleProductoId: (soporteDoble || soporteDobleProducto) ? (soporteDobleProducto?.id || null) : null,
+        // IMPORTANTE: Guardar el objeto completo y el ID del producto cabezal (riel/barral)
+        // Para sistemas Tradicional/Propios, usar productoSeleccionado de sistemaPedidoDetalles
+        // Para otros sistemas, usar selectedRielBarral
+        selectedRielBarral: (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))
+          ? sistemaPedidoDetalles?.productoSeleccionado || null
+          : selectedRielBarral,
+        selectedRielBarralId: (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))
+          ? (sistemaPedidoDetalles?.productoSeleccionado?.id || null)
+          : (selectedRielBarral?.id || null),
         accesorios: [
           getSoporteResumen() ? getSoporteResumen()?.nombre : null
           // Aquí puedes agregar otros accesorios según el sistema
@@ -1480,7 +1668,9 @@ export default function GenerarPedidoModal({
       console.log('Tela Dunes:', sistemaPedidoDetalles?.tela);
     }
     
-    onPedidoCreated(pedido);
+    // Si estamos editando, pasar el ID del item
+    const editingItemId = itemToEdit?.id;
+    onPedidoCreated(pedido, editingItemId);
     resetInputs(); // Limpiar todos los campos antes de cerrar el modal
     onOpenChange(false);
   };
@@ -1512,6 +1702,395 @@ export default function GenerarPedidoModal({
     };
     fetchProductosFiltrados();
   }, [selectedSistema]);
+
+  // EFECTO 2: Esperar a que los productos filtrados se carguen después de seleccionar el sistema
+  // Este efecto verifica cuando loadingProductosFiltrados termina y marca sistemaCargado como true
+  useEffect(() => {
+    if (selectedSistema && itemToEdit && !loadingProductosFiltrados && !sistemaCargado) {
+      // Los productos filtrados están listos, ahora podemos continuar precargando
+      console.log('✅ Sistema cargado completamente, productos filtrados listos');
+      setSistemaCargado(true);
+    }
+  }, [selectedSistema, loadingProductosFiltrados, itemToEdit, sistemaCargado]);
+
+  // EFECTO 3: Precargar el resto de los campos cuando el sistema esté completamente cargado
+  // Este efecto precarga todos los campos que dependen del sistema y productos filtrados
+  useEffect(() => {
+    if (sistemaCargado && itemToEdit && isOpen) {
+      console.log('🔄 Precargando detalles del sistema:', itemToEdit);
+      
+      const precargarDetalles = async () => {
+          // Precargar detalles específicos del sistema
+          if (itemToEdit.detalles) {
+            if (itemToEdit.detalles.detalle) {
+              setDetalle(itemToEdit.detalles.detalle);
+            }
+            // Precargar caida por delante (checkbox booleano)
+            if (itemToEdit.detalles.caidaPorDelante !== undefined) {
+              setCaidaPorDelante(itemToEdit.detalles.caidaPorDelante === true || itemToEdit.detalles.caidaPorDelante === "Si");
+            }
+            if (itemToEdit.detalles.colorSistema) {
+              setColorSistema(itemToEdit.detalles.colorSistema);
+            }
+            if (itemToEdit.detalles.ladoComando) {
+              setLadoComando(itemToEdit.detalles.ladoComando);
+            }
+            if (itemToEdit.detalles.tipoTela) {
+              setTipoTela(itemToEdit.detalles.tipoTela);
+            }
+            // Precargar soporte intermedio y soporte doble (mutuamente excluyentes)
+            // IMPORTANTE: Si hay ID o producto guardado, activar el checkbox aunque el booleano sea false
+            console.log('🔍 [DEBUG] Soportes en itemToEdit.detalles:', {
+              soporteIntermedio: itemToEdit.detalles.soporteIntermedio,
+              soporteIntermedioId: itemToEdit.detalles.soporteIntermedioId,
+              soporteIntermedioTipo: itemToEdit.detalles.soporteIntermedioTipo,
+              soporteDoble: itemToEdit.detalles.soporteDoble,
+              soporteDobleProductoId: itemToEdit.detalles.soporteDobleProductoId,
+              soporteDobleProducto: itemToEdit.detalles.soporteDobleProducto
+            });
+            
+            // Determinar si hay soporte intermedio guardado (por booleano o por existencia de producto)
+            const tieneSoporteIntermedioGuardado = itemToEdit.detalles.soporteIntermedio === true || 
+                                                   Boolean(itemToEdit.detalles.soporteIntermedioId) || 
+                                                   Boolean(itemToEdit.detalles.soporteIntermedioTipo);
+            
+            // Determinar si hay soporte doble guardado (por booleano o por existencia de producto)
+            const tieneSoporteDobleGuardado = itemToEdit.detalles.soporteDoble === true || 
+                                               Boolean(itemToEdit.detalles.soporteDobleProductoId) || 
+                                               Boolean(itemToEdit.detalles.soporteDobleProducto);
+            
+            // Aplicar lógica mutuamente excluyente: solo uno puede estar activo
+            if (tieneSoporteIntermedioGuardado && tieneSoporteDobleGuardado) {
+              console.log('⚠️ Detectado conflicto: ambos soportes guardados, priorizando soporte intermedio');
+              // Priorizar soporte intermedio si ambos están guardados
+              setSoporteIntermedio(true);
+              setSoporteDoble(false);
+            } else if (tieneSoporteIntermedioGuardado) {
+              setSoporteIntermedio(true);
+              setSoporteDoble(false);
+              console.log('✅ Soporte intermedio activado (checkbox):', true);
+            } else if (tieneSoporteDobleGuardado) {
+              setSoporteDoble(true);
+              setSoporteIntermedio(false);
+              setSelectedSoporteIntermedio(null);
+              console.log('✅ Soporte doble activado (checkbox):', true);
+            } else {
+              // Ninguno está guardado
+              setSoporteIntermedio(false);
+              setSoporteDoble(false);
+            }
+          
+          // Precargar tela - buscar desde API si solo tenemos el nombre
+          if (itemToEdit.detalles.tela && typeof itemToEdit.detalles.tela === 'object') {
+            // Si ya tenemos el objeto completo de la tela
+            setSelectedTela(itemToEdit.detalles.tela);
+            setSearchTela(itemToEdit.detalles.tela.nombreProducto || itemToEdit.detalles.tela.nombre || '');
+          } else if (itemToEdit.detalles.tipoTela) {
+            // Si solo tenemos el nombre, intentar buscarlo
+            setTipoTela(itemToEdit.detalles.tipoTela);
+            setSearchTela(itemToEdit.detalles.tipoTela);
+            // Intentar buscar la tela completa desde la API usando la misma lógica que TelasSearch
+            try {
+              // Usar selectedSistema que ya está normalizado (sin "Cortina")
+              const sistemaKey = selectedSistema?.toLowerCase();
+              const isTradicional = sistemaKey && (sistemaKey.includes('tradicional') || sistemaKey.includes('propios'));
+              
+              let url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados`;
+              
+              if (isTradicional || !sistemaKey || !sistemaToApiParams[sistemaKey]) {
+                // Para sistemas Tradicional/Propios, usar filtro fijo
+                url += `?rubroId=4&q=${encodeURIComponent(itemToEdit.detalles.tipoTela)}`;
+              } else {
+                // Para otros sistemas, usar filtros dinámicos
+                const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
+                url += `?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${encodeURIComponent(itemToEdit.detalles.tipoTela)}`;
+              }
+              
+              const response = await fetch(url);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+                  // Buscar la tela que coincida con el nombre
+                  const telaEncontrada = data.data.find((t: any) => 
+                    t.nombreProducto?.toLowerCase().includes(itemToEdit.detalles.tipoTela.toLowerCase()) ||
+                    itemToEdit.detalles.tipoTela.toLowerCase().includes(t.nombreProducto?.toLowerCase() || '')
+                  );
+                  if (telaEncontrada) {
+                    setSelectedTela({
+                      id: telaEncontrada.id,
+                      nombreProducto: telaEncontrada.nombreProducto,
+                      tipo: telaEncontrada.descripcion || '',
+                      color: telaEncontrada.color || '',
+                      precio: telaEncontrada.precio ? Number(telaEncontrada.precio).toString() : '0'
+                    });
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error al buscar tela:', error);
+            }
+          }
+          
+          // Precargar segunda tela si existe
+          if (itemToEdit.detalles.tela2) {
+            if (typeof itemToEdit.detalles.tela2 === 'object') {
+              setSelectedTela2(itemToEdit.detalles.tela2);
+              setSearchTela2(itemToEdit.detalles.tela2.nombreProducto || itemToEdit.detalles.tela2.nombre || '');
+            } else {
+              setSearchTela2(itemToEdit.detalles.tela2);
+            }
+            if (itemToEdit.detalles.multiplicadorTela2) {
+              setMultiplicadorTela2(itemToEdit.detalles.multiplicadorTela2);
+            }
+            if (itemToEdit.detalles.cantidadTelaManual2) {
+              setCantidadTelaManual2(itemToEdit.detalles.cantidadTelaManual2);
+            }
+          }
+          
+          // Precargar motorización
+          if (itemToEdit.detalles.incluirMotorizacion) {
+            setIncluirMotorizacion(true);
+            if (itemToEdit.detalles.precioMotorizacion) {
+              setPrecioMotorizacion(itemToEdit.detalles.precioMotorizacion);
+            }
+          }
+          
+          // Precargar colocación
+          if (itemToEdit.detalles.incluirColocacion !== undefined) {
+            setIncluirColocacion(itemToEdit.detalles.incluirColocacion);
+          }
+          if (itemToEdit.detalles.precioColocacion) {
+            setPrecioColocacion(itemToEdit.detalles.precioColocacion);
+          }
+          
+          // Precargar multiplicador de tela
+          if (itemToEdit.detalles.multiplicadorTela) {
+            setMultiplicadorTelaLocal(itemToEdit.detalles.multiplicadorTela);
+          }
+          if (itemToEdit.detalles.cantidadTelaManual) {
+            setCantidadTelaManual(itemToEdit.detalles.cantidadTelaManual);
+          }
+          
+          // Precargar accesorios adicionales
+          if (itemToEdit.detalles.accesoriosAdicionales && Array.isArray(itemToEdit.detalles.accesoriosAdicionales)) {
+            setAccesoriosAdicionales(itemToEdit.detalles.accesoriosAdicionales);
+          }
+          
+          // Establecer sistemaPedidoDetalles con TODOS los datos disponibles para que los formularios específicos los usen
+          const detallesCompletos: any = {
+            detalle: itemToEdit.detalles.detalle || '',
+            colorSistema: itemToEdit.detalles.colorSistema || '',
+            ladoComando: itemToEdit.detalles.ladoComando || '',
+            ladoApertura: itemToEdit.detalles.ladoApertura || '',
+            instalacion: itemToEdit.detalles.instalacion || '',
+            tipoApertura: itemToEdit.detalles.tipoApertura || '',
+            caidaPorDelante: itemToEdit.detalles.caidaPorDelante || false,
+            soporteIntermedio: itemToEdit.detalles.soporteIntermedio || false,
+            soporteDoble: itemToEdit.detalles.soporteDoble || false,
+            accesorios: itemToEdit.detalles.accesorios || [],
+            accesoriosAdicionales: itemToEdit.detalles.accesoriosAdicionales || [],
+            tela: itemToEdit.detalles.tela || null,
+            tela2: itemToEdit.detalles.tela2 || null,
+            multiplicadorTela: itemToEdit.detalles.multiplicadorTela || null,
+            multiplicadorTela2: itemToEdit.detalles.multiplicadorTela2 || null,
+            cantidadTelaManual: itemToEdit.detalles.cantidadTelaManual || null,
+            cantidadTelaManual2: itemToEdit.detalles.cantidadTelaManual2 || null,
+            incluirMotorizacion: itemToEdit.detalles.incluirMotorizacion || false,
+            precioMotorizacion: itemToEdit.detalles.precioMotorizacion || 0,
+            incluirColocacion: itemToEdit.detalles.incluirColocacion || false,
+            precioColocacion: itemToEdit.detalles.precioColocacion || 0
+          };
+          
+          // Para sistemas específicos como Dunes
+          if (itemToEdit.detalles.productoDunes || itemToEdit.detalles.telaDunes) {
+            detallesCompletos.producto = itemToEdit.detalles.productoDunes;
+            detallesCompletos.tela = itemToEdit.detalles.telaDunes;
+          }
+          
+          // Para sistemas Tradicional/Propios
+          if (itemToEdit.detalles.sistema && 
+              (itemToEdit.detalles.sistema.toLowerCase().includes('tradicional') || 
+               itemToEdit.detalles.sistema.toLowerCase().includes('propios'))) {
+            detallesCompletos.productoSeleccionado = itemToEdit.detalles.productoSeleccionado || null;
+          }
+          
+          setSistemaPedidoDetalles(detallesCompletos);
+          
+          // Precargar producto cabezal (riel/barral) - buscar por ID primero
+          const precargarProductoCabezal = async () => {
+            const productoId = itemToEdit.detalles.selectedRielBarralId || itemToEdit.detalles.productoSeleccionado?.id;
+            const productoObj = itemToEdit.detalles.productoSeleccionado || itemToEdit.detalles.selectedRielBarral;
+            
+            if (productoObj && typeof productoObj === 'object' && productoObj.id) {
+              // Si ya tenemos el objeto completo
+              setSelectedRielBarral(productoObj);
+              setSearchRielBarral(productoObj.nombreProducto || '');
+              console.log('✅ Producto cabezal precargado por objeto:', productoObj.nombreProducto, 'ID:', productoObj.id);
+            } else if (productoId) {
+              // Si tenemos el ID, buscar el producto por ID desde la API
+              try {
+                console.log('🔍 Buscando producto cabezal por ID:', productoId);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/${productoId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data && data.id) {
+                    setSelectedRielBarral(data);
+                    setSearchRielBarral(data.nombreProducto || '');
+                    console.log('✅ Producto cabezal encontrado por ID:', data.nombreProducto);
+                  }
+                }
+              } catch (error) {
+                console.error('Error al buscar producto cabezal por ID:', error);
+              }
+            } else if (productoObj && (typeof productoObj === 'string' || productoObj.nombreProducto)) {
+              // Fallback: buscar por nombre si no hay ID
+              const nombreProducto = typeof productoObj === 'string' ? productoObj : productoObj.nombreProducto;
+              setSearchRielBarral(nombreProducto);
+              console.log('🔍 Buscando producto cabezal por nombre:', nombreProducto);
+              
+              // Intentar encontrar el producto en productosFiltrados
+              if (productosFiltrados && Array.isArray(productosFiltrados) && productosFiltrados.length > 0) {
+                const productoEncontrado = productosFiltrados.find((p: any) => 
+                  p.nombreProducto?.toLowerCase().includes(nombreProducto.toLowerCase()) ||
+                  nombreProducto.toLowerCase().includes(p.nombreProducto?.toLowerCase() || '')
+                );
+                if (productoEncontrado) {
+                  setSelectedRielBarral(productoEncontrado);
+                  console.log('✅ Producto cabezal encontrado en productosFiltrados:', productoEncontrado.nombreProducto);
+                }
+              }
+            }
+          };
+          
+          await precargarProductoCabezal();
+          
+          // Precargar soporte intermedio - buscar por ID primero, luego en la lista de soportesIntermedios
+          const precargarSoporteIntermedio = async () => {
+            // Precargar si hay ID o producto guardado (aunque el booleano sea false)
+            const tieneSoporteIntermedioGuardado = itemToEdit.detalles.soporteIntermedio === true || 
+                                                   Boolean(itemToEdit.detalles.soporteIntermedioId) || 
+                                                   Boolean(itemToEdit.detalles.soporteIntermedioTipo);
+            
+            if (!tieneSoporteIntermedioGuardado) {
+              console.log('ℹ️ Soporte intermedio no está guardado, no se precarga');
+              return;
+            }
+            
+            const soporteId = itemToEdit.detalles.soporteIntermedioId;
+            const soporteObj = itemToEdit.detalles.soporteIntermedioTipo;
+            
+            // Primero intentar buscar en la lista de soportesIntermedios si ya está cargada
+            if (soportesIntermedios.length > 0 && soporteId) {
+              const soporteEncontrado = soportesIntermedios.find(
+                s => Number(s.id) === Number(soporteId)
+              );
+              if (soporteEncontrado) {
+                setSelectedSoporteIntermedio(soporteEncontrado);
+                console.log('✅ Soporte intermedio precargado desde lista:', soporteEncontrado.nombre, 'ID:', soporteEncontrado.id);
+                return; // Ya encontramos el soporte, no necesitamos buscar más
+              }
+            }
+            
+            if (soporteObj && typeof soporteObj === 'object' && soporteObj.id) {
+              // Si ya tenemos el objeto completo, verificar si está en la lista
+              if (soportesIntermedios.length > 0) {
+                const soporteEncontrado = soportesIntermedios.find(
+                  s => Number(s.id) === Number(soporteObj.id)
+                );
+                if (soporteEncontrado) {
+                  setSelectedSoporteIntermedio(soporteEncontrado);
+                  console.log('✅ Soporte intermedio precargado por objeto (encontrado en lista):', soporteEncontrado.nombre, 'ID:', soporteEncontrado.id);
+                  return;
+                }
+              }
+              // Si no está en la lista, usar el objeto directamente
+              setSelectedSoporteIntermedio(soporteObj);
+              console.log('✅ Soporte intermedio precargado por objeto:', soporteObj.nombre || soporteObj.nombreProducto, 'ID:', soporteObj.id);
+            } else if (soporteId) {
+              // Si tenemos el ID, buscar el producto por ID desde la API
+              try {
+                console.log('🔍 Buscando soporte intermedio por ID:', soporteId);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/${soporteId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data && data.id) {
+                    // Verificar si está en la lista de soportesIntermedios
+                    if (soportesIntermedios.length > 0) {
+                      const soporteEncontrado = soportesIntermedios.find(
+                        s => Number(s.id) === Number(data.id)
+                      );
+                      if (soporteEncontrado) {
+                        setSelectedSoporteIntermedio(soporteEncontrado);
+                        console.log('✅ Soporte intermedio encontrado por ID (encontrado en lista):', soporteEncontrado.nombre);
+                        return;
+                      }
+                    }
+                    // Si no está en la lista, usar el objeto de la API
+                    setSelectedSoporteIntermedio(data);
+                    console.log('✅ Soporte intermedio encontrado por ID:', data.nombreProducto);
+                  }
+                }
+              } catch (error) {
+                console.error('Error al buscar soporte intermedio por ID:', error);
+              }
+            }
+          };
+          
+          await precargarSoporteIntermedio();
+          
+          // Precargar soporte doble - buscar por ID primero
+          const precargarSoporteDoble = async () => {
+            const soporteId = itemToEdit.detalles.soporteDobleProductoId;
+            const soporteObj = itemToEdit.detalles.soporteDobleProducto;
+            
+            // Precargar si hay ID o producto guardado (aunque el booleano sea false)
+            const tieneSoporteDobleGuardado = itemToEdit.detalles.soporteDoble === true || 
+                                              Boolean(itemToEdit.detalles.soporteDobleProductoId) || 
+                                              Boolean(itemToEdit.detalles.soporteDobleProducto);
+            
+            if (!tieneSoporteDobleGuardado) {
+              console.log('ℹ️ Soporte doble no está guardado, no se precarga');
+              return;
+            }
+            
+            // Si el soporte doble está guardado, asegurar que el soporte intermedio esté desactivado
+            if (tieneSoporteDobleGuardado && (itemToEdit.detalles.soporteIntermedio || itemToEdit.detalles.soporteIntermedioId || itemToEdit.detalles.soporteIntermedioTipo)) {
+              console.log('⚠️ Desactivando soporte intermedio porque soporte doble está guardado');
+              setSoporteIntermedio(false);
+              setSelectedSoporteIntermedio(null);
+            }
+            
+            if (soporteObj && typeof soporteObj === 'object' && soporteObj.id) {
+              // Si ya tenemos el objeto completo
+              setSoporteDobleProducto(soporteObj);
+              console.log('✅ Soporte doble precargado por objeto:', soporteObj.nombre || soporteObj.nombreProducto, 'ID:', soporteObj.id);
+            } else if (soporteId) {
+              // Si tenemos el ID, buscar el producto por ID desde la API
+              try {
+                console.log('🔍 Buscando soporte doble por ID:', soporteId);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/${soporteId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data && data.id) {
+                    setSoporteDobleProducto(data);
+                    console.log('✅ Soporte doble encontrado por ID:', data.nombreProducto);
+                  }
+                }
+              } catch (error) {
+                console.error('Error al buscar soporte doble por ID:', error);
+              }
+            }
+          };
+          
+          await precargarSoporteDoble();
+        }
+        
+        console.log('✅ Precarga de detalles completada');
+      };
+      
+      precargarDetalles();
+    }
+  }, [sistemaCargado, itemToEdit, isOpen, productosFiltrados, soportesIntermedios]);
 
   const handleBuscarProducto = async (value: string) => {
     console.log('[DEBUG] handleBuscarProducto called with:', value, selectedSistema);
@@ -1668,7 +2247,7 @@ export default function GenerarPedidoModal({
           return (
             <>
               <ModalHeader className="sticky top-0 z-20 bg-white dark:bg-dark-card rounded-t-lg border-b dark:border-dark-border flex justify-between items-center">
-                <span>Generar Pedido</span>
+                <span>{itemToEdit ? "Modificar Pedido" : "Generar Pedido"}</span>
                 <Button
                   isIconOnly
                   variant="flat"
@@ -2774,7 +3353,7 @@ export default function GenerarPedidoModal({
                       onPress={handleSubmit}
                       className="min-w-[140px]"
                     >
-                      Generar Pedido
+                      {itemToEdit ? "Actualizar Pedido" : "Generar Pedido"}
                     </Button>
                   </div>
                 </div>

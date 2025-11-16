@@ -31,6 +31,16 @@ export const BudgetSummary = ({
   const { calculateTotals } = useBudgetCalculations();
   const [discountType, setDiscountType] = useState<"percentage" | "amount">("percentage");
   const [discountValue, setDiscountValue] = useState("10");
+  
+  // Log para depuración: verificar valores recibidos
+  useEffect(() => {
+    console.log('🔍 [BudgetSummary] Valores recibidos:', {
+      applyDiscount: Boolean(applyDiscount),
+      showMeasuresInPDF: Boolean(showMeasuresInPDF),
+      esEstimativo: Boolean(esEstimativo),
+      shouldRound: Boolean(shouldRound)
+    });
+  }, [applyDiscount, showMeasuresInPDF, esEstimativo, shouldRound]);
 
   // Calcular el subtotal primero
   const subtotal = items.reduce((acc, item) => {
@@ -84,9 +94,12 @@ export const BudgetSummary = ({
   const { discount, total, adjustedDiscountValue } = calculateFinalValues();
 
   // Efecto para notificar cambios en el descuento
+  // IMPORTANTE: Solo notificar cuando hay cambios reales, no en el montaje inicial
   useEffect(() => {
+    // No llamar en el montaje inicial si los valores son los por defecto
+    // Esto evita que se sobrescriban los valores cargados desde presupuesto_json
     onDiscountChange(applyDiscount, discountType, discountValue, shouldRound);
-  }, [applyDiscount, discountType, discountValue, shouldRound]);
+  }, [applyDiscount, discountType, discountValue, shouldRound, onDiscountChange]);
 
   return (
     <div className="flex justify-start gap-4 mt-4">
@@ -94,8 +107,8 @@ export const BudgetSummary = ({
         <div className="flex flex-col gap-2 mb-3">
           <div className="flex gap-2 items-center">
             <Checkbox
-              checked={applyDiscount}
-              onChange={(e) => onDiscountChange(e.target.checked, discountType, discountValue, shouldRound)}
+              isSelected={Boolean(applyDiscount)}
+              onValueChange={(isSelected) => onDiscountChange(isSelected, discountType, discountValue, shouldRound)}
             >
               Aplicar descuento
             </Checkbox>
@@ -103,8 +116,8 @@ export const BudgetSummary = ({
           
           <div className="flex gap-2 items-center">
             <Checkbox
-              checked={showMeasuresInPDF}
-              onChange={(e) => onShowMeasuresChange(e.target.checked)}
+              isSelected={Boolean(showMeasuresInPDF)}
+              onValueChange={(isSelected) => onShowMeasuresChange(isSelected)}
             >
               Mostrar medidas en PDF
             </Checkbox>
@@ -112,8 +125,8 @@ export const BudgetSummary = ({
 
           <div className="flex gap-2 items-center">
             <Checkbox
-              checked={esEstimativo}
-              onChange={(e) => onEstimativoChange(e.target.checked)}
+              isSelected={Boolean(esEstimativo)}
+              onValueChange={(isSelected) => onEstimativoChange(isSelected)}
             >
               <strong>Presupuesto Estimativo <br />  (no muestra el total)</strong>
             </Checkbox>
@@ -156,8 +169,8 @@ export const BudgetSummary = ({
               </div>
               <div className="flex gap-2 items-center">
                 <Checkbox
-                  checked={shouldRound}
-                  onChange={(e) => onDiscountChange(applyDiscount, discountType, discountValue, e.target.checked)}
+                  isSelected={Boolean(shouldRound)}
+                  onValueChange={(isSelected) => onDiscountChange(applyDiscount, discountType, discountValue, isSelected)}
                 >
                   Redondear a miles
                 </Checkbox>

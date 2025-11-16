@@ -9,7 +9,7 @@ import { LoadingButton } from "../shared/LoadingButton";
 import { useBudgetCalculations } from "../../hooks/useBudgetCalculations";
 import GenerarPedidoModal from "../GenerarPedidoModal";
 import BudgetResume from "../budgetResume";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 // Renombrar la declaración local
 interface LocalTableItem {
@@ -64,12 +64,14 @@ const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esR
 
 export const BudgetGenerator = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   // Estados del cliente
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
   // Estados de productos y tabla
   const [tableData, setTableData] = useState<TableItem[]>([]);
   const [showPedidoModal, setShowPedidoModal] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<TableItem | null>(null);
   
   // Estados de descuento y cálculos
   const [applyDiscount, setApplyDiscount] = useState(false);
@@ -92,17 +94,214 @@ export const BudgetGenerator = () => {
   const [numeroPresupuesto, setNumeroPresupuesto] = useState<number>(0);
   const [showResume, setShowResume] = useState(false);
   const [presupuestoGenerado, setPresupuestoGenerado] = useState<PresupuestoResumen | null>(null);
+  const [presupuestoId, setPresupuestoId] = useState<number | null>(null);
 
   // Estados de presupuesto estimativo
   const [esEstimativo, setEsEstimativo] = useState(false);
+  const [checkboxesCargados, setCheckboxesCargados] = useState(false);
 
   // Efecto para manejar la precarga desde URL
   useEffect(() => {
+    // Resetear el flag de checkboxes cargados al iniciar
+    setCheckboxesCargados(false);
+    
     const loadPresetData = async () => {
       const clienteId = searchParams.get('clienteId');
       const medidasIds = searchParams.getAll('medidas');
+      const editId = searchParams.get('editId');
 
-      if (!clienteId || !medidasIds.length) return;
+      // Si hay un editId, cargar el presupuesto para editar
+      if (editId) {
+        try {
+          const presupuestoResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${editId}?include=clientes,producto`
+          );
+          
+          if (!presupuestoResponse.ok) {
+            throw new Error('Error al cargar el presupuesto');
+          }
+
+          const presupuestoData = await presupuestoResponse.json();
+          const presupuesto = presupuestoData.data || presupuestoData;
+
+          // Cargar cliente
+          if (presupuesto.cliente_id) {
+            const clientResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/clientes/${presupuesto.cliente_id}`
+            );
+            
+            if (clientResponse.ok) {
+              const clientData = await clientResponse.json();
+              if (clientData && clientData.data) {
+                setSelectedClient({
+                  id: clientData.data.id,
+                  nombre: clientData.data.nombre,
+                  direccion: clientData.data.direccion,
+                  telefono: clientData.data.telefono,
+                  email: clientData.data.email
+                });
+              }
+            }
+          }
+
+          // Parsear presupuesto_json si existe
+          let presupuestoJson = null;
+          if (presupuesto.presupuesto_json) {
+            try {
+              presupuestoJson = typeof presupuesto.presupuesto_json === 'string' 
+                ? JSON.parse(presupuesto.presupuesto_json) 
+                : presupuesto.presupuesto_json;
+            } catch (error) {
+              console.error('Error al parsear presupuesto_json:', error);
+            }
+          }
+
+          // Cargar configuración del presupuesto
+          // IMPORTANTE: Recuperar valores de checkboxes desde presupuesto_json
+          // Función helper para convertir valores a booleanos (maneja strings, números, booleanos)
+          const toBoolean = (value: any): boolean => {
+            if (typeof value === 'boolean') return value;
+            if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1';
+            if (typeof value === 'number') return value === 1 || value > 0;
+            return false;
+          };
+          
+          if (presupuestoJson) {
+            // Recuperar valores booleanos, convirtiendo explícitamente
+            const esEstimativoValue = toBoolean(presupuestoJson.esEstimativo);
+            const shouldRoundValue = toBoolean(presupuestoJson.shouldRound);
+            const applyDiscountValue = toBoolean(presupuestoJson.applyDiscount);
+            const showMeasuresInPDFValue = toBoolean(presupuestoJson.showMeasuresInPDF);
+            
+            // Establecer valores de checkboxes
+            setEsEstimativo(esEstimativoValue);
+            setShouldRound(shouldRoundValue);
+            setApplyDiscount(applyDiscountValue);
+            setShowMeasuresInPDF(showMeasuresInPDFValue);
+            
+            // Marcar que los checkboxes han sido cargados
+            setCheckboxesCargados(true);
+            
+            console.log('✅ Checkboxes recuperados desde presupuesto_json:', {
+              esEstimativo: esEstimativoValue,
+              applyDiscount: applyDiscountValue,
+              showMeasuresInPDF: showMeasuresInPDFValue,
+              shouldRound: shouldRoundValue,
+              valoresOriginales: {
+                esEstimativo: presupuestoJson.esEstimativo,
+                applyDiscount: presupuestoJson.applyDiscount,
+                showMeasuresInPDF: presupuestoJson.showMeasuresInPDF,
+                shouldRound: presupuestoJson.shouldRound
+              }
+            });
+            
+            if (applyDiscountValue) {
+              // Determinar tipo de descuento
+              if (presupuestoJson.descuento > 0 && presupuestoJson.subtotal > 0) {
+                const porcentaje = (presupuestoJson.descuento / presupuestoJson.subtotal) * 100;
+                if (porcentaje === Math.round(porcentaje)) {
+                  setDiscountType("percentage");
+                  setDiscountValue(porcentaje.toString());
+                } else {
+                  setDiscountType("amount");
+                  setDiscountValue(presupuestoJson.descuento.toString());
+                }
+              }
+            }
+          } else {
+            // Si no hay presupuesto_json, establecer valores por defecto explícitamente
+            console.log('ℹ️ No hay presupuesto_json, usando valores por defecto');
+            setEsEstimativo(false);
+            setShouldRound(false);
+            setApplyDiscount(false);
+            setShowMeasuresInPDF(false);
+            setCheckboxesCargados(true); // Marcar como cargados incluso si no hay JSON
+          }
+
+          // Convertir items del presupuesto a TableItem
+          const tableItems: TableItem[] = (presupuesto.items || []).map((item: any, index: number) => {
+            const productoJson = presupuestoJson?.productos?.[index] || {};
+            
+            // Calcular precio unitario base (sin motorización)
+            const cantidad = Number(item.cantidad) || 0;
+            const subtotalTotal = Number(item.subtotal) || 0;
+            const incluirMotorizacion = Boolean(
+              productoJson.incluirMotorizacion || 
+              item.detalles?.incluirMotorizacion
+            );
+            const precioMotorizacionUnitario = incluirMotorizacion 
+              ? Number(productoJson.precioMotorizacion || item.detalles?.precioMotorizacion || 0) 
+              : 0;
+            const subtotalMotorizacion = precioMotorizacionUnitario * cantidad;
+            const precioUnitarioBase = subtotalTotal - subtotalMotorizacion;
+            const precioUnitario = cantidad > 0 ? precioUnitarioBase / cantidad : precioUnitarioBase;
+
+            return {
+              id: item.id || Date.now() + index,
+              productId: item.producto_id || Date.now() + index,
+              name: item.nombre,
+              description: item.descripcion || '',
+              quantity: cantidad,
+              price: precioUnitario,
+              total: subtotalTotal,
+              espacio: productoJson.espacio || item.espacio || 'Sin especificar',
+              detalles: {
+                sistema: item.detalles?.sistema || productoJson.sistema || '',
+                sistemaId: item.detalles?.sistemaId || productoJson.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
+                detalle: item.detalles?.detalle || productoJson.detalle || '',
+                caidaPorDelante: item.detalles?.caidaPorDelante || '', // Checkbox booleano (no necesita ID)
+                colorSistema: item.detalles?.colorSistema || productoJson.colorSistema || '',
+                ladoComando: item.detalles?.ladoComando || productoJson.ladoComando || '',
+                tipoTela: item.detalles?.tipoTela || productoJson.tipoTela || '',
+                soporteIntermedio: item.detalles?.soporteIntermedio || false,
+                soporteDoble: item.detalles?.soporteDoble || false,
+                // IMPORTANTE: Restaurar objetos completos y IDs de productos
+                soporteIntermedioTipo: item.detalles?.soporteIntermedioTipo || productoJson.soporteIntermedioTipo || null,
+                soporteIntermedioId: item.detalles?.soporteIntermedioId || productoJson.soporteIntermedioId || item.detalles?.soporteIntermedioTipo?.id || null,
+                soporteDobleProducto: item.detalles?.soporteDobleProducto || productoJson.soporteDobleProducto || null,
+                soporteDobleProductoId: item.detalles?.soporteDobleProductoId || productoJson.soporteDobleProductoId || item.detalles?.soporteDobleProducto?.id || null,
+                selectedRielBarral: item.detalles?.selectedRielBarral || productoJson.selectedRielBarral || item.detalles?.productoSeleccionado || productoJson.productoSeleccionado || null,
+                selectedRielBarralId: item.detalles?.selectedRielBarralId || productoJson.selectedRielBarralId || item.detalles?.selectedRielBarral?.id || item.detalles?.productoSeleccionado?.id || null,
+                accesorios: item.detalles?.accesorios || [],
+                accesoriosAdicionales: item.detalles?.accesoriosAdicionales || [],
+                ancho: productoJson.ancho || item.detalles?.ancho,
+                alto: productoJson.alto || item.detalles?.alto,
+                incluirMotorizacion,
+                precioMotorizacion: precioMotorizacionUnitario,
+                // IMPORTANTE: Restaurar el objeto completo de la tela desde productoJson o item.detalles
+                // Si está disponible en productoJson (desde presupuesto_json), usar ese
+                // Si no, intentar desde item.detalles
+                // Si tampoco, usar null (se buscará por nombre más tarde)
+                tela: productoJson.tela || item.detalles?.tela || null,
+                // También restaurar segunda tela si existe
+                tela2: productoJson.tela2 || item.detalles?.tela2 || null,
+                multiplicadorTela: productoJson.multiplicadorTela || item.detalles?.multiplicadorTela || null,
+                multiplicadorTela2: productoJson.multiplicadorTela2 || item.detalles?.multiplicadorTela2 || null,
+                cantidadTelaManual: productoJson.cantidadTelaManual || item.detalles?.cantidadTelaManual || null,
+                cantidadTelaManual2: productoJson.cantidadTelaManual2 || item.detalles?.cantidadTelaManual2 || null,
+                ...(item.detalles || {})
+              } as any
+            };
+          });
+
+          setTableData(tableItems);
+          
+          // Guardar el ID del presupuesto para actualizar después
+          setPresupuestoId(parseInt(editId));
+          
+        } catch (error) {
+          console.error('Error al cargar presupuesto para editar:', error);
+          mostrarErrorToast(error instanceof Error ? error.message : "Error al cargar el presupuesto");
+        }
+        return;
+      }
+
+      // Código original para cargar medidas precargadas
+      // Si no hay editId ni medidas para cargar, marcar checkboxes como cargados (valores por defecto)
+      if (!clienteId || !medidasIds.length) {
+        setCheckboxesCargados(true);
+        return;
+      }
 
       try {
         // 1. Cargar datos del cliente
@@ -162,15 +361,27 @@ export const BudgetGenerator = () => {
 
         setTableData(newTableItems);
         setShowPedidoModal(true);
+        setCheckboxesCargados(true); // Marcar como cargados después de cargar medidas
 
       } catch (error) {
         console.error('Error detallado:', error);
         mostrarErrorToast(error instanceof Error ? error.message : "Error al cargar los datos preestablecidos");
+        setCheckboxesCargados(true); // Marcar como cargados incluso si hay error
       }
     };
 
     loadPresetData();
   }, [searchParams]);
+
+  // Efecto para verificar que los valores de checkboxes se establezcan correctamente
+  useEffect(() => {
+    console.log('🔍 [DEBUG] Estados actuales de checkboxes:', {
+      esEstimativo,
+      applyDiscount,
+      showMeasuresInPDF,
+      shouldRound
+    });
+  }, [esEstimativo, applyDiscount, showMeasuresInPDF, shouldRound]);
 
   // Función para mostrar toast de error
   const mostrarErrorToast = (mensaje: string) => {
@@ -212,12 +423,13 @@ export const BudgetGenerator = () => {
   };
 
   // Manejador de pedido personalizado
-  const handleAddPedido = (pedido: any) => {
+  const handleAddPedido = (pedido: any, editingItemId?: number) => {
     console.log('=== PEDIDO RECIBIDO EN BUDGETGENERATOR ===');
     console.log('Pedido completo:', pedido);
     console.log('Detalles del pedido:', pedido.detalles);
     console.log('Accesorios:', pedido.detalles?.accesorios);
     console.log('Accesorios adicionales:', pedido.detalles?.accesoriosAdicionales);
+    console.log('Editando item ID:', editingItemId);
     
     // Logs específicos para Dunes
     if (pedido.sistema?.toLowerCase().includes('dunes')) {
@@ -264,74 +476,105 @@ export const BudgetGenerator = () => {
       cantidadDelPedido: cantidadDelPedido,
       precioUnitarioCalculado: precioUnitarioCalculado
     });
-    // Si el pedido viene de una medida precargada, actualizar ese item
-    if (pedido.medidaId) {
+    // Crear el objeto del item actualizado
+    const itemActualizado = {
+      name: `Cortina ${pedido.sistema}`,
+      description: (() => {
+        // Lógica específica para Dunes
+        if (pedido.sistema?.toLowerCase().includes('dunes')) {
+          const productoDunes = pedido.detalles?.productoDunes;
+          const telaDunes = pedido.detalles?.telaDunes;
+          if (productoDunes && telaDunes) {
+            return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
+          }
+        }
+        // Para otros sistemas, incluir información de segunda tela si existe
+        const telaPrincipal = pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || '';
+        const telaSecundaria = pedido.detalles?.tela2?.nombreProducto || '';
+        
+        if (telaSecundaria) {
+          return `${telaPrincipal} + ${telaSecundaria}`;
+        }
+        return telaPrincipal;
+      })(),
+      quantity: cantidadDelPedido,
+      price: precioUnitarioCalculado,
+      total: precioTotalDelModal,
+      espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio,
+      detalles: {
+        sistema: pedido.sistema || "",
+        sistemaId: pedido.sistemaId || pedido.detalles?.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
+        detalle: pedido.detalles?.detalle || "",
+        caidaPorDelante: pedido.detalles?.caidaPorDelante ? "Si" : "No", // Checkbox booleano (no necesita ID)
+        colorSistema: pedido.detalles?.colorSistema || "",
+        ladoComando: pedido.detalles?.ladoComando || "",
+        tipoTela: pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || "",
+        // IMPORTANTE: Si hay producto de soporte guardado, el booleano debe ser true
+        soporteIntermedio: Boolean(pedido.detalles?.soporteIntermedioTipo) || Boolean(pedido.detalles?.soporteIntermedioId) || pedido.detalles?.soporteIntermedio || false,
+        soporteDoble: Boolean(pedido.detalles?.soporteDobleProducto) || Boolean(pedido.detalles?.soporteDobleProductoId) || pedido.detalles?.soporteDoble || false,
+        // IMPORTANTE: Guardar objetos completos y IDs de productos
+        soporteIntermedioTipo: pedido.detalles?.soporteIntermedioTipo || null,
+        soporteIntermedioId: pedido.detalles?.soporteIntermedioId || pedido.detalles?.soporteIntermedioTipo?.id || null,
+        soporteDobleProducto: pedido.detalles?.soporteDobleProducto || null,
+        soporteDobleProductoId: pedido.detalles?.soporteDobleProductoId || pedido.detalles?.soporteDobleProducto?.id || null,
+        selectedRielBarral: pedido.detalles?.selectedRielBarral || pedido.detalles?.productoSeleccionado || null,
+        selectedRielBarralId: pedido.detalles?.selectedRielBarralId || pedido.detalles?.selectedRielBarral?.id || pedido.detalles?.productoSeleccionado?.id || null,
+        accesorios: pedido.detalles?.accesorios || [],
+        accesoriosAdicionales: pedido.detalles?.accesoriosAdicionales || [],
+        medidaId: pedido.medidaId,
+        ancho: pedido.detalles?.ancho,
+        alto: pedido.detalles?.alto,
+        ubicacion: pedido.detalles?.ubicacion,
+        // Información específica para tela tradicional
+        multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
+        metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null,
+        // Información específica para segunda tela
+        tela2: pedido.detalles?.tela2 || null,
+        multiplicadorTela2: pedido.detalles?.multiplicadorTela2 || null,
+        cantidadTelaManual2: pedido.detalles?.cantidadTelaManual2 || null,
+        // Información específica para Dunes
+        ...(pedido.sistema?.toLowerCase().includes('dunes') && {
+          productoDunes: pedido.detalles?.productoDunes,
+          telaDunes: pedido.detalles?.telaDunes,
+          precioSistemaDunes: pedido.detalles?.precioSistemaDunes,
+          precioTelaDunes: pedido.detalles?.precioTelaDunes,
+          // Campos específicos del formulario de Dunes
+          colorSistema: pedido.detalles?.colorSistema || "",
+          ladoComando: pedido.detalles?.ladoComando || "",
+          ladoApertura: pedido.detalles?.ladoApertura || "",
+          instalacion: pedido.detalles?.instalacion || "",
+          tipoApertura: pedido.detalles?.tipoApertura || ""
+        }),
+        // Información de motorización
+        incluirMotorizacion: pedido.detalles?.incluirMotorizacion || false,
+        precioMotorizacion: pedido.detalles?.precioMotorizacion || 0,
+        // Incluir otros campos que puedan estar en los detalles
+        // IMPORTANTE: Guardar el objeto completo de la tela con ID, nombre, precio, etc.
+        tela: pedido.detalles?.tela || pedido.tela || null,
+        incluirColocacion: pedido.incluirColocacion || false,
+        precioColocacion: pedido.precioColocacion || 0
+      } as any
+    };
+
+    // Si estamos editando un item existente, actualizarlo
+    if (editingItemId !== undefined) {
+      setTableData(prev => prev.map(item => 
+        item.id === editingItemId
+          ? {
+              ...item,
+              ...itemActualizado
+            }
+          : item
+      ));
+      // Limpiar el item a editar
+      setItemToEdit(null);
+    } else if (pedido.medidaId) {
+      // Si el pedido viene de una medida precargada, actualizar ese item
       setTableData(prev => prev.map(item => 
         item.detalles && 'medidaId' in item.detalles && item.detalles.medidaId === pedido.medidaId
           ? {
               ...item,
-              name: `Cortina ${pedido.sistema}`,
-                      description: (() => {
-          // Lógica específica para Dunes
-          if (pedido.sistema?.toLowerCase().includes('dunes')) {
-            const productoDunes = pedido.detalles?.productoDunes;
-            const telaDunes = pedido.detalles?.telaDunes;
-            if (productoDunes && telaDunes) {
-              return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
-            }
-          }
-          // Para otros sistemas, incluir información de segunda tela si existe
-          const telaPrincipal = pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || '';
-          const telaSecundaria = pedido.detalles?.tela2?.nombreProducto || '';
-          
-          if (telaSecundaria) {
-            return `${telaPrincipal} + ${telaSecundaria}`;
-          }
-          return telaPrincipal;
-        })(),
-              quantity: cantidadDelPedido,
-              price: precioUnitarioCalculado,
-              total: precioTotalDelModal,
-              espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio, // Usar espacio personalizado si es "Otro"
-              detalles: {
-                sistema: pedido.sistema || "",
-                detalle: pedido.detalles?.detalle || "",
-                caidaPorDelante: pedido.detalles?.caidaPorDelante ? "Si" : "No",
-                colorSistema: pedido.detalles?.colorSistema || "",
-                ladoComando: pedido.detalles?.ladoComando || "",
-                tipoTela: pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || "",
-                soporteIntermedio: pedido.detalles?.soporteIntermedio || false,
-                soporteDoble: pedido.detalles?.soporteDoble || false,
-                accesorios: pedido.detalles?.accesorios || [],
-                accesoriosAdicionales: pedido.detalles?.accesoriosAdicionales || [],
-                medidaId: pedido.medidaId,
-                ancho: pedido.detalles?.ancho,
-                alto: pedido.detalles?.alto,
-                ubicacion: pedido.detalles?.ubicacion,
-                // Información específica para tela tradicional
-                multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
-                metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null,
-                // Información específica para segunda tela
-                tela2: pedido.detalles?.tela2 || null,
-                multiplicadorTela2: pedido.detalles?.multiplicadorTela2 || null,
-                cantidadTelaManual2: pedido.detalles?.cantidadTelaManual2 || null,
-                // Información específica para Dunes
-                ...(pedido.sistema?.toLowerCase().includes('dunes') && {
-                  productoDunes: pedido.detalles?.productoDunes,
-                  telaDunes: pedido.detalles?.telaDunes,
-                  precioSistemaDunes: pedido.detalles?.precioSistemaDunes,
-                  precioTelaDunes: pedido.detalles?.precioTelaDunes,
-                  // Campos específicos del formulario de Dunes
-                  colorSistema: pedido.detalles?.colorSistema || "",
-                  ladoComando: pedido.detalles?.ladoComando || "",
-                  ladoApertura: pedido.detalles?.ladoApertura || "",
-                  instalacion: pedido.detalles?.instalacion || "",
-                  tipoApertura: pedido.detalles?.tipoApertura || ""
-                }),
-                // Información de motorización
-                incluirMotorizacion: pedido.detalles?.incluirMotorizacion || false,
-                precioMotorizacion: pedido.detalles?.precioMotorizacion || 0
-              }
+              ...itemActualizado
             }
           : item
       ));
@@ -340,68 +583,7 @@ export const BudgetGenerator = () => {
       const newTableItem: TableItem = {
         id: Date.now(),
         productId: Date.now(),
-        name: `Cortina ${pedido.sistema}`,
-        description: (() => {
-          // Lógica específica para Dunes
-          if (pedido.sistema?.toLowerCase().includes('dunes')) {
-            const productoDunes = pedido.detalles?.productoDunes;
-            const telaDunes = pedido.detalles?.telaDunes;
-            if (productoDunes && telaDunes) {
-              return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
-            }
-          }
-          // Para otros sistemas, incluir información de segunda tela si existe
-          const telaPrincipal = pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || '';
-          const telaSecundaria = pedido.detalles?.tela2?.nombreProducto || '';
-          
-          if (telaSecundaria) {
-            return `${telaPrincipal} + ${telaSecundaria}`;
-          }
-          return telaPrincipal;
-        })(),
-        quantity: cantidadDelPedido,
-        price: precioUnitarioCalculado,
-        total: precioTotalDelModal,
-        espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio, // Usar espacio personalizado si es "Otro"
-        detalles: {
-          sistema: pedido.sistema || "",
-          detalle: pedido.detalles?.detalle || "",
-          caidaPorDelante: pedido.detalles?.caidaPorDelante ? "Si" : "No",
-          colorSistema: pedido.detalles?.colorSistema || "",
-          ladoComando: pedido.detalles?.ladoComando || "",
-          tipoTela: pedido.detalles?.tela?.nombreProducto || pedido.tela?.nombreProducto || "",
-          soporteIntermedio: pedido.detalles?.soporteIntermedio || false,
-          soporteDoble: pedido.detalles?.soporteDoble || false,
-          accesorios: pedido.detalles?.accesorios || [],
-          accesoriosAdicionales: pedido.detalles?.accesoriosAdicionales || [],
-          medidaId: pedido.medidaId,
-          ancho: pedido.detalles?.ancho,
-          alto: pedido.detalles?.alto,
-          ubicacion: pedido.detalles?.ubicacion,
-          // Información específica para tela tradicional
-          multiplicadorTela: pedido.detalles?.multiplicadorTela || null,
-          metrosTotalesTela: pedido.detalles?.metrosTotalesTela || null,
-          // Información específica para segunda tela
-          tela2: pedido.detalles?.tela2 || null,
-          multiplicadorTela2: pedido.detalles?.multiplicadorTela2 || null,
-          cantidadTelaManual2: pedido.detalles?.cantidadTelaManual2 || null,
-          // Información específica para Dunes
-          ...(pedido.sistema?.toLowerCase().includes('dunes') && {
-            productoDunes: pedido.detalles?.productoDunes,
-            telaDunes: pedido.detalles?.telaDunes,
-            precioSistemaDunes: pedido.detalles?.precioSistemaDunes,
-            precioTelaDunes: pedido.detalles?.precioTelaDunes,
-            // Campos específicos del formulario de Dunes
-            colorSistema: pedido.detalles?.colorSistema || "",
-            ladoComando: pedido.detalles?.ladoComando || "",
-            ladoApertura: pedido.detalles?.ladoApertura || "",
-            instalacion: pedido.detalles?.instalacion || "",
-            tipoApertura: pedido.detalles?.tipoApertura || ""
-          }),
-          // Información de motorización
-          incluirMotorizacion: pedido.detalles?.incluirMotorizacion || false,
-          precioMotorizacion: pedido.detalles?.precioMotorizacion || 0
-        } as any
+        ...itemActualizado
       };
       console.log('=== ITEM GUARDADO EN TABLEDATA ===');
       console.log('Nuevo item:', newTableItem);
@@ -413,14 +595,8 @@ export const BudgetGenerator = () => {
 
   // Manejador para editar un pedido
   const handleEditItem = (item: TableItem) => {
-    // Asegurarse de que el item seleccionado esté en el estado antes de abrir el modal
-    setTableData(prevData => {
-      const itemExists = prevData.some(prevItem => prevItem.id === item.id);
-      if (!itemExists) {
-        return [...prevData, item];
-      }
-      return prevData;
-    });
+    // Guardar el item a editar para pasarlo al modal
+    setItemToEdit(item);
     
     // Abrir el modal con los datos del item seleccionado
     setShowPedidoModal(true);
@@ -455,16 +631,19 @@ export const BudgetGenerator = () => {
       setIsLoading(true);
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Generar ID basado en la fecha actual
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      const day = now.getDate().toString().padStart(2, '0');
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const seconds = now.getSeconds().toString().padStart(2, '0');
-      
-      const presupuestoId = `${year}${month}${day}-${hours}${minutes}${seconds}`;
+      // Generar ID basado en la fecha actual solo si no estamos editando
+      let presupuestoIdString = null;
+      if (!presupuestoId) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        
+        presupuestoIdString = `${year}${month}${day}-${hours}${minutes}${seconds}`;
+      }
       
       const { subtotal, discount, finalTotal } = calculateTotals(
         tableData, 
@@ -475,14 +654,14 @@ export const BudgetGenerator = () => {
       );
 
       // Crear el objeto de presupuesto para enviar al backend
-      const presupuestoData = {
+      const presupuestoData: any = {
         estado: "Emitido",
-        numeroPresupuesto: presupuestoId,
         clienteId: selectedClient.id,
-        esEstimativo: esEstimativo,
-        showMeasuresInPDF: showMeasuresInPDF,
-        shouldRound: shouldRound,
-        applyDiscount: applyDiscount,
+        // IMPORTANTE: Guardar valores booleanos explícitamente (incluso si son false)
+        esEstimativo: Boolean(esEstimativo),
+        showMeasuresInPDF: Boolean(showMeasuresInPDF),
+        shouldRound: Boolean(shouldRound),
+        applyDiscount: Boolean(applyDiscount),
         subtotal: subtotal,
         descuento: discount,
         total: finalTotal,
@@ -507,7 +686,8 @@ export const BudgetGenerator = () => {
             espacio: item.espacio,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: precioMotorizacionUnitario,
-            tipoTela: item.detalles?.tipoTela || '',
+            tipoTela: item.detalles?.tipoTela || item.detalles?.tela?.nombreProducto || '',
+            sistemaId: item.detalles?.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
             tipoApertura: item.detalles?.tipoApertura || '',
             colorSistema: item.detalles?.colorSistema || '',
             ladoComando: item.detalles?.ladoComando || '',
@@ -516,15 +696,44 @@ export const BudgetGenerator = () => {
             // Incluir medidas del producto en el JSON
             ancho: item.detalles?.ancho,
             alto: item.detalles?.alto,
+            // IMPORTANTE: Guardar el objeto completo de la tela con ID, nombre, precio, etc.
+            tela: (item.detalles as any)?.tela || null,
             // Información de segunda tela
             tela2: (item.detalles as any)?.tela2 || null,
             multiplicadorTela2: (item.detalles as any)?.multiplicadorTela2 || null,
-            cantidadTelaManual2: (item.detalles as any)?.cantidadTelaManual2 || null
+            cantidadTelaManual2: (item.detalles as any)?.cantidadTelaManual2 || null,
+            // IMPORTANTE: Guardar objetos completos y IDs de productos de soportes
+            // Si hay producto de soporte guardado, el booleano debe ser true
+            soporteIntermedio: Boolean((item.detalles as any)?.soporteIntermedioTipo) || Boolean((item.detalles as any)?.soporteIntermedioId) || (item.detalles as any)?.soporteIntermedio || false,
+            soporteIntermedioTipo: (item.detalles as any)?.soporteIntermedioTipo || null,
+            soporteIntermedioId: (item.detalles as any)?.soporteIntermedioId || (item.detalles as any)?.soporteIntermedioTipo?.id || null,
+            soporteDoble: Boolean((item.detalles as any)?.soporteDobleProducto) || Boolean((item.detalles as any)?.soporteDobleProductoId) || (item.detalles as any)?.soporteDoble || false,
+            soporteDobleProducto: (item.detalles as any)?.soporteDobleProducto || null,
+            soporteDobleProductoId: (item.detalles as any)?.soporteDobleProductoId || (item.detalles as any)?.soporteDobleProducto?.id || null,
+            selectedRielBarral: (item.detalles as any)?.selectedRielBarral || (item.detalles as any)?.productoSeleccionado || null,
+            selectedRielBarralId: (item.detalles as any)?.selectedRielBarralId || (item.detalles as any)?.selectedRielBarral?.id || (item.detalles as any)?.productoSeleccionado?.id || null
           };
         })
       };
 
-      console.log('PresupuestoData completo con espacios:', presupuestoData.productos.map(p => ({ nombre: p.nombre, espacio: p.espacio })));
+      // Solo agregar numeroPresupuesto si estamos creando uno nuevo
+      if (presupuestoIdString) {
+        presupuestoData.numeroPresupuesto = presupuestoIdString;
+      }
+
+      // Si estamos editando, agregar la fecha de última modificación
+      if (presupuestoId) {
+        presupuestoData.fecha_ultima_modificacion = new Date().toISOString();
+        console.log('📅 Fecha de última modificación agregada:', presupuestoData.fecha_ultima_modificacion);
+      }
+
+      console.log('PresupuestoData completo con espacios:', presupuestoData.productos.map((p: any) => ({ nombre: p.nombre, espacio: p.espacio })));
+      console.log('📋 PresupuestoData completo enviado:', {
+        estado: presupuestoData.estado,
+        fecha_ultima_modificacion: presupuestoData.fecha_ultima_modificacion,
+        presupuestoId: presupuestoId,
+        metodo: presupuestoId ? 'PUT' : 'POST'
+      });
 
       tableData.forEach((item, index) => {
         console.log(`Producto ${index + 1}:`, {
@@ -552,9 +761,15 @@ export const BudgetGenerator = () => {
         }
       });
 
-      // Realizar el POST al endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos`, {
-        method: 'POST',
+      // Si estamos editando, hacer PUT, sino POST
+      const url = presupuestoId 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoId}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/presupuestos`;
+      
+      const method = presupuestoId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -564,20 +779,26 @@ export const BudgetGenerator = () => {
       if (!response.ok) {
         const errorData = await response.text();
         console.error('Error response:', errorData);
-        throw new Error('Error al guardar el presupuesto');
+        throw new Error(presupuestoId ? 'Error al actualizar el presupuesto' : 'Error al guardar el presupuesto');
       }
 
       const presupuestoGuardado = await response.json();
       console.log('Presupuesto guardado:', presupuestoGuardado);
       
+      // Si estamos editando, usar el número existente del presupuesto guardado
+      const numeroPresupuestoFinal = presupuestoId 
+        ? (presupuestoGuardado.data?.numero_presupuesto || presupuestoGuardado.numero_presupuesto)
+        : presupuestoIdString;
+      
       const presupuestoResumen = {
-        numeroPresupuesto: presupuestoId,
+        numeroPresupuesto: numeroPresupuestoFinal || '',
         fecha: new Date().toLocaleDateString(),
         cliente: selectedClient,
-        showMeasuresInPDF: showMeasuresInPDF,
-        esEstimativo: esEstimativo,
-        shouldRound: shouldRound,
-        applyDiscount: applyDiscount,
+        // IMPORTANTE: Guardar valores booleanos explícitamente (incluso si son false)
+        showMeasuresInPDF: Boolean(showMeasuresInPDF),
+        esEstimativo: Boolean(esEstimativo),
+        shouldRound: Boolean(shouldRound),
+        applyDiscount: Boolean(applyDiscount),
         productos: tableData.map(item => {
           const cantidad = Number(item.quantity);
           const precioUnitario = Number(item.price);
@@ -620,9 +841,16 @@ export const BudgetGenerator = () => {
       setSubmitStatus('success');
       setIsSubmitted(true);
       
+      // Si estamos editando, redirigir a home (donde está la tabla de presupuestos) después de un delay
+      if (presupuestoId) {
+        setTimeout(() => {
+          router.push('/home');
+        }, 2000);
+      }
+      
     } catch (error) {
       console.error('Error al emitir presupuesto:', error);
-      mostrarErrorToast(error instanceof Error ? error.message : 'Error al emitir el presupuesto');
+      mostrarErrorToast(error instanceof Error ? error.message : (presupuestoId ? 'Error al actualizar el presupuesto' : 'Error al emitir el presupuesto'));
       setSubmitStatus('error');
       setIsSubmitted(true);
     } finally {
@@ -641,7 +869,7 @@ export const BudgetGenerator = () => {
 
   return (
     <Card className="p-8">
-      <h1 style={{ fontSize: "200" }}>Generar Presupuesto</h1>
+      <h1 style={{ fontSize: "200" }}>{presupuestoId ? "Editar Presupuesto" : "Generar Presupuesto"}</h1>
       <Spacer y={6} />
       
       <BudgetClientSection
@@ -667,18 +895,22 @@ export const BudgetGenerator = () => {
       
       <Spacer y={1} />
       
-      <BudgetSummary
-        items={tableData}
-        applyDiscount={applyDiscount}
-        onDiscountChange={handleDiscountChange}
-        shouldRound={shouldRound}
-        showMeasuresInPDF={showMeasuresInPDF}
-        onShowMeasuresChange={handleShowMeasuresChange}
-        esEstimativo={esEstimativo}
-        onEstimativoChange={handleEstimativoChange}
-        opciones={[]}
-        onOpcionesChange={() => {}}
-      />
+      {/* Solo renderizar BudgetSummary después de que los checkboxes se hayan cargado */}
+      {checkboxesCargados && (
+        <BudgetSummary
+          key={`summary-${applyDiscount}-${showMeasuresInPDF}-${esEstimativo}-${shouldRound}`}
+          items={tableData}
+          applyDiscount={applyDiscount}
+          onDiscountChange={handleDiscountChange}
+          shouldRound={shouldRound}
+          showMeasuresInPDF={showMeasuresInPDF}
+          onShowMeasuresChange={handleShowMeasuresChange}
+          esEstimativo={esEstimativo}
+          onEstimativoChange={handleEstimativoChange}
+          opciones={[]}
+          onOpcionesChange={() => {}}
+        />
+      )}
       
       <Spacer y={6} />
       
@@ -692,8 +924,14 @@ export const BudgetGenerator = () => {
           }`}>
             <strong className="font-bold">
               {submitStatus === 'success' 
-                ? 'Recordá que al emitir el presupuesto el mismo queda guardado en el historial del cliente para su posterior uso!'
-                : 'No se pudo emitir el presupuesto'}
+                ? (presupuestoId 
+                    ? '¡Presupuesto actualizado exitosamente!'
+                    : 'Recordá que al emitir el presupuesto el mismo queda guardado en el historial del cliente para su posterior uso!'
+                  )
+                : (presupuestoId 
+                    ? 'No se pudo actualizar el presupuesto'
+                    : 'No se pudo emitir el presupuesto'
+                  )}
             </strong>
           </div>
         )}
@@ -703,21 +941,28 @@ export const BudgetGenerator = () => {
             color="success"
             type="submit"
             isLoading={isLoading}
-            loadingText="Emitiendo..."
+            loadingText={presupuestoId ? "Actualizando..." : "Emitiendo..."}
           >
-            Emitir Presupuesto
+            {presupuestoId ? "Actualizar Presupuesto" : "Emitir Presupuesto"}
           </LoadingButton>
         </div>
       </form>
 
       <GenerarPedidoModal
         isOpen={showPedidoModal}
-        onOpenChange={setShowPedidoModal}
+        onOpenChange={(isOpen) => {
+          setShowPedidoModal(isOpen);
+          // Limpiar el item a editar cuando se cierra el modal
+          if (!isOpen) {
+            setItemToEdit(null);
+          }
+        }}
         selectedClient={selectedClient}
         productos={tableData}
         total={calculateTotals(tableData, applyDiscount, discountType === "percentage" ? Number(discountValue) : undefined, discountType === "amount" ? Number(discountValue) : undefined, shouldRound).finalTotal}
         onPedidoCreated={handleAddPedido}
         medidasPrecargadas={undefined}
+        itemToEdit={itemToEdit}
       />
 
       {showResume && presupuestoGenerado && (

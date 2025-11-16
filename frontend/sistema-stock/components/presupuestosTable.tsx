@@ -30,11 +30,13 @@ import {
 import BudgetPDFModal from './BudgetPDFModal';
 import { FaFilePdf } from 'react-icons/fa';
 import { Alert } from "@/components/shared/alert";
+import { useRouter } from 'next/navigation';
 
 interface Presupuesto {
   id: number;
   numero_presupuesto: string;
   fecha: string;
+  fecha_ultima_modificacion?: string; // Fecha de última modificación del presupuesto
   estado:  "Confirmado" | "En Proceso" | "Entregado" | "Requiere Facturación" | "Cancelado";
   subtotal: number; // Agregar subtotal
   descuento: number; // Cambiar de optional a required
@@ -90,6 +92,7 @@ interface PresupuestosTableProps {
 }
 
 export default function PresupuestosTable({ onDataLoaded }: PresupuestosTableProps) {
+  const router = useRouter();
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,6 +161,14 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const presupuestos = presupuestosData.data || presupuestosData;
         const pedidos = pedidosData.data || pedidosData;
         
+        // Log para depuración: verificar si los presupuestos tienen fecha_ultima_modificacion
+        console.log('🔍 Presupuestos recibidos de la API:', presupuestos.map((p: any) => ({
+          id: p.id,
+          numero: p.numero_presupuesto,
+          fecha_ultima_modificacion: p.fecha_ultima_modificacion || 'No tiene',
+          tieneFechaModificacion: !!p.fecha_ultima_modificacion
+        })));
+        
         // Verificar que los datos sean arrays
         if (!Array.isArray(presupuestos)) {
           console.warn('Los presupuestos no son un array:', presupuestos);
@@ -188,6 +199,9 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
              let descuentoCalculado = presupuesto.descuento;
              let totalCalculado = presupuesto.total;
              
+             // Variable para almacenar fecha de última modificación desde cualquier fuente
+             let fechaUltimaModificacion = presupuesto.fecha_ultima_modificacion || (presupuesto as any).updated_at || undefined;
+             
              if (presupuesto.presupuesto_json) {
                try {
                  const presupuestoJson = typeof presupuesto.presupuesto_json === 'string' 
@@ -200,6 +214,12 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                  shouldRound = presupuestoJson.shouldRound || false;
                  applyDiscount = presupuestoJson.applyDiscount || false;
                  showMeasuresInPDF = presupuestoJson.showMeasuresInPDF || false;
+                 
+                 // IMPORTANTE: Buscar fecha_ultima_modificacion dentro de presupuesto_json también
+                 if (!fechaUltimaModificacion && presupuestoJson.fecha_ultima_modificacion) {
+                   fechaUltimaModificacion = presupuestoJson.fecha_ultima_modificacion;
+                   console.log('✅ Fecha de última modificación encontrada en presupuesto_json:', fechaUltimaModificacion);
+                 }
                  
                  // Usar los valores ya calculados del JSON (con redondeo aplicado)
                  subtotalCalculado = presupuestoJson.subtotal || presupuesto.subtotal;
@@ -256,7 +276,19 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                          incluirMotorizacion,
                          precioMotorizacion,
                          subtotalMotorizacion,
-                         subtotalBase
+                         subtotalBase,
+                         // IMPORTANTE: Recuperar soportes desde presupuesto_json
+                         soporteIntermedio: productoJson?.soporteIntermedio || item.detalles?.soporteIntermedio || false,
+                         soporteIntermedioTipo: productoJson?.soporteIntermedioTipo || item.detalles?.soporteIntermedioTipo || null,
+                         soporteIntermedioId: productoJson?.soporteIntermedioId || item.detalles?.soporteIntermedioId || null,
+                         // IMPORTANTE: Si hay soporteDobleProducto, el soporte doble debe estar activo
+                         soporteDoble: productoJson?.soporteDoble !== undefined 
+                           ? productoJson.soporteDoble 
+                           : (item.detalles?.soporteDoble !== undefined 
+                               ? item.detalles.soporteDoble 
+                               : Boolean(productoJson?.soporteDobleProducto || item.detalles?.soporteDobleProducto)),
+                         soporteDobleProducto: productoJson?.soporteDobleProducto || item.detalles?.soporteDobleProducto || null,
+                         soporteDobleProductoId: productoJson?.soporteDobleProductoId || item.detalles?.soporteDobleProductoId || null
                        } as any
                      };
                      
@@ -286,7 +318,7 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
                }));
              }
             
-            return {
+            const presupuestoActualizado = {
               ...presupuesto,
               items: itemsConEspacio,
               estado: presupuestosConfirmados.has(presupuesto.id) ? "Confirmado" : presupuesto.estado,
@@ -295,11 +327,27 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
               shouldRound: shouldRound,
               applyDiscount: applyDiscount,
               showMeasuresInPDF: showMeasuresInPDF,
+              // IMPORTANTE: Usar la fecha encontrada (puede venir del objeto principal o de presupuesto_json)
+              fecha_ultima_modificacion: fechaUltimaModificacion,
               // Usar los valores ya calculados del JSON (con redondeo aplicado)
               subtotal: subtotalCalculado,
               descuento: descuentoCalculado,
               total: totalCalculado
             };
+            
+            // Log para depuración: verificar si se preservó la fecha
+            if (presupuestoActualizado.fecha_ultima_modificacion) {
+              console.log('✅ Fecha de última modificación preservada para presupuesto:', presupuestoActualizado.id, presupuestoActualizado.fecha_ultima_modificacion);
+            } else {
+              console.log('❌ No se encontró fecha de modificación para presupuesto:', presupuestoActualizado.id, 'Valores originales:', {
+                fecha_ultima_modificacion: presupuesto.fecha_ultima_modificacion,
+                updated_at: (presupuesto as any).updated_at,
+                tienePresupuestoJson: !!presupuesto.presupuesto_json,
+                todosLosCampos: Object.keys(presupuesto)
+              });
+            }
+            
+            return presupuestoActualizado;
           }
         );
 
@@ -664,6 +712,20 @@ const formatearDetallesProducto = (item: Item) => {
     }
   };
 
+  const handleEditPresupuesto = (presupuesto: Presupuesto) => {
+    // Verificar si el presupuesto ya fue convertido a pedido
+    if (presupuesto.estado === "Confirmado") {
+      setNotification({
+        message: "No se puede editar un presupuesto que ya fue convertido a pedido",
+        variant: "error"
+      });
+      return;
+    }
+    
+    // Redirigir a la página de presupuestos con el ID para editar
+    router.push(`/presupuestos?editId=${presupuesto.id}`);
+  };
+
   const handleDuplicatePresupuesto = async (presupuesto: Presupuesto) => {
     try {
       setIsDuplicating(true);
@@ -757,6 +819,12 @@ const formatearDetallesProducto = (item: Item) => {
   const renderCell = (presupuesto: Presupuesto, columnKey: React.Key) => {
     switch (columnKey) {
       case "numero_presupuesto":
+        // Log para depuración: verificar qué tiene la fecha cuando se renderiza
+        const fechaModificacion = presupuesto.fecha_ultima_modificacion || (presupuesto as any).updated_at;
+        if (fechaModificacion) {
+          console.log('🔄 Renderizando fecha de modificación para presupuesto:', presupuesto.id, 'Fecha:', fechaModificacion);
+        }
+        
         return (
           <div className="font-medium">
             <div className="flex items-center gap-2">
@@ -772,6 +840,17 @@ const formatearDetallesProducto = (item: Item) => {
                 </Chip>
               )}
             </div>
+            {fechaModificacion && (
+              <div className="text-xs text-gray-500 mt-1">
+                Modificado el: {new Date(fechaModificacion).toLocaleString('es-AR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            )}
           </div>
         );
       case "cliente":
@@ -988,6 +1067,29 @@ const formatearDetallesProducto = (item: Item) => {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="Acciones del presupuesto">
+                <DropdownItem
+                  key="edit"
+                  onPress={() => handleEditPresupuesto(presupuesto)}
+                  isDisabled={presupuesto.estado === "Confirmado"}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      strokeWidth="1.5" 
+                      stroke="currentColor" 
+                      className="size-4"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" 
+                      />
+                    </svg>
+                    Editar presupuesto
+                  </div>
+                </DropdownItem>
                 <DropdownItem
                   key="delete"
                   className="text-danger"
