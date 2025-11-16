@@ -687,8 +687,10 @@ export const BudgetGenerator = () => {
             espacio: item.espacio,
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: precioMotorizacionUnitario,
-            tipoTela: item.detalles?.tipoTela || item.detalles?.tela?.nombreProducto || '',
-            sistemaId: item.detalles?.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
+            // Usamos cast a any porque la propiedad 'tela' no está definida en el tipo base de detalles
+            tipoTela: item.detalles?.tipoTela || (item.detalles as any)?.tela?.nombreProducto || '',
+            // Cast a any porque 'sistemaId' no existe en el tipo base de detalles pero sí en tiempo de ejecución
+            sistemaId: (item.detalles as any)?.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
             tipoApertura: item.detalles?.tipoApertura || '',
             colorSistema: item.detalles?.colorSistema || '',
             ladoComando: item.detalles?.ladoComando || '',
