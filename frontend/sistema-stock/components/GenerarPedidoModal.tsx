@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox, Popover, PopoverTrigger, PopoverContent, Alert} from "@heroui/react";
+import {Modal, ModalContent,ModalHeader,ModalBody,ModalFooter,Button,Select,SelectItem,Input,Checkbox, Alert} from "@heroui/react";
 import { RollerForm } from "./utils/abacos/forms/RollerForm";
 import DubaiForm from "./utils/abacos/forms/DubaiForm";
 import DunesForm from "./utils/abacos/forms/DunesForm";
@@ -303,7 +303,7 @@ const procesarSistemasUnicos = (sistemas: Sistema[]) => {
   return Array.from(sistemasMap.values());
 };
 
-// Mapeo de parámetros para cada sistema
+// Mapeo de parámetros para cada sistema (usado para telas)
 const sistemaToApiParams: Record<string, { sistemaId: number; rubroId: number; proveedorId: number }> = {
   "bandas verticales": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
   "barcelona - bandas verticales": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
@@ -313,6 +313,25 @@ const sistemaToApiParams: Record<string, { sistemaId: number; rubroId: number; p
   "venecianas": { sistemaId: 4, rubroId: 9, proveedorId: 2 },
   // Paneles usa sistemaId: 1 (mismo que Roller) para mostrar las mismas telas que Roller
   "paneles": { sistemaId: 1, rubroId: 9, proveedorId: 2 },
+  "propios": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
+  "tradicional": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
+  "tradicional/ propio": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
+  "riel": { sistemaId: 10, rubroId: 5, proveedorId: 7 },
+  "barral": { sistemaId: 10, rubroId: 6, proveedorId: 8 },
+  // Agrega aquí otros sistemas según corresponda
+};
+
+// Mapeo de parámetros para productos/sistemas/soportes (campo "Agregar Producto")
+// Paneles usa sistemaId: 2 para mostrar sistemas/soportes (no telas)
+const sistemaToApiParamsProductos: Record<string, { sistemaId: number; rubroId: number; proveedorId: number }> = {
+  "bandas verticales": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
+  "barcelona - bandas verticales": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
+  "barcelona": { sistemaId: 5, rubroId: 9, proveedorId: 2 },
+  "roller": { sistemaId: 1, rubroId: 9, proveedorId: 2 },
+  "dubai": { sistemaId: 6, rubroId: 9, proveedorId: 2 },
+  "venecianas": { sistemaId: 4, rubroId: 9, proveedorId: 2 },
+  // Paneles usa sistemaId: 2 para buscar productos/sistemas/soportes (no telas)
+  "paneles": { sistemaId: 2, rubroId: 9, proveedorId: 2 },
   "propios": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
   "tradicional": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
   "tradicional/ propio": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
@@ -1683,9 +1702,10 @@ export default function GenerarPedidoModal({
   useEffect(() => {
     const fetchProductosFiltrados = async () => {
       const sistemaKey = selectedSistema?.toLowerCase();
-      if (sistemaKey && sistemaToApiParams[sistemaKey]) {
+      // Usar sistemaToApiParamsProductos para buscar productos/sistemas/soportes
+      if (sistemaKey && sistemaToApiParamsProductos[sistemaKey]) {
         setLoadingProductosFiltrados(true);
-        const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
+        const { sistemaId, rubroId, proveedorId } = sistemaToApiParamsProductos[sistemaKey];
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}`);
           const data = await res.json();
@@ -2097,15 +2117,30 @@ export default function GenerarPedidoModal({
     console.log('[DEBUG] handleBuscarProducto called with:', value, selectedSistema);
     setSearchRielBarral(value);
     setShowRielesBarralesList(true);
+    
+    // Permitir búsqueda si es '*' (con o sin espacios) o si hay texto
+    const isAsterisk = value.trim() === '*';
+    
     const sistemaKey = selectedSistema?.toLowerCase();
-    if (!sistemaKey || !sistemaToApiParams[sistemaKey] || !value.trim()) {
-      console.log('[DEBUG] No sistema seleccionado o no hay mapeo o valor vacío', selectedSistema, 'key usado:', sistemaKey, value);
+    // Usar sistemaToApiParamsProductos para buscar productos/sistemas/soportes
+    if (!sistemaKey || !sistemaToApiParamsProductos[sistemaKey]) {
+      console.log('[DEBUG] No sistema seleccionado o no hay mapeo', selectedSistema, 'key usado:', sistemaKey);
       setRielesBarrales([]);
       setShowRielesBarralesList(false);
       return;
     }
-    const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${encodeURIComponent(value)}`;
+    
+    // Si no hay valor y no es '*', limpiar resultados
+    if (!value.trim() && !isAsterisk) {
+      setRielesBarrales([]);
+      setShowRielesBarralesList(false);
+      return;
+    }
+    
+    const { sistemaId, rubroId, proveedorId } = sistemaToApiParamsProductos[sistemaKey];
+    // Si el valor es '*', buscar todos los productos (q=*)
+    const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
     const res = await fetch(url);
     const data = await res.json();
     console.log(`[Busqueda Sistema] Input: "${value}" | Ruta: ${url} | Respuesta:`, data);
@@ -2125,10 +2160,13 @@ export default function GenerarPedidoModal({
   const [nombreSistemaCambio, setNombreSistemaCambio] = useState("");
 
   // Justo antes del return principal de GenerarPedidoModal
-  const sugerenciasFiltradas = rielesBarrales.filter(item =>
-    item.nombreProducto.toLowerCase().includes(searchRielBarral.toLowerCase()) ||
-    (item.descripcion && item.descripcion.toLowerCase().includes(searchRielBarral.toLowerCase()))
-  );
+  // Si el valor de búsqueda es '*', mostrar todos los productos sin filtrar
+  const sugerenciasFiltradas = searchRielBarral.trim() === '*' 
+    ? rielesBarrales
+    : rielesBarrales.filter(item =>
+        item.nombreProducto.toLowerCase().includes(searchRielBarral.toLowerCase()) ||
+        (item.descripcion && item.descripcion.toLowerCase().includes(searchRielBarral.toLowerCase()))
+      );
 
   useEffect(() => {
     if (selectedRielBarral) {
@@ -2265,58 +2303,40 @@ export default function GenerarPedidoModal({
                 <div className="space-y-6">
                   {/* PARTE 1: Inputs generales */}
                   <div className="space-y-4">
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1">
-                        <Select
-                          label="Seleccionar Sistema"
-                          placeholder="Elegir un sistema"
-                          selectedKeys={selectedSistema ? [selectedSistema] : []}
-                          onSelectionChange={(keys) => {
-                            const sistemaSeleccionado = Array.from(keys)[0] as string;
-                            setSelectedSistema(sistemaSeleccionado);
-                            resetCamposSistema();
-                            setSelectedTela(null);
-                            setSearchTela("");
-                            setShowTelasList(false);
-                            setNombreSistemaCambio(sistemaSeleccionado);
-                            setShowCambioSistema(true);
-                            setTimeout(() => setShowCambioSistema(false), 2500);
-                            console.log("Sistema seleccionado:", sistemaSeleccionado);
-                          }}
-                          disallowEmptySelection={false}
-                          selectionMode="single"
-                          className="w-full"
-                          onClose={() => {
-                            // Prevenir el cierre del modal
-                            return false;
-                          }}
-                        >
-                          {sistemas?.map((sistema) => (
-                            <SelectItem 
-                              key={String(sistema.nombreSistemas)}
-                              textValue={String(sistema.nombreSistemas)}
-                            >
-                              {sistema.nombreSistemas} 
-                            </SelectItem>
-                          ))}
-                        </Select>
-                      </div>
-                      <Popover placement="bottom" color="foreground">
-                        <PopoverTrigger>
-                          <Button
-                            color="default"
-                            variant="bordered"
-                            className="h-12"
+                    <div>
+                      <Select
+                        label="Seleccionar Sistema"
+                        placeholder="Elegir un sistema"
+                        selectedKeys={selectedSistema ? [selectedSistema] : []}
+                        onSelectionChange={(keys) => {
+                          const sistemaSeleccionado = Array.from(keys)[0] as string;
+                          setSelectedSistema(sistemaSeleccionado);
+                          resetCamposSistema();
+                          setSelectedTela(null);
+                          setSearchTela("");
+                          setShowTelasList(false);
+                          setNombreSistemaCambio(sistemaSeleccionado);
+                          setShowCambioSistema(true);
+                          setTimeout(() => setShowCambioSistema(false), 2500);
+                          console.log("Sistema seleccionado:", sistemaSeleccionado);
+                        }}
+                        disallowEmptySelection={false}
+                        selectionMode="single"
+                        className="w-full"
+                        onClose={() => {
+                          // Prevenir el cierre del modal
+                          return false;
+                        }}
+                      >
+                        {sistemas?.map((sistema) => (
+                          <SelectItem 
+                            key={String(sistema.nombreSistemas)}
+                            textValue={String(sistema.nombreSistemas)}
                           >
-                            Consultar Ábaco de Medidas
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent>
-                          <div className="px-1 py-2">
-                            <div className="font-bold text-small">Aún estamos desarrollando esto!</div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                            {sistema.nombreSistemas} 
+                          </SelectItem>
+                        ))}
+                      </Select>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
@@ -2425,7 +2445,7 @@ export default function GenerarPedidoModal({
                       <div className="mt-4">
                         <Input
                           label="Agregar Producto"
-                          placeholder="Buscar por nombre o ID..."
+                          placeholder="Escribe para buscar productos o * para ver todos..."
                           value={searchRielBarral}
                           onValueChange={handleBuscarProducto}
                           onKeyDown={handleKeyDown}
@@ -2452,7 +2472,7 @@ export default function GenerarPedidoModal({
                             )
                           }
                         />
-                        {showRielesBarralesList && searchRielBarral.length > 1 && (
+                        {showRielesBarralesList && searchRielBarral.trim().length > 0 && (
                           sugerenciasFiltradas.length > 0 ? (
                             <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 dark:bg-dark-card z-[1050] relative">
                               {sugerenciasFiltradas.map(item => (
@@ -2491,7 +2511,7 @@ export default function GenerarPedidoModal({
                       <div className="mt-4">
                         <Input
                           label="Buscar Productos de Riel"
-                          placeholder="Buscar rieles por nombre o ID..."
+                          placeholder="Escribe para buscar rieles o * para ver todos..."
                           value={searchRielBarral}
                           onValueChange={handleBuscarProducto}
                           onKeyDown={handleKeyDown}
@@ -2518,7 +2538,7 @@ export default function GenerarPedidoModal({
                             )
                           }
                         />
-                        {showRielesBarralesList && searchRielBarral.length > 1 && (
+                        {showRielesBarralesList && searchRielBarral.trim().length > 0 && (
                           sugerenciasFiltradas.length > 0 ? (
                             <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 dark:bg-dark-card z-[1050] relative">
                               {sugerenciasFiltradas.map(item => (
