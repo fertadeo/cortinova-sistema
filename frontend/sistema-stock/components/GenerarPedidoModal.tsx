@@ -311,7 +311,8 @@ const sistemaToApiParams: Record<string, { sistemaId: number; rubroId: number; p
   "roller": { sistemaId: 1, rubroId: 9, proveedorId: 2 },
   "dubai": { sistemaId: 6, rubroId: 9, proveedorId: 2 },
   "venecianas": { sistemaId: 4, rubroId: 9, proveedorId: 2 },
-  "paneles": { sistemaId: 2, rubroId: 9, proveedorId: 2 },
+  // Paneles usa sistemaId: 1 (mismo que Roller) para mostrar las mismas telas que Roller
+  "paneles": { sistemaId: 1, rubroId: 9, proveedorId: 2 },
   "propios": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
   "tradicional": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
   "tradicional/ propio": { sistemaId: 7, rubroId: 9, proveedorId: 2 },
