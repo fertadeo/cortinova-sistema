@@ -162,6 +162,10 @@ export const BudgetSummary = ({
                     setDiscountValue(e.target.value);
                     onDiscountChange(applyDiscount, discountType, e.target.value, shouldRound);
                   }}
+                  onWheel={(e) => {
+                    e.currentTarget.blur();
+                    e.preventDefault();
+                  }}
                   endContent={discountType === "percentage" ? "%" : "$"}
                   min={0}
                   max={discountType === "percentage" ? 100 : undefined}

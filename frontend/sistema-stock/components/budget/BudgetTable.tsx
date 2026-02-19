@@ -224,6 +224,10 @@ export const BudgetTable = ({
               type="number"
               value={item.quantity}
               onChange={(e) => handleQuantityChange(item.localId, e.target.value)}
+              onWheel={(e) => {
+                e.currentTarget.blur();
+                e.preventDefault();
+              }}
               className="p-1 w-20 rounded border"
               min="0"
               step="0.1"

@@ -217,6 +217,10 @@ useEffect(() => {
                       cantidadDisponible: Number(e.target.value),
                     })
                   }
+                  onWheel={(e) => {
+                    e.currentTarget.blur();
+                    e.preventDefault();
+                  }}
                 />
               </div>
 
@@ -232,6 +236,10 @@ useEffect(() => {
                       precio: Number(e.target.value),
                     })
                   }
+                  onWheel={(e) => {
+                    e.currentTarget.blur();
+                    e.preventDefault();
+                  }}
                 />
               </div>
 
@@ -247,6 +255,10 @@ useEffect(() => {
                       descuento: Number(e.target.value),
                     })
                   }
+                  onWheel={(e) => {
+                    e.currentTarget.blur();
+                    e.preventDefault();
+                  }}
                 />
               </div>
             </div>

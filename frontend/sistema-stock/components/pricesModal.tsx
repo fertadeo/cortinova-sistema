@@ -387,6 +387,10 @@ const ModalPriceUpdater: React.FC<{ isOpen: boolean; onClose: () => void; onRefr
                   placeholder="Ingrese el porcentaje"
                   value={porcentaje}
                   onChange={handlePorcentajeChange}
+                  onWheel={(e) => {
+                    e.currentTarget.blur();
+                    e.preventDefault();
+                  }}
                   startContent="%"
                   size="md"
                   className="w-full"

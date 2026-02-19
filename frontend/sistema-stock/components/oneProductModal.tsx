@@ -288,6 +288,10 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                       name="PrecioCosto"
                       value={productData.PrecioCosto}
                       onChange={handleInputChange}
+                      onWheel={(e) => {
+                        e.currentTarget.blur();
+                        e.preventDefault();
+                      }}
                       labelPlacement="outside"
                       size="md"
                       startContent={
@@ -304,6 +308,10 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                       name="Precio"
                       value={productData.Precio}
                       onChange={handleInputChange}
+                      onWheel={(e) => {
+                        e.currentTarget.blur();
+                        e.preventDefault();
+                      }}
                       isInvalid={!inputValidity.Precio}
                       labelPlacement="outside"
                       size="md"
@@ -324,6 +332,10 @@ const OneProductModal: React.FC<OneProductModalProps> = ({ isOpen, onClose, onPr
                       name="Cantidad_stock"
                       value={productData.Cantidad_stock}
                       onChange={handleInputChange}
+                      onWheel={(e) => {
+                        e.currentTarget.blur();
+                        e.preventDefault();
+                      }}
                       labelPlacement="outside"
                       size="md"
                     />

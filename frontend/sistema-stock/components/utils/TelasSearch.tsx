@@ -250,6 +250,10 @@ export const TelasSearch = ({
                     onCantidadTelaManualChange?.(parseFloat(val));
                   }
                 }}
+                onWheel={(e) => {
+                  e.currentTarget.blur();
+                  e.preventDefault();
+                }}
                 className="w-24 border border-gray-300 dark:border-dark-border rounded px-2 py-1 text-sm bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
                 placeholder="0"
               />

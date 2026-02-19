@@ -593,6 +593,8 @@ export default function GenerarPedidoModal({
   const [soportesIntermedios, setSoportesIntermedios] = useState<any[]>([]);
   const [selectedSoporteIntermedio, setSelectedSoporteIntermedio] = useState<any>(null);
   const [soporteDobleProducto, setSoporteDobleProducto] = useState<any>(null);
+  // Estado para almacenar el producto de soporte doble cuando se carga desde la API (sin establecerlo automáticamente)
+  const [soporteDobleProductoDisponible, setSoporteDobleProductoDisponible] = useState<any>(null);
 
   // Buscar soportes intermedios y soporte doble al abrir el modal si se selecciona Roller
   useEffect(() => {
@@ -608,7 +610,7 @@ export default function GenerarPedidoModal({
           const dataIntermedio1 = await resIntermedio1.json();
           const dataIntermedio2 = await resIntermedio2.json();
           
-          // Buscar soporte doble por ID (238)
+          // Buscar soporte doble por ID (238) - solo para tenerlo disponible, no establecerlo automáticamente
           const resSoporteDoble = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/238`);
           const dataSoporteDoble = await resSoporteDoble.json();
           
@@ -619,7 +621,9 @@ export default function GenerarPedidoModal({
           
           setSoportesIntermedios(soportesIntermediosList);
           
-          setSoporteDobleProducto({
+          // Guardar el producto de soporte doble disponible, pero NO establecerlo automáticamente
+          // Solo se establecerá cuando el checkbox esté marcado o cuando se esté editando un pedido con soporte doble
+          setSoporteDobleProductoDisponible({
             id: dataSoporteDoble.id,
             nombre: dataSoporteDoble.nombreProducto,
             precio: dataSoporteDoble.precio
@@ -643,6 +647,7 @@ export default function GenerarPedidoModal({
           } else if (!itemToEdit) {
             // Solo resetear si NO estamos editando
             setSelectedSoporteIntermedio(null);
+            setSoporteDobleProducto(null);
           }
         } catch (e) {
           console.error('Error al obtener soportes:', e);
@@ -650,8 +655,9 @@ export default function GenerarPedidoModal({
           // Solo resetear si NO estamos editando
           if (!itemToEdit) {
             setSelectedSoporteIntermedio(null);
+            setSoporteDobleProducto(null);
           }
-          setSoporteDobleProducto(null);
+          setSoporteDobleProductoDisponible(null);
         }
       };
       fetchSoportes();
@@ -672,6 +678,21 @@ export default function GenerarPedidoModal({
       // Si se activa soporte doble, limpiar soporte intermedio (tanto checkbox como dropdown)
       setSoporteIntermedio(false);
       setSelectedSoporteIntermedio(null);
+      // Establecer el producto de soporte doble disponible cuando se marca el checkbox
+      if (soporteDobleProductoDisponible) {
+        setSoporteDobleProducto(soporteDobleProductoDisponible);
+      }
+    } else {
+      // Si se desactiva soporte doble, limpiar el producto y la segunda tela (si es Roller)
+      setSoporteDobleProducto(null);
+      if (selectedSistema?.toLowerCase().includes('roller')) {
+        setSelectedTela2(null);
+        setSearchTela2("");
+        setShowTelasList2(false);
+        setMultiplicadorTela2(1);
+        setCantidadTelaManual2(null);
+        setPrecioTela2(0);
+      }
     }
     setSoporteDoble(value);
   };
@@ -1266,9 +1287,12 @@ export default function GenerarPedidoModal({
       );
     }
 
-    // 2.1 Segunda tela - solo para cortinas tradicionales (riel/barral)
+    // 2.1 Segunda tela - para cortinas tradicionales (riel/barral) o Roller con soporte doble
     let precioTela2 = 0;
-    if (selectedTela2 && (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))) {
+    const esTradicionalPropios = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+    const esRollerConSoporteDoble = selectedSistema?.toLowerCase().includes('roller') && soporteDoble;
+    
+    if (selectedTela2 && (esTradicionalPropios || esRollerConSoporteDoble)) {
       // Si hay cantidad manual ingresada, usar esa directamente
       if (cantidadTelaManual2 && cantidadTelaManual2 > 0) {
         precioTela2 = cantidadTelaManual2 * (selectedTela2?.precio ? Number(selectedTela2.precio) : 0);
@@ -1488,7 +1512,10 @@ export default function GenerarPedidoModal({
 
   // useEffect para recalcular precio cuando cambie la segunda tela
   useEffect(() => {
-    if (selectedSistema && (selectedSistema.toLowerCase().includes('tradicional') || selectedSistema.toLowerCase().includes('propios')) && ancho && alto) {
+    const esTradicionalPropios = selectedSistema && (selectedSistema.toLowerCase().includes('tradicional') || selectedSistema.toLowerCase().includes('propios'));
+    const esRollerConSoporteDoble = selectedSistema && selectedSistema.toLowerCase().includes('roller') && soporteDoble;
+    
+    if ((esTradicionalPropios || esRollerConSoporteDoble) && ancho && alto) {
       // console.log('🔄 Recalculando precio por cambio de segunda tela:', {
       //   sistema: selectedSistema,
       //   ancho: ancho,
@@ -1500,14 +1527,18 @@ export default function GenerarPedidoModal({
       // Calcular precio de la segunda tela
       let nuevoPrecioTela2 = 0;
       if (selectedTela2) {
-        nuevoPrecioTela2 = calcularPrecioTela(
-          Number(ancho),
-          Number(alto),
-          selectedTela2?.precio ? Number(selectedTela2.precio) : 0,
-          false,
-          selectedSistema,
-          multiplicadorTela2
-        );
+        if (cantidadTelaManual2 && cantidadTelaManual2 > 0) {
+          nuevoPrecioTela2 = cantidadTelaManual2 * (selectedTela2?.precio ? Number(selectedTela2.precio) : 0);
+        } else {
+          nuevoPrecioTela2 = calcularPrecioTela(
+            Number(ancho),
+            Number(alto),
+            selectedTela2?.precio ? Number(selectedTela2.precio) : 0,
+            false,
+            selectedSistema,
+            multiplicadorTela2
+          );
+        }
       }
       
       setPrecioTela2(nuevoPrecioTela2);
@@ -1517,7 +1548,7 @@ export default function GenerarPedidoModal({
       const nuevoPrecioTotal = calcularPrecioTotal();
       // console.log('💰 Nuevo precio total con segunda tela:', nuevoPrecioTotal);
     }
-  }, [selectedTela2, multiplicadorTela2, cantidadTelaManual2, selectedSistema, ancho, alto]);
+  }, [selectedTela2, multiplicadorTela2, cantidadTelaManual2, selectedSistema, ancho, alto, soporteDoble]);
 
   // Limpia todos los campos menos ancho y alto
   const resetCamposSistema = () => {
@@ -1760,7 +1791,7 @@ export default function GenerarPedidoModal({
               setTipoTela(itemToEdit.detalles.tipoTela);
             }
             // Precargar soporte intermedio y soporte doble (mutuamente excluyentes)
-            // IMPORTANTE: Si hay ID o producto guardado, activar el checkbox aunque el booleano sea false
+            // IMPORTANTE: Solo activar el checkbox si el booleano es true en los detalles del pedido
             console.log('🔍 [DEBUG] Soportes en itemToEdit.detalles:', {
               soporteIntermedio: itemToEdit.detalles.soporteIntermedio,
               soporteIntermedioId: itemToEdit.detalles.soporteIntermedioId,
@@ -1775,10 +1806,9 @@ export default function GenerarPedidoModal({
                                                    Boolean(itemToEdit.detalles.soporteIntermedioId) || 
                                                    Boolean(itemToEdit.detalles.soporteIntermedioTipo);
             
-            // Determinar si hay soporte doble guardado (por booleano o por existencia de producto)
-            const tieneSoporteDobleGuardado = itemToEdit.detalles.soporteDoble === true || 
-                                               Boolean(itemToEdit.detalles.soporteDobleProductoId) || 
-                                               Boolean(itemToEdit.detalles.soporteDobleProducto);
+            // IMPORTANTE: Solo considerar soporte doble guardado si el booleano es explícitamente true
+            // Esto evita que se marque automáticamente solo porque existe el producto disponible
+            const tieneSoporteDobleGuardado = itemToEdit.detalles.soporteDoble === true;
             
             // Aplicar lógica mutuamente excluyente: solo uno puede estar activo
             if (tieneSoporteIntermedioGuardado && tieneSoporteDobleGuardado) {
@@ -1786,9 +1816,11 @@ export default function GenerarPedidoModal({
               // Priorizar soporte intermedio si ambos están guardados
               setSoporteIntermedio(true);
               setSoporteDoble(false);
+              setSoporteDobleProducto(null);
             } else if (tieneSoporteIntermedioGuardado) {
               setSoporteIntermedio(true);
               setSoporteDoble(false);
+              setSoporteDobleProducto(null);
               console.log('✅ Soporte intermedio activado (checkbox):', true);
             } else if (tieneSoporteDobleGuardado) {
               setSoporteDoble(true);
@@ -1799,6 +1831,7 @@ export default function GenerarPedidoModal({
               // Ninguno está guardado
               setSoporteIntermedio(false);
               setSoporteDoble(false);
+              setSoporteDobleProducto(null);
             }
           
           // Precargar tela - buscar desde API si solo tenemos el nombre
@@ -2059,23 +2092,19 @@ export default function GenerarPedidoModal({
           
           await precargarSoporteIntermedio();
           
-          // Precargar soporte doble - buscar por ID primero
+          // Precargar soporte doble - solo si el booleano es true
           const precargarSoporteDoble = async () => {
-            const soporteId = itemToEdit.detalles.soporteDobleProductoId;
-            const soporteObj = itemToEdit.detalles.soporteDobleProducto;
-            
-            // Precargar si hay ID o producto guardado (aunque el booleano sea false)
-            const tieneSoporteDobleGuardado = itemToEdit.detalles.soporteDoble === true || 
-                                              Boolean(itemToEdit.detalles.soporteDobleProductoId) || 
-                                              Boolean(itemToEdit.detalles.soporteDobleProducto);
-            
-            if (!tieneSoporteDobleGuardado) {
-              console.log('ℹ️ Soporte doble no está guardado, no se precarga');
+            // IMPORTANTE: Solo precargar si el booleano soporteDoble es explícitamente true
+            if (itemToEdit.detalles.soporteDoble !== true) {
+              console.log('ℹ️ Soporte doble no está guardado (booleano false o undefined), no se precarga');
               return;
             }
             
+            const soporteId = itemToEdit.detalles.soporteDobleProductoId;
+            const soporteObj = itemToEdit.detalles.soporteDobleProducto;
+            
             // Si el soporte doble está guardado, asegurar que el soporte intermedio esté desactivado
-            if (tieneSoporteDobleGuardado && (itemToEdit.detalles.soporteIntermedio || itemToEdit.detalles.soporteIntermedioId || itemToEdit.detalles.soporteIntermedioTipo)) {
+            if (itemToEdit.detalles.soporteIntermedio || itemToEdit.detalles.soporteIntermedioId || itemToEdit.detalles.soporteIntermedioTipo) {
               console.log('⚠️ Desactivando soporte intermedio porque soporte doble está guardado');
               setSoporteIntermedio(false);
               setSelectedSoporteIntermedio(null);
@@ -2100,6 +2129,10 @@ export default function GenerarPedidoModal({
               } catch (error) {
                 console.error('Error al buscar soporte doble por ID:', error);
               }
+            } else if (soporteDobleProductoDisponible) {
+              // Si no hay producto guardado pero el booleano es true, usar el producto disponible
+              setSoporteDobleProducto(soporteDobleProductoDisponible);
+              console.log('✅ Soporte doble precargado usando producto disponible:', soporteDobleProductoDisponible.nombre);
             }
           };
           
@@ -2111,7 +2144,7 @@ export default function GenerarPedidoModal({
       
       precargarDetalles();
     }
-  }, [sistemaCargado, itemToEdit, isOpen, productosFiltrados, soportesIntermedios]);
+  }, [sistemaCargado, itemToEdit, isOpen, productosFiltrados, soportesIntermedios, soporteDobleProductoDisponible]);
 
   const handleBuscarProducto = async (value: string) => {
     console.log('[DEBUG] handleBuscarProducto called with:', value, selectedSistema);
@@ -2347,6 +2380,10 @@ export default function GenerarPedidoModal({
                         onValueChange={setCantidad}
                         variant="bordered"
                         size="sm"
+                        onWheel={(e) => {
+                          e.currentTarget.blur();
+                          e.preventDefault();
+                        }}
                       />
                       <div className="relative">
                         <Input
@@ -2357,6 +2394,10 @@ export default function GenerarPedidoModal({
                           variant="bordered"
                           size="sm"
                           placeholder="0"
+                          onWheel={(e) => {
+                            e.currentTarget.blur();
+                            e.preventDefault();
+                          }}
                           isInvalid={
                             selectedSistema && ancho ? (
                               Number(ancho) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.ancho || 0) * 100 ||
@@ -2383,6 +2424,10 @@ export default function GenerarPedidoModal({
                           variant="bordered"
                           size="sm"
                           placeholder="0"
+                          onWheel={(e) => {
+                            e.currentTarget.blur();
+                            e.preventDefault();
+                          }}
                           isInvalid={
                             selectedSistema && alto ? (
                               Number(alto) < (abacoData[selectedSistema as keyof typeof abacoData]?.["medidas permitidas"]?.min?.alto || 0) * 100 ||
@@ -2761,12 +2806,17 @@ export default function GenerarPedidoModal({
                       />
                     )}
 
-                    {/* PARTE 3.1: Buscador de segunda tela (solo para cortinas tradicionales) */}
-                    {selectedSistema && (selectedSistema.toLowerCase().includes('tradicional') || selectedSistema.toLowerCase().includes('propios')) && (
+                    {/* PARTE 3.1: Buscador de segunda tela (para cortinas tradicionales/propios o Roller con soporte doble) */}
+                    {selectedSistema && (
+                      (selectedSistema.toLowerCase().includes('tradicional') || selectedSistema.toLowerCase().includes('propios')) ||
+                      (selectedSistema.toLowerCase().includes('roller') && soporteDoble)
+                    ) && (
                       <div className="pt-4 mt-4 border-t border-gray-200 dark:border-dark-border">
                         <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-dark-text">Segunda Tela (Opcional)</h4>
                         <p className="text-sm text-gray-600 dark:text-dark-text-secondary mb-4">
-                          Agregue una segunda tela si necesita una tela fina y otra que oscurezca el ambiente.
+                          {selectedSistema.toLowerCase().includes('roller') && soporteDoble
+                            ? "Agregue una segunda tela para el soporte doble."
+                            : "Agregue una segunda tela si necesita una tela fina y otra que oscurezca el ambiente."}
                         </p>
                         <TelasSearch
                           searchTela={searchTela2}
@@ -3114,10 +3164,13 @@ export default function GenerarPedidoModal({
                             return null;
                           })()}
 
-                          {/* Mostrar segunda tela para cortinas tradicionales */}
+                          {/* Mostrar segunda tela para cortinas tradicionales/propios o Roller con soporte doble */}
                           {(() => {
-                            // Solo mostrar segunda tela para sistemas tradicionales/propios
-                            if (selectedTela2 && (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))) {
+                            const esTradicionalPropios = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+                            const esRollerConSoporteDoble = selectedSistema?.toLowerCase().includes('roller') && soporteDoble;
+                            
+                            // Mostrar segunda tela para sistemas tradicionales/propios o Roller con soporte doble
+                            if (selectedTela2 && (esTradicionalPropios || esRollerConSoporteDoble)) {
                               const precioTela2Calculado = calcularPrecioTela(
                                 Number(ancho),
                                 Number(alto),
@@ -3134,8 +3187,11 @@ export default function GenerarPedidoModal({
                                       <span className="text-blue-600 dark:text-primary font-medium">2ª Tela:</span>
                                       {selectedTela2.nombreProducto} - ${Number(selectedTela2.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       {(() => {
-                                        // Para sistemas Propios/Tradicional, mostrar el ancho multiplicado
+                                        // Para sistemas Propios/Tradicional o Roller con soporte doble, mostrar el ancho multiplicado
                                         if (selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) {
+                                          const anchoMultiplicado = Number(ancho) * (multiplicadorTela2 || 1);
+                                          return `(${ancho}cm x ${multiplicadorTela2 || 1} = ${anchoMultiplicado}cm)`;
+                                        } else if (selectedSistema?.toLowerCase().includes('roller') && soporteDoble) {
                                           const anchoMultiplicado = Number(ancho) * (multiplicadorTela2 || 1);
                                           return `(${ancho}cm x ${multiplicadorTela2 || 1} = ${anchoMultiplicado}cm)`;
                                         } else {
@@ -3162,7 +3218,8 @@ export default function GenerarPedidoModal({
                                         : (precioTela2Calculado * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
-                                  {selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional')) && (
+                                  {(selectedSistema && (selectedSistema.toLowerCase().includes('propios') || selectedSistema.toLowerCase().includes('tradicional'))) || 
+                                    (selectedSistema?.toLowerCase().includes('roller') && soporteDoble) ? (
                                     <div className="text-xs text-blue-700 dark:text-primary pl-2">
                                       {cantidadTelaManual2 && cantidadTelaManual2 > 0 ? (
                                         <>Cálculo: {cantidadTelaManual2}m × ${Number(selectedTela2.precio).toFixed(2)}/m = ${(cantidadTelaManual2 * Number(selectedTela2.precio)).toFixed(2)}</>
@@ -3170,7 +3227,7 @@ export default function GenerarPedidoModal({
                                         <>Cálculo: {ancho}cm x {multiplicadorTela2} = {Number(ancho) * multiplicadorTela2}cm × ${Number(selectedTela2.precio).toFixed(2)}/m = ${((Number(ancho) * multiplicadorTela2 / 100) * Number(selectedTela2.precio)).toFixed(2)}</>
                                       )}
                                     </div>
-                                  )}
+                                  ) : null}
                                 </div>
                               );
                             }
@@ -3260,6 +3317,10 @@ export default function GenerarPedidoModal({
                                     className="w-32"
                                     value={precioColocacion.toString()}
                                     onValueChange={(value) => setPrecioColocacion(Number(value) || 0)}
+                                    onWheel={(e) => {
+                                      e.currentTarget.blur();
+                                      e.preventDefault();
+                                    }}
                                     startContent={
                                       <div className="flex items-center pointer-events-none">
                                         <span className="text-default-400 text-small">$</span>
@@ -3293,6 +3354,10 @@ export default function GenerarPedidoModal({
                                     className="w-32"
                                     value={precioMotorizacion.toString()}
                                     onValueChange={(value) => setPrecioMotorizacion(Number(value) || 0)}
+                                    onWheel={(e) => {
+                                      e.currentTarget.blur();
+                                      e.preventDefault();
+                                    }}
                                     startContent={
                                       <div className="flex items-center pointer-events-none">
                                         <span className="text-default-400 text-small">$</span>

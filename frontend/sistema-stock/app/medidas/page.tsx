@@ -668,6 +668,10 @@ export default function MedidasPage() {
                             handleUpdateMedida(medida.id, "cantidad", isNaN(num) || num < 1 ? 1 : num);
                           }
                         }}
+                        onWheel={(e) => {
+                          e.currentTarget.blur();
+                          e.preventDefault();
+                        }}
                         onBlur={() => {
                           if (medida.cantidad === 0 || isNaN(medida.cantidad)) {
                             handleUpdateMedida(medida.id, "cantidad", 1);
@@ -681,6 +685,10 @@ export default function MedidasPage() {
                       type="number"
                       value={medida.ancho.toString()}
                       onChange={(e) => handleUpdateMedida(medida.id, "ancho", parseFloat(e.target.value) || 0)}
+                      onWheel={(e) => {
+                        e.currentTarget.blur();
+                        e.preventDefault();
+                      }}
                       className="max-w-full"
                     />
                     <Input
@@ -688,6 +696,10 @@ export default function MedidasPage() {
                       type="number"
                       value={medida.alto.toString()}
                       onChange={(e) => handleUpdateMedida(medida.id, "alto", parseFloat(e.target.value) || 0)}
+                      onWheel={(e) => {
+                        e.currentTarget.blur();
+                        e.preventDefault();
+                      }}
                       className="max-w-full"
                     />
                   </div>

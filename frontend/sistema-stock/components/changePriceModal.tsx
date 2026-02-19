@@ -46,12 +46,20 @@ const ChangePriceModal: React.FC<ChangePriceModalProps> = ({
           label="ID Proveedor"
           value={proveedorId.toString()} // Convert to string
           onChange={(e) => setProveedorId(Number(e.target.value))}
+          onWheel={(e) => {
+            e.currentTarget.blur();
+            e.preventDefault();
+          }}
         />
         <Input
           type="number"
           label="Porcentaje (puede ser negativo)"
           value={porcentaje.toString()} // Convert to string
           onChange={(e) => setPorcentaje(Number(e.target.value))}
+          onWheel={(e) => {
+            e.currentTarget.blur();
+            e.preventDefault();
+          }}
         />
       </ModalBody>
       <ModalFooter>

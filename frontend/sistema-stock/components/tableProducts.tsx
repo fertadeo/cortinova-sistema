@@ -772,7 +772,10 @@ const TableProducts = forwardRef((props: TableProductsProps, ref) => {
                                 }
                                 handlePriceKeyDown(e, product.id);
                               }}
-                              onWheel={(e) => e.currentTarget.blur()}
+                              onWheel={(e) => {
+                                e.currentTarget.blur();
+                                e.preventDefault();
+                              }}
                               className="w-24"
                               size="sm"
                               min="0"
