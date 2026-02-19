@@ -425,10 +425,33 @@ export default function GenerarPedidoModal({
   const [multiplicadorTela2, setMultiplicadorTela2] = useState(1);
   const [cantidadTelaManual2, setCantidadTelaManual2] = useState<number | null>(null);
 
+  // Estados para el segundo cabezal
+  const [segundosCabezales, setSegundosCabezales] = useState<Array<{
+    id: number;
+    nombreProducto: string;
+    cantidad_stock: string;
+    descripcion: string;
+    precioCosto: string;
+    precio: string;
+    divisa: string;
+    descuento: number;
+    rubro_id: string;
+    sistema_id: string;
+    disponible: boolean;
+    proveedor: {
+      id: number;
+      nombreProveedores: string;
+    };
+  }>>([]);
+  const [selectedSegundoCabezal, setSelectedSegundoCabezal] = useState<any>(null);
+  const [searchSegundoCabezal, setSearchSegundoCabezal] = useState("");
+  const [showSegundosCabezalesList, setShowSegundosCabezalesList] = useState(false);
+
   // Define state to hold calculated prices
   const [precioSistema, setPrecioSistema] = useState(0);
   const [precioTela, setPrecioTela] = useState(0);
   const [precioTela2, setPrecioTela2] = useState(0);
+  const [precioSegundoCabezal, setPrecioSegundoCabezal] = useState(0);
 
   // Agregar este estado
   const [incluirColocacion, setIncluirColocacion] = useState(true);
@@ -692,6 +715,10 @@ export default function GenerarPedidoModal({
         setMultiplicadorTela2(1);
         setCantidadTelaManual2(null);
         setPrecioTela2(0);
+        setSelectedSegundoCabezal(null);
+        setSearchSegundoCabezal("");
+        setShowSegundosCabezalesList(false);
+        setPrecioSegundoCabezal(0);
       }
     }
     setSoporteDoble(value);
@@ -763,9 +790,14 @@ export default function GenerarPedidoModal({
     setShowTelasList2(false);
     setMultiplicadorTela2(1);
     setCantidadTelaManual2(null);
+    setSearchSegundoCabezal("");
+    setSegundosCabezales([]);
+    setSelectedSegundoCabezal(null);
+    setShowSegundosCabezalesList(false);
     setPrecioSistema(0);
     setPrecioTela(0);
     setPrecioTela2(0);
+    setPrecioSegundoCabezal(0);
     setIncluirColocacion(true);
     setError("");
     setShowValidationAlert(false);
@@ -1309,6 +1341,14 @@ export default function GenerarPedidoModal({
       }
     }
 
+    // 2.2 Segundo cabezal - para cortinas tradicionales (riel/barral) o Roller con soporte doble
+    let precioSegundoCabezal = 0;
+    if (selectedSegundoCabezal && (esTradicionalPropios || esRollerConSoporteDoble)) {
+      if (selectedSegundoCabezal.precio) {
+        precioSegundoCabezal = (anchoEfectivo / 100) * Number(selectedSegundoCabezal.precio);
+      }
+    }
+
     // 3. Soporte intermedio/doble - calcular por metro lineal (ancho)
     let precioSoporte = 0;
     if (getSoporteResumen() && getSoporteResumen()?.precio) {
@@ -1328,8 +1368,8 @@ export default function GenerarPedidoModal({
       0
     );
 
-    // Calcular total: (sistema + tela + tela2 + soporte + colocación + motorización + accesorios) * cantidad
-    total = (precioSistema + precioTela + precioTela2 + precioSoporte + precioColocacionFinal + precioMotorizacionFinal + totalAccesoriosAdicionales) * cantidadNum;
+    // Calcular total: (sistema + tela + tela2 + segundo cabezal + soporte + colocación + motorización + accesorios) * cantidad
+    total = (precioSistema + precioTela + precioTela2 + precioSegundoCabezal + precioSoporte + precioColocacionFinal + precioMotorizacionFinal + totalAccesoriosAdicionales) * cantidadNum;
 
     // Aplicar redondeo si está activado
     if (aplicarRedondeo) {
@@ -1340,6 +1380,7 @@ export default function GenerarPedidoModal({
     setPrecioSistema(precioSistema);
     setPrecioTela(precioTela);
     setPrecioTela2(precioTela2);
+    setPrecioSegundoCabezal(precioSegundoCabezal);
 
     return total;
   };
@@ -1550,6 +1591,24 @@ export default function GenerarPedidoModal({
     }
   }, [selectedTela2, multiplicadorTela2, cantidadTelaManual2, selectedSistema, ancho, alto, soporteDoble]);
 
+  // useEffect para recalcular precio cuando cambie el segundo cabezal
+  useEffect(() => {
+    const esTradicionalPropios = selectedSistema && (selectedSistema.toLowerCase().includes('tradicional') || selectedSistema.toLowerCase().includes('propios'));
+    const esRollerConSoporteDoble = selectedSistema && selectedSistema.toLowerCase().includes('roller') && soporteDoble;
+    
+    if ((esTradicionalPropios || esRollerConSoporteDoble) && ancho && selectedSegundoCabezal) {
+      const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, Number(ancho));
+      const nuevoPrecioSegundoCabezal = selectedSegundoCabezal.precio 
+        ? (anchoEfectivo / 100) * Number(selectedSegundoCabezal.precio)
+        : 0;
+      
+      setPrecioSegundoCabezal(nuevoPrecioSegundoCabezal);
+      
+      // Recalcular el precio total que incluye el segundo cabezal
+      const nuevoPrecioTotal = calcularPrecioTotal();
+    }
+  }, [selectedSegundoCabezal, selectedSistema, ancho, soporteDoble]);
+
   // Limpia todos los campos menos ancho y alto
   const resetCamposSistema = () => {
     setSelectedArticulo("");
@@ -1685,6 +1744,9 @@ export default function GenerarPedidoModal({
         tela2: selectedTela2,
         multiplicadorTela2: multiplicadorTela2,
         cantidadTelaManual2: cantidadTelaManual2,
+        // Información específica para segundo cabezal
+        selectedSegundoCabezal: selectedSegundoCabezal,
+        selectedSegundoCabezalId: selectedSegundoCabezal?.id || null,
         // Información específica para Dunes
         ...(selectedSistema?.toLowerCase().includes('dunes') && {
           productoDunes: sistemaPedidoDetalles?.producto,
@@ -2137,6 +2199,37 @@ export default function GenerarPedidoModal({
           };
           
           await precargarSoporteDoble();
+          
+          // Precargar segundo cabezal si existe
+          const precargarSegundoCabezal = async () => {
+            const segundoCabezalId = itemToEdit.detalles.selectedSegundoCabezalId;
+            const segundoCabezalObj = itemToEdit.detalles.selectedSegundoCabezal;
+            
+            if (segundoCabezalObj && typeof segundoCabezalObj === 'object' && segundoCabezalObj.id) {
+              // Si ya tenemos el objeto completo
+              setSelectedSegundoCabezal(segundoCabezalObj);
+              setSearchSegundoCabezal(segundoCabezalObj.nombreProducto || '');
+              console.log('✅ Segundo cabezal precargado por objeto:', segundoCabezalObj.nombreProducto, 'ID:', segundoCabezalObj.id);
+            } else if (segundoCabezalId) {
+              // Si tenemos el ID, buscar el producto por ID desde la API
+              try {
+                console.log('🔍 Buscando segundo cabezal por ID:', segundoCabezalId);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/productos/${segundoCabezalId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data && data.id) {
+                    setSelectedSegundoCabezal(data);
+                    setSearchSegundoCabezal(data.nombreProducto || '');
+                    console.log('✅ Segundo cabezal encontrado por ID:', data.nombreProducto);
+                  }
+                }
+              } catch (error) {
+                console.error('Error al buscar segundo cabezal por ID:', error);
+              }
+            }
+          };
+          
+          await precargarSegundoCabezal();
         }
         
         console.log('✅ Precarga de detalles completada');
@@ -2185,6 +2278,47 @@ export default function GenerarPedidoModal({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setShowRielesBarralesList(false);
+    }
+  };
+
+  // Función para buscar segundo cabezal (similar a handleBuscarProducto)
+  const handleBuscarSegundoCabezal = async (value: string) => {
+    console.log('[DEBUG] handleBuscarSegundoCabezal called with:', value, selectedSistema);
+    setSearchSegundoCabezal(value);
+    setShowSegundosCabezalesList(true);
+    
+    // Permitir búsqueda si es '*' (con o sin espacios) o si hay texto
+    const isAsterisk = value.trim() === '*';
+    
+    const sistemaKey = selectedSistema?.toLowerCase();
+    // Usar sistemaToApiParamsProductos para buscar productos/sistemas/soportes
+    if (!sistemaKey || !sistemaToApiParamsProductos[sistemaKey]) {
+      console.log('[DEBUG] No sistema seleccionado o no hay mapeo', selectedSistema, 'key usado:', sistemaKey);
+      setSegundosCabezales([]);
+      setShowSegundosCabezalesList(false);
+      return;
+    }
+    
+    // Si no hay valor y no es '*', limpiar resultados
+    if (!value.trim() && !isAsterisk) {
+      setSegundosCabezales([]);
+      setShowSegundosCabezalesList(false);
+      return;
+    }
+    
+    const { sistemaId, rubroId, proveedorId } = sistemaToApiParamsProductos[sistemaKey];
+    // Si el valor es '*', buscar todos los productos (q=*)
+    const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    console.log(`[Busqueda Segundo Cabezal] Input: "${value}" | Ruta: ${url} | Respuesta:`, data);
+    setSegundosCabezales(Array.isArray(data.data) ? data.data : []);
+  };
+
+  const handleKeyDownSegundoCabezal = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowSegundosCabezalesList(false);
     }
   };
 
@@ -2840,6 +2974,94 @@ export default function GenerarPedidoModal({
                       </div>
                     )}
 
+                    {/* PARTE 3.2: Buscador de segundo cabezal (para cortinas tradicionales/propios o Roller con soporte doble) */}
+                    {selectedSistema && (
+                      (selectedSistema.toLowerCase().includes('tradicional') || selectedSistema.toLowerCase().includes('propios')) ||
+                      (selectedSistema.toLowerCase().includes('roller') && soporteDoble)
+                    ) && (
+                      <div className="pt-4 mt-4 border-t border-gray-200 dark:border-dark-border">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-dark-text">Segundo Cabezal (Opcional)</h4>
+                        <p className="text-sm text-gray-600 dark:text-dark-text-secondary mb-4">
+                          {selectedSistema.toLowerCase().includes('roller') && soporteDoble
+                            ? "Agregue un segundo cabezal para el soporte doble."
+                            : "Agregue un segundo cabezal si necesita un cabezal adicional."}
+                        </p>
+                        <Input
+                          label="Segundo Cabezal"
+                          placeholder="Escribe para buscar productos o * para ver todos..."
+                          value={searchSegundoCabezal}
+                          onValueChange={handleBuscarSegundoCabezal}
+                          onKeyDown={handleKeyDownSegundoCabezal}
+                          size="sm"
+                          startContent={
+                            <div className="flex items-center pointer-events-none">
+                              <span className="text-default-400 text-small">🔍</span>
+                            </div>
+                          }
+                          endContent={
+                            selectedSegundoCabezal && (
+                              <button
+                                type="button"
+                                className="px-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                aria-label="Quitar segundo cabezal"
+                                onClick={() => {
+                                  setSelectedSegundoCabezal(null);
+                                  setSearchSegundoCabezal("");
+                                  setShowSegundosCabezalesList(false);
+                                }}
+                              >
+                                ×
+                              </button>
+                            )
+                          }
+                        />
+                        {showSegundosCabezalesList && searchSegundoCabezal.trim().length > 0 && (
+                          (() => {
+                            const sugerenciasFiltradasSegundoCabezal = searchSegundoCabezal.trim() === '*' 
+                              ? segundosCabezales
+                              : segundosCabezales.filter(item =>
+                                  item.nombreProducto.toLowerCase().includes(searchSegundoCabezal.toLowerCase()) ||
+                                  (item.descripcion && item.descripcion.toLowerCase().includes(searchSegundoCabezal.toLowerCase()))
+                                );
+                            
+                            return sugerenciasFiltradasSegundoCabezal.length > 0 ? (
+                              <div className="overflow-y-auto mt-2 max-h-48 rounded-lg border bg-gray-100 dark:bg-dark-card z-[1050] relative">
+                                {sugerenciasFiltradasSegundoCabezal.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    className="px-4 py-2 border-b border-gray-200 dark:border-dark-border cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700/50 last:border-b-0"
+                                    onClick={() => {
+                                      setSelectedSegundoCabezal(item);
+                                      setSearchSegundoCabezal(item.nombreProducto);
+                                      setShowSegundosCabezalesList(false);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        setSelectedSegundoCabezal(item);
+                                        setSearchSegundoCabezal(item.nombreProducto);
+                                        setShowSegundosCabezalesList(false);
+                                      }
+                                    }}
+                                    aria-selected={selectedSegundoCabezal?.id === item.id}
+                                  >
+                                    <div className="font-semibold text-gray-900 dark:text-dark-text">{item.nombreProducto}</div>
+                                    {item.descripcion && (
+                                      <div className="text-sm text-gray-600 dark:text-dark-text-secondary">{item.descripcion}</div>
+                                    )}
+                                    <div className="text-sm text-blue-600 dark:text-primary font-medium">
+                                      ${Number(item.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null;
+                          })()
+                        )}
+                      </div>
+                    )}
+
                     {/* Cuarto paso - Resumen de precios */}
                     {canProceedToNextStep() && selectedSistema === "Roller" && (
                       <div className="pt-4 mt-4 border-t">
@@ -3228,6 +3450,53 @@ export default function GenerarPedidoModal({
                                       )}
                                     </div>
                                   ) : null}
+                                </div>
+                              );
+                            }
+                            
+                            return null;
+                          })()}
+
+                          {/* Mostrar segundo cabezal para cortinas tradicionales/propios o Roller con soporte doble */}
+                          {(() => {
+                            const esTradicionalPropios = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+                            const esRollerConSoporteDoble = selectedSistema?.toLowerCase().includes('roller') && soporteDoble;
+                            
+                            // Mostrar segundo cabezal para sistemas tradicionales/propios o Roller con soporte doble
+                            if (selectedSegundoCabezal && (esTradicionalPropios || esRollerConSoporteDoble)) {
+                              const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, Number(ancho));
+                              const precioSegundoCabezalCalculado = selectedSegundoCabezal.precio 
+                                ? (anchoEfectivo / 100) * Number(selectedSegundoCabezal.precio)
+                                : 0;
+                              
+                              return (
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex justify-between items-center">
+                                    <span className="flex gap-2 items-center">
+                                      <span className="text-blue-600 dark:text-primary font-medium">2º Cabezal:</span>
+                                      {selectedSegundoCabezal.nombreProducto} - ${Number(selectedSegundoCabezal.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      ({anchoEfectivo}cm)
+                                      {Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                      <button
+                                        type="button"
+                                        className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                        aria-label="Quitar segundo cabezal"
+                                        onClick={() => {
+                                          setSelectedSegundoCabezal(null);
+                                          setSearchSegundoCabezal("");
+                                          setShowSegundosCabezalesList(false);
+                                        }}
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                    <span className="font-medium">
+                                      ${(precioSegundoCabezalCalculado * Number(cantidad || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-blue-700 dark:text-primary pl-2">
+                                    Cálculo: {anchoEfectivo}cm × ${Number(selectedSegundoCabezal.precio).toFixed(2)}/m = ${precioSegundoCabezalCalculado.toFixed(2)}
+                                  </div>
                                 </div>
                               );
                             }
