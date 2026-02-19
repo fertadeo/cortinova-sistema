@@ -3029,7 +3029,7 @@ export default function GenerarPedidoModal({
                                 {sugerenciasFiltradasSegundoCabezal.map((item) => (
                                   <div
                                     key={item.id}
-                                    role="button"
+                                    role="option"
                                     tabIndex={0}
                                     className="px-4 py-2 border-b border-gray-200 dark:border-dark-border cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700/50 last:border-b-0"
                                     onClick={() => {
