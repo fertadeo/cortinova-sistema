@@ -240,6 +240,10 @@ const ClientesTable: React.FC<Props> = ({ initialUsers }) => {
         </Button>
       </div>
 
+      <div className="px-4 mt-2 text-sm text-default-500">
+        Mostrando {filteredUsers.length} {filteredUsers.length === 1 ? "cliente" : "clientes"}
+      </div>
+
       <div className="overflow-auto flex-1 mt-4">
         <Table aria-label="Tabla de Clientes" className="w-full">
           <TableHeader columns={filteredColumns}>
