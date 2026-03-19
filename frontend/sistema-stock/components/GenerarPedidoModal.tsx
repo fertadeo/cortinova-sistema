@@ -1349,10 +1349,28 @@ export default function GenerarPedidoModal({
       }
     }
 
+    // Regla de negocio:
+    // Cortinas Tradicional con tela doble => deben sumarse 2 confecciones,
+    // usando SIEMPRE el precio más costoso, pero aplicado igual a ambas.
+    if (selectedTela2 && esTradicionalPropios) {
+      const precioConfeccionMax = Math.max(precioSistema, precioSegundoCabezal);
+      precioSistema = precioConfeccionMax;
+      precioSegundoCabezal = precioConfeccionMax;
+    }
+
     // 3. Soporte intermedio/doble - calcular por metro lineal (ancho)
     let precioSoporte = 0;
     if (getSoporteResumen() && getSoporteResumen()?.precio) {
-      precioSoporte = (anchoEfectivo / 100) * Number(getSoporteResumen()?.precio);
+      const soporteResumen = getSoporteResumen();
+      const esRoller = selectedSistema?.toLowerCase().includes('roller');
+      const soporteEsDoble = soporteResumen?.tipo === 'doble';
+
+      // En Roller, el soporte doble es UNA unidad (no se cobra por metro/lineal).
+      if (esRoller && soporteEsDoble) {
+        precioSoporte = Number(soporteResumen?.precio);
+      } else {
+        precioSoporte = (anchoEfectivo / 100) * Number(soporteResumen?.precio);
+      }
     }
 
     // 4. Colocación
@@ -2305,7 +2323,37 @@ export default function GenerarPedidoModal({
       setShowSegundosCabezalesList(false);
       return;
     }
-    
+
+    // Para cortinas Tradicional/Propios, el "cabezal 1" se busca por `rubroId`
+    // (sin el mapeo del padre por `sistemaId/proveedorId`).
+    // Alinear el buscador del "segundo cabezal" con los mismos parámetros evita
+    // seleccionar un producto distinto y que el precio de confección no sea el correcto.
+    const sistemaLower = selectedSistema?.toLowerCase() || '';
+    const esTradicionalPropios =
+      sistemaLower.includes('tradicional') || sistemaLower.includes('propios');
+    if (esTradicionalPropios && selectedRielBarral) {
+      const rubroIdRaw = (selectedRielBarral as any)?.rubro_id ?? (selectedRielBarral as any)?.rubroId;
+      const rubroId = rubroIdRaw !== undefined && rubroIdRaw !== null ? String(rubroIdRaw) : null;
+
+      if (rubroId) {
+        try {
+          const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
+          const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?rubroId=${rubroId}&q=${queryParam}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          console.log(`[Busqueda Segundo Cabezal][Trad/Propios] Input: "${value}" | Ruta: ${url} | Respuesta:`, data);
+          setSegundosCabezales(Array.isArray(data.data) ? data.data : []);
+          return;
+        } catch (err) {
+          console.error('Error al buscar segundo cabezal (Trad/Propios) por rubroId:', err);
+          setSegundosCabezales([]);
+          setShowSegundosCabezalesList(false);
+          return;
+        }
+      }
+      // Si no se pudo inferir rubroId, caemos al comportamiento anterior.
+    }
+
     const { sistemaId, rubroId, proveedorId } = sistemaToApiParamsProductos[sistemaKey];
     // Si el valor es '*', buscar todos los productos (q=*)
     const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
@@ -3253,12 +3301,18 @@ export default function GenerarPedidoModal({
                                         </span>
                                         <span className="font-medium">
                                           ${(() => {
-                                            const precioBase = Number(productoSeleccionado.precio);
+                                            const precioBase1 = Number(productoSeleccionado.precio);
+                                            const esTradicionalPropios =
+                                              selectedSistema?.toLowerCase().includes('tradicional') ||
+                                              selectedSistema?.toLowerCase().includes('propios');
+                                            const aplicaTelaDoble = !!selectedTela2 && esTradicionalPropios;
+                                            const precioBase2 = selectedSegundoCabezal?.precio ? Number(selectedSegundoCabezal.precio) : 0;
+                                            const precioBaseUsado = aplicaTelaDoble ? Math.max(precioBase1, precioBase2) : precioBase1;
                                             const anchoMetros = anchoEfectivo / 100;
                                             const altoMetros = Number(alto) / 100;
                                             
                                             // Para todos los sistemas, calcular por metro lineal (ancho) con mínimos aplicados
-                                            return (precioBase * anchoMetros * Number(cantidad)).toLocaleString();
+                                            return (precioBaseUsado * anchoMetros * Number(cantidad)).toLocaleString();
                                           })()}
                                         </span>
                                       </div>
@@ -3465,16 +3519,30 @@ export default function GenerarPedidoModal({
                             // Mostrar segundo cabezal para sistemas tradicionales/propios o Roller con soporte doble
                             if (selectedSegundoCabezal && (esTradicionalPropios || esRollerConSoporteDoble)) {
                               const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, Number(ancho));
-                              const precioSegundoCabezalCalculado = selectedSegundoCabezal.precio 
-                                ? (anchoEfectivo / 100) * Number(selectedSegundoCabezal.precio)
-                                : 0;
+                              const aplicaTelaDobleTradicional = !!selectedTela2 && esTradicionalPropios;
+
+                              const productoCabezal1 = (esTradicionalPropios && sistemaPedidoDetalles?.productoSeleccionado)
+                                ? sistemaPedidoDetalles.productoSeleccionado
+                                : selectedRielBarral;
+
+                              const precioBaseCabezal1 = productoCabezal1?.precio ? Number(productoCabezal1.precio) : 0;
+                              const precioBaseCabezal2 = selectedSegundoCabezal.precio ? Number(selectedSegundoCabezal.precio) : 0;
+                              const precioBaseUsado = aplicaTelaDobleTradicional
+                                ? Math.max(precioBaseCabezal1, precioBaseCabezal2)
+                                : precioBaseCabezal2;
+
+                              const precioSegundoCabezalCalculado = (anchoEfectivo / 100) * precioBaseUsado;
+                              const nombreUsado =
+                                aplicaTelaDobleTradicional && precioBaseCabezal1 > precioBaseCabezal2
+                                  ? productoCabezal1?.nombreProducto
+                                  : selectedSegundoCabezal.nombreProducto;
                               
                               return (
                                 <div className="flex flex-col gap-1">
                                   <div className="flex justify-between items-center">
                                     <span className="flex gap-2 items-center">
                                       <span className="text-blue-600 dark:text-primary font-medium">2º Cabezal:</span>
-                                      {selectedSegundoCabezal.nombreProducto} - ${Number(selectedSegundoCabezal.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      {nombreUsado} - ${precioBaseUsado.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       ({anchoEfectivo}cm)
                                       {Number(cantidad) > 1 ? ` x${cantidad}` : ''}
                                       <button
@@ -3495,7 +3563,7 @@ export default function GenerarPedidoModal({
                                     </span>
                                   </div>
                                   <div className="text-xs text-blue-700 dark:text-primary pl-2">
-                                    Cálculo: {anchoEfectivo}cm × ${Number(selectedSegundoCabezal.precio).toFixed(2)}/m = ${precioSegundoCabezalCalculado.toFixed(2)}
+                                    Cálculo: {anchoEfectivo}cm × ${precioBaseUsado.toFixed(2)}/m = ${precioSegundoCabezalCalculado.toFixed(2)}
                                   </div>
                                 </div>
                               );
@@ -3528,6 +3596,15 @@ export default function GenerarPedidoModal({
                               <span className="font-medium">
                                 ${(() => {
                                   const precioBase = Number(getSoporteResumen()?.precio || 0);
+                                  const soporteResumen = getSoporteResumen();
+                                  const esRoller = selectedSistema?.toLowerCase().includes('roller');
+                                  const soporteEsDoble = soporteResumen?.tipo === 'doble';
+
+                                  // En Roller, el soporte doble es unidad (no lineal por ancho).
+                                  if (esRoller && soporteEsDoble) {
+                                    return precioBase.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                  }
+
                                   const anchoIngresado = Number(ancho);
                                   const { anchoEfectivo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
                                   return ((anchoEfectivo / 100) * precioBase).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
