@@ -512,6 +512,8 @@ export const BudgetGenerator = () => {
       total: precioTotalDelModal,
       espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio,
       detalles: {
+        // Preservar todos los campos que lleguen desde el modal (formularios específicos)
+        ...(pedido.detalles || {}),
         sistema: pedido.sistema || "",
         sistemaId: pedido.sistemaId || pedido.detalles?.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
         detalle: pedido.detalles?.detalle || "",

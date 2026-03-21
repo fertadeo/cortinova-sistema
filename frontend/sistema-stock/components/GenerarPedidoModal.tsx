@@ -1720,6 +1720,8 @@ export default function GenerarPedidoModal({
       espacio: espacio, // Agregar el espacio seleccionado
       espacioPersonalizado: espacio === "Otro" ? espacioPersonalizado : "", // Agregar espacio personalizado
       detalles: {
+        // Preservar TODOS los campos del formulario específico (Propios/Roller/etc.)
+        ...(sistemaPedidoDetalles || {}),
         cantidad: parseFloat(cantidad),
         ancho: ancho && !isNaN(Number(ancho)) ? Number(ancho) : null,
         alto: alto && !isNaN(Number(alto)) ? Number(alto) : null,
