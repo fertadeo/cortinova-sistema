@@ -222,6 +222,10 @@ export const BudgetGenerator = () => {
           // Convertir items del presupuesto a TableItem
           const tableItems: TableItem[] = (presupuesto.items || []).map((item: any, index: number) => {
             const productoJson = presupuestoJson?.productos?.[index] || {};
+            const detallesPersistidos = {
+              ...(item.detalles || {}),
+              ...(productoJson.detalles || {}),
+            } as any;
             
             // Calcular precio unitario base (sin motorización)
             const cantidad = Number(item.cantidad) || 0;
@@ -247,40 +251,44 @@ export const BudgetGenerator = () => {
               total: subtotalTotal,
               espacio: productoJson.espacio || item.espacio || 'Sin especificar',
               detalles: {
-                sistema: item.detalles?.sistema || productoJson.sistema || '',
-                sistemaId: item.detalles?.sistemaId || productoJson.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
-                detalle: item.detalles?.detalle || productoJson.detalle || '',
-                caidaPorDelante: item.detalles?.caidaPorDelante || '', // Checkbox booleano (no necesita ID)
-                colorSistema: item.detalles?.colorSistema || productoJson.colorSistema || '',
-                ladoComando: item.detalles?.ladoComando || productoJson.ladoComando || '',
-                tipoTela: item.detalles?.tipoTela || productoJson.tipoTela || '',
-                soporteIntermedio: item.detalles?.soporteIntermedio || false,
-                soporteDoble: item.detalles?.soporteDoble || false,
+                ...detallesPersistidos,
+                sistema: detallesPersistidos?.sistema || productoJson.sistema || '',
+                sistemaId: detallesPersistidos?.sistemaId || productoJson.sistemaId || null, // IMPORTANTE: ID del sistema para identificación precisa
+                detalle: detallesPersistidos?.detalle || productoJson.detalle || '',
+                caidaPorDelante: detallesPersistidos?.caidaPorDelante || '', // Checkbox booleano (no necesita ID)
+                colorSistema: detallesPersistidos?.colorSistema || productoJson.colorSistema || '',
+                ladoComando: detallesPersistidos?.ladoComando || productoJson.ladoComando || '',
+                tipoTela: detallesPersistidos?.tipoTela || productoJson.tipoTela || '',
+                soporteIntermedio: Boolean(detallesPersistidos?.soporteIntermedio),
+                soporteDoble: Boolean(detallesPersistidos?.soporteDoble),
                 // IMPORTANTE: Restaurar objetos completos y IDs de productos
-                soporteIntermedioTipo: item.detalles?.soporteIntermedioTipo || productoJson.soporteIntermedioTipo || null,
-                soporteIntermedioId: item.detalles?.soporteIntermedioId || productoJson.soporteIntermedioId || item.detalles?.soporteIntermedioTipo?.id || null,
-                soporteDobleProducto: item.detalles?.soporteDobleProducto || productoJson.soporteDobleProducto || null,
-                soporteDobleProductoId: item.detalles?.soporteDobleProductoId || productoJson.soporteDobleProductoId || item.detalles?.soporteDobleProducto?.id || null,
-                selectedRielBarral: item.detalles?.selectedRielBarral || productoJson.selectedRielBarral || item.detalles?.productoSeleccionado || productoJson.productoSeleccionado || null,
-                selectedRielBarralId: item.detalles?.selectedRielBarralId || productoJson.selectedRielBarralId || item.detalles?.selectedRielBarral?.id || item.detalles?.productoSeleccionado?.id || null,
-                accesorios: item.detalles?.accesorios || [],
-                accesoriosAdicionales: item.detalles?.accesoriosAdicionales || [],
-                ancho: productoJson.ancho || item.detalles?.ancho,
-                alto: productoJson.alto || item.detalles?.alto,
+                soporteIntermedioTipo: detallesPersistidos?.soporteIntermedioTipo || productoJson.soporteIntermedioTipo || null,
+                soporteIntermedioId: detallesPersistidos?.soporteIntermedioId || productoJson.soporteIntermedioId || detallesPersistidos?.soporteIntermedioTipo?.id || null,
+                soporteDobleProducto: detallesPersistidos?.soporteDobleProducto || productoJson.soporteDobleProducto || null,
+                soporteDobleProductoId: detallesPersistidos?.soporteDobleProductoId || productoJson.soporteDobleProductoId || detallesPersistidos?.soporteDobleProducto?.id || null,
+                selectedRielBarral: detallesPersistidos?.selectedRielBarral || productoJson.selectedRielBarral || detallesPersistidos?.productoSeleccionado || productoJson.productoSeleccionado || null,
+                selectedRielBarralId: detallesPersistidos?.selectedRielBarralId || productoJson.selectedRielBarralId || detallesPersistidos?.selectedRielBarral?.id || detallesPersistidos?.productoSeleccionado?.id || null,
+                selectedSegundoCabezal: detallesPersistidos?.selectedSegundoCabezal || productoJson.selectedSegundoCabezal || null,
+                selectedSegundoCabezalId: detallesPersistidos?.selectedSegundoCabezalId || productoJson.selectedSegundoCabezalId || detallesPersistidos?.selectedSegundoCabezal?.id || null,
+                accesorios: detallesPersistidos?.accesorios || [],
+                accesoriosAdicionales: detallesPersistidos?.accesoriosAdicionales || [],
+                ancho: productoJson.ancho || detallesPersistidos?.ancho,
+                alto: productoJson.alto || detallesPersistidos?.alto,
                 incluirMotorizacion,
                 precioMotorizacion: precioMotorizacionUnitario,
+                incluirColocacion: Boolean(productoJson.incluirColocacion ?? detallesPersistidos?.incluirColocacion),
+                precioColocacion: Number(productoJson.precioColocacion ?? detallesPersistidos?.precioColocacion ?? 0),
                 // IMPORTANTE: Restaurar el objeto completo de la tela desde productoJson o item.detalles
                 // Si está disponible en productoJson (desde presupuesto_json), usar ese
                 // Si no, intentar desde item.detalles
                 // Si tampoco, usar null (se buscará por nombre más tarde)
-                tela: productoJson.tela || item.detalles?.tela || null,
+                tela: productoJson.tela || detallesPersistidos?.tela || null,
                 // También restaurar segunda tela si existe
-                tela2: productoJson.tela2 || item.detalles?.tela2 || null,
-                multiplicadorTela: productoJson.multiplicadorTela || item.detalles?.multiplicadorTela || null,
-                multiplicadorTela2: productoJson.multiplicadorTela2 || item.detalles?.multiplicadorTela2 || null,
-                cantidadTelaManual: productoJson.cantidadTelaManual || item.detalles?.cantidadTelaManual || null,
-                cantidadTelaManual2: productoJson.cantidadTelaManual2 || item.detalles?.cantidadTelaManual2 || null,
-                ...(item.detalles || {})
+                tela2: productoJson.tela2 || detallesPersistidos?.tela2 || null,
+                multiplicadorTela: productoJson.multiplicadorTela || detallesPersistidos?.multiplicadorTela || null,
+                multiplicadorTela2: productoJson.multiplicadorTela2 || detallesPersistidos?.multiplicadorTela2 || null,
+                cantidadTelaManual: productoJson.cantidadTelaManual || detallesPersistidos?.cantidadTelaManual || null,
+                cantidadTelaManual2: productoJson.cantidadTelaManual2 || detallesPersistidos?.cantidadTelaManual2 || null
               } as any
             };
           });
@@ -533,6 +541,10 @@ export const BudgetGenerator = () => {
         tela2: pedido.detalles?.tela2 || null,
         multiplicadorTela2: pedido.detalles?.multiplicadorTela2 || null,
         cantidadTelaManual2: pedido.detalles?.cantidadTelaManual2 || null,
+        cantidadTelaManual: pedido.detalles?.cantidadTelaManual || null,
+        // Información específica para segundo cabezal
+        selectedSegundoCabezal: pedido.detalles?.selectedSegundoCabezal || null,
+        selectedSegundoCabezalId: pedido.detalles?.selectedSegundoCabezalId || pedido.detalles?.selectedSegundoCabezal?.id || null,
         // Información específica para Dunes
         ...(pedido.sistema?.toLowerCase().includes('dunes') && {
           productoDunes: pedido.detalles?.productoDunes,
@@ -696,6 +708,8 @@ export const BudgetGenerator = () => {
             ladoComando: item.detalles?.ladoComando || '',
             ladoApertura: item.detalles?.ladoApertura || '',
             detalle: item.detalles?.detalle || '',
+            incluirColocacion: (item.detalles as any)?.incluirColocacion || false,
+            precioColocacion: (item.detalles as any)?.precioColocacion || 0,
             // Incluir medidas del producto en el JSON
             ancho: item.detalles?.ancho,
             alto: item.detalles?.alto,
@@ -705,6 +719,10 @@ export const BudgetGenerator = () => {
             tela2: (item.detalles as any)?.tela2 || null,
             multiplicadorTela2: (item.detalles as any)?.multiplicadorTela2 || null,
             cantidadTelaManual2: (item.detalles as any)?.cantidadTelaManual2 || null,
+            cantidadTelaManual: (item.detalles as any)?.cantidadTelaManual || null,
+            // Información específica para segundo cabezal
+            selectedSegundoCabezal: (item.detalles as any)?.selectedSegundoCabezal || null,
+            selectedSegundoCabezalId: (item.detalles as any)?.selectedSegundoCabezalId || (item.detalles as any)?.selectedSegundoCabezal?.id || null,
             // IMPORTANTE: Guardar objetos completos y IDs de productos de soportes
             // Si hay producto de soporte guardado, el booleano debe ser true
             soporteIntermedio: Boolean((item.detalles as any)?.soporteIntermedioTipo) || Boolean((item.detalles as any)?.soporteIntermedioId) || (item.detalles as any)?.soporteIntermedio || false,
@@ -714,7 +732,9 @@ export const BudgetGenerator = () => {
             soporteDobleProducto: (item.detalles as any)?.soporteDobleProducto || null,
             soporteDobleProductoId: (item.detalles as any)?.soporteDobleProductoId || (item.detalles as any)?.soporteDobleProducto?.id || null,
             selectedRielBarral: (item.detalles as any)?.selectedRielBarral || (item.detalles as any)?.productoSeleccionado || null,
-            selectedRielBarralId: (item.detalles as any)?.selectedRielBarralId || (item.detalles as any)?.selectedRielBarral?.id || (item.detalles as any)?.productoSeleccionado?.id || null
+            selectedRielBarralId: (item.detalles as any)?.selectedRielBarralId || (item.detalles as any)?.selectedRielBarral?.id || (item.detalles as any)?.productoSeleccionado?.id || null,
+            // Snapshot completo para garantizar persistencia al re-editar
+            detalles: (item.detalles as any) || {}
           };
         })
       };

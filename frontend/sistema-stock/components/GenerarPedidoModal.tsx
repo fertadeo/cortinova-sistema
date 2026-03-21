@@ -1745,10 +1745,10 @@ export default function GenerarPedidoModal({
         // Para sistemas Tradicional/Propios, usar productoSeleccionado de sistemaPedidoDetalles
         // Para otros sistemas, usar selectedRielBarral
         selectedRielBarral: (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))
-          ? sistemaPedidoDetalles?.productoSeleccionado || null
+          ? (sistemaPedidoDetalles?.productoSeleccionado || selectedRielBarral || null)
           : selectedRielBarral,
         selectedRielBarralId: (selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios'))
-          ? (sistemaPedidoDetalles?.productoSeleccionado?.id || null)
+          ? (sistemaPedidoDetalles?.productoSeleccionado?.id || selectedRielBarral?.id || null)
           : (selectedRielBarral?.id || null),
         accesorios: [
           getSoporteResumen() ? getSoporteResumen()?.nombre : null
@@ -2045,7 +2045,10 @@ export default function GenerarPedidoModal({
           if (itemToEdit.detalles.sistema && 
               (itemToEdit.detalles.sistema.toLowerCase().includes('tradicional') || 
                itemToEdit.detalles.sistema.toLowerCase().includes('propios'))) {
-            detallesCompletos.productoSeleccionado = itemToEdit.detalles.productoSeleccionado || null;
+            detallesCompletos.productoSeleccionado =
+              itemToEdit.detalles.productoSeleccionado ||
+              itemToEdit.detalles.selectedRielBarral ||
+              null;
           }
           
           setSistemaPedidoDetalles(detallesCompletos);
