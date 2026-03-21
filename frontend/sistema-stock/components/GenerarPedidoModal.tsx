@@ -813,6 +813,7 @@ export default function GenerarPedidoModal({
     setSoporteDobleProducto(null);
     setSistemaPedidoDetalles(null);
     setAccesoriosAdicionales([]);
+    setAplicarRedondeo(false);
     // NO resetear precioColocacion aquí - se obtiene del API
     setCantidadTelaManual(null);
     setSistemaCargado(false); // Resetear el flag de sistema cargado
@@ -1655,6 +1656,7 @@ export default function GenerarPedidoModal({
     setSistemaRecomendado("");
     setPedidoJSON("");
     setError("");
+    setAplicarRedondeo(false);
     // Puedes agregar aquí cualquier otro estado que deba limpiarse
   };
 
@@ -1758,6 +1760,7 @@ export default function GenerarPedidoModal({
         // Información específica para tela tradicional
         multiplicadorTela: multiplicadorTelaInfo,
         metrosTotalesTela: metrosTotalesTela,
+        cantidadTelaManual: cantidadTelaManual,
         // Información específica para segunda tela tradicional
         tela2: selectedTela2,
         multiplicadorTela2: multiplicadorTela2,
@@ -1779,6 +1782,7 @@ export default function GenerarPedidoModal({
         }),
         incluirMotorizacion,
         precioMotorizacion: incluirMotorizacion ? precioMotorizacion : 0,
+        aplicarRedondeo,
       },
       fecha: new Date().toISOString(),
       precioUnitario: precioUnitarioCompleto,
@@ -2003,6 +2007,9 @@ export default function GenerarPedidoModal({
           }
           if (itemToEdit.detalles.cantidadTelaManual) {
             setCantidadTelaManual(itemToEdit.detalles.cantidadTelaManual);
+          }
+          if (itemToEdit.detalles.aplicarRedondeo !== undefined) {
+            setAplicarRedondeo(Boolean(itemToEdit.detalles.aplicarRedondeo));
           }
           
           // Precargar accesorios adicionales

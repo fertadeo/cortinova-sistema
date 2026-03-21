@@ -276,6 +276,7 @@ export const BudgetGenerator = () => {
                 alto: productoJson.alto || detallesPersistidos?.alto,
                 incluirMotorizacion,
                 precioMotorizacion: precioMotorizacionUnitario,
+                aplicarRedondeo: Boolean(productoJson.aplicarRedondeo ?? detallesPersistidos?.aplicarRedondeo),
                 incluirColocacion: Boolean(productoJson.incluirColocacion ?? detallesPersistidos?.incluirColocacion),
                 precioColocacion: Number(productoJson.precioColocacion ?? detallesPersistidos?.precioColocacion ?? 0),
                 // IMPORTANTE: Restaurar el objeto completo de la tela desde productoJson o item.detalles
@@ -561,6 +562,7 @@ export const BudgetGenerator = () => {
         // Información de motorización
         incluirMotorizacion: pedido.detalles?.incluirMotorizacion || false,
         precioMotorizacion: pedido.detalles?.precioMotorizacion || 0,
+        aplicarRedondeo: pedido.detalles?.aplicarRedondeo || false,
         // Incluir otros campos que puedan estar en los detalles
         // IMPORTANTE: Guardar el objeto completo de la tela con ID, nombre, precio, etc.
         tela: pedido.detalles?.tela || pedido.tela || null,
@@ -708,6 +710,7 @@ export const BudgetGenerator = () => {
             ladoComando: item.detalles?.ladoComando || '',
             ladoApertura: item.detalles?.ladoApertura || '',
             detalle: item.detalles?.detalle || '',
+            aplicarRedondeo: (item.detalles as any)?.aplicarRedondeo || false,
             incluirColocacion: (item.detalles as any)?.incluirColocacion || false,
             precioColocacion: (item.detalles as any)?.precioColocacion || 0,
             // Incluir medidas del producto en el JSON
