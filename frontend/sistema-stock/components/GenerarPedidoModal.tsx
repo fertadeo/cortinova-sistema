@@ -2327,34 +2327,47 @@ export default function GenerarPedidoModal({
       return;
     }
 
-    // Para cortinas Tradicional/Propios, el "cabezal 1" se busca por `rubroId`
-    // (sin el mapeo del padre por `sistemaId/proveedorId`).
-    // Alinear el buscador del "segundo cabezal" con los mismos parámetros evita
-    // seleccionar un producto distinto y que el precio de confección no sea el correcto.
+    // Para cortinas Tradicional/Propios, usar exactamente la misma lógica de búsqueda
+    // que el input de Riel/Barral del PropiosForm (según tipoArmado).
     const sistemaLower = selectedSistema?.toLowerCase() || '';
     const esTradicionalPropios =
       sistemaLower.includes('tradicional') || sistemaLower.includes('propios');
-    if (esTradicionalPropios && selectedRielBarral) {
-      const rubroIdRaw = (selectedRielBarral as any)?.rubro_id ?? (selectedRielBarral as any)?.rubroId;
-      const rubroId = rubroIdRaw !== undefined && rubroIdRaw !== null ? String(rubroIdRaw) : null;
+    if (esTradicionalPropios) {
+      const tipoArmado = (sistemaPedidoDetalles?.tipoArmado || '').toString().toLowerCase();
+      const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
 
-      if (rubroId) {
-        try {
-          const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
-          const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?rubroId=${rubroId}&q=${queryParam}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          console.log(`[Busqueda Segundo Cabezal][Trad/Propios] Input: "${value}" | Ruta: ${url} | Respuesta:`, data);
-          setSegundosCabezales(Array.isArray(data.data) ? data.data : []);
-          return;
-        } catch (err) {
-          console.error('Error al buscar segundo cabezal (Trad/Propios) por rubroId:', err);
-          setSegundosCabezales([]);
-          setShowSegundosCabezalesList(false);
-          return;
+      try {
+        let url = '';
+
+        if (tipoArmado === 'riel') {
+          // Igual que PropiosForm.handleBuscarRiel cuando selectedTab === 'riel'
+          url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?rubroId=5&q=${queryParam}`;
+        } else if (tipoArmado === 'barral') {
+          // Igual que PropiosForm.handleBuscarRiel cuando selectedTab === 'barral'
+          url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=10&rubroId=6&proveedorId=8&q=${queryParam}`;
+        } else {
+          // Fallback: inferir rubro desde el cabezal seleccionado si no hay tipoArmado
+          const rubroIdRaw = (selectedRielBarral as any)?.rubro_id ?? (selectedRielBarral as any)?.rubroId;
+          const rubroId = rubroIdRaw !== undefined && rubroIdRaw !== null ? String(rubroIdRaw) : null;
+          if (!rubroId) {
+            setSegundosCabezales([]);
+            setShowSegundosCabezalesList(false);
+            return;
+          }
+          url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?rubroId=${rubroId}&q=${queryParam}`;
         }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        console.log(`[Busqueda Segundo Cabezal][Trad/Propios] Input: "${value}" | Ruta: ${url} | Respuesta:`, data);
+        setSegundosCabezales(Array.isArray(data.data) ? data.data : []);
+        return;
+      } catch (err) {
+        console.error('Error al buscar segundo cabezal (Trad/Propios):', err);
+        setSegundosCabezales([]);
+        setShowSegundosCabezalesList(false);
+        return;
       }
-      // Si no se pudo inferir rubroId, caemos al comportamiento anterior.
     }
 
     const { sistemaId, rubroId, proveedorId } = sistemaToApiParamsProductos[sistemaKey];
