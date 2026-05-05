@@ -9,6 +9,7 @@ import Link from "next/link";
 export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -122,16 +123,52 @@ export const Login = () => {
                              <label htmlFor="password" className="block text-gray-800">
                  Contraseña
                </label>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               <input
-                     type="password"
-                     id="password"
-                     placeholder="Ingresa tu contraseña"
-                     minLength={6}
-                     className="w-full px-4 py-3 mt-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:border-yellow-500 focus:outline-none [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-800 [&:-webkit-autofill]:shadow-[0_0_0_30px_white_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:theme(colors.gray.800)]"
-                     value={password}
-                     onChange={(e) => setPassword(e.target.value)}
-                     required
-                   />
+              <div className="relative mt-2">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  placeholder="Ingresa tu contraseña"
+                  minLength={6}
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg bg-white text-gray-800 focus:border-yellow-500 focus:outline-none [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-800 [&:-webkit-autofill]:shadow-[0_0_0_30px_white_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:theme(colors.gray.800)]"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="w-5 h-5"
+                    >
+                      <path d="M2 2l20 20" />
+                      <path d="M10.58 10.58a2 2 0 102.83 2.83" />
+                      <path d="M9.36 5.37A10.94 10.94 0 0112 5c5.05 0 9.27 3.11 10.5 7.5a11.1 11.1 0 01-2.32 4.36" />
+                      <path d="M6.24 6.24A11.12 11.12 0 001.5 12.5a11.1 11.1 0 003.67 5.06" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="w-5 h-5"
+                    >
+                      <path d="M1.5 12.5C2.73 8.11 6.95 5 12 5s9.27 3.11 10.5 7.5c-1.23 4.39-5.45 7.5-10.5 7.5S2.73 16.89 1.5 12.5z" />
+                      <circle cx="12" cy="12.5" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="hidden mt-2 text-right">
