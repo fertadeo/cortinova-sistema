@@ -276,6 +276,9 @@ const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = tr
     } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
       // Bandas verticales: mínimo 1.5 metros cuadrados
       return Math.max(area, 1.5);
+    } else if (sistemaLower.includes('veneciana')) {
+      // Venecianas: mínimo 1 metro cuadrado (coherente con calcularPrecioSistema)
+      return Math.max(area, 1.0);
     }
   }
   
@@ -1192,7 +1195,8 @@ export default function GenerarPedidoModal({
       }
       
       const precioBase = Number(productoSeleccionado.precio);
-      const areaMetrosCuadrados = anchoMetros * altoMetros;
+      // Venecianas: igual que Roller — mínimo 1 m² facturado
+      const areaMetrosCuadrados = Math.max(anchoMetros * altoMetros, 1.0);
       const precioCalculado = precioBase * areaMetrosCuadrados;
       
       // console.log('🪟 Cálculo Venecianas por metro cuadrado:', {
@@ -3185,7 +3189,15 @@ export default function GenerarPedidoModal({
                       const anchoIngresado = Number(ancho);
                       const { anchoEfectivo, aplicaMinimo } = getAnchoEfectivo(selectedSistema, anchoIngresado);
                       const anchoMinimo = getAnchoMinimo(selectedSistema);
-                      
+                      const areaRealVeneciana =
+                        selectedSistema.toLowerCase().includes('veneciana')
+                          ? (anchoEfectivo / 100) * (Number(alto) / 100)
+                          : 0;
+                      const areaFacturacionVeneciana =
+                        selectedSistema.toLowerCase().includes('veneciana')
+                          ? Math.max(areaRealVeneciana, 1.0)
+                          : 0;
+
                       return (
                             <div className="p-4 mt-4 bg-gray-50 dark:bg-dark-card rounded-lg border dark:border-dark-border">
                                                               <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-dark-text">Resumen de Precios</h3>
@@ -3263,6 +3275,14 @@ export default function GenerarPedidoModal({
                                   return selectedSistema.toLowerCase().includes('veneciana') ? (
                                     <>
                                       <div className="flex justify-between items-center">
+                                        <span>Metros cuadrados:</span>
+                                        <span>
+                                          {areaFacturacionVeneciana > areaRealVeneciana
+                                            ? `${areaFacturacionVeneciana.toFixed(2)} m² (mínimo aplicado)`
+                                            : `${areaRealVeneciana.toFixed(2)} m²`}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center">
                                         <span className="flex gap-2 items-center">
                                           {productoSeleccionado?.nombreProducto ? `${productoSeleccionado.nombreProducto} $${Number(productoSeleccionado.precio).toLocaleString()}` : selectedSistema.toUpperCase()} ({ancho}cm x {alto}cm)
                                           {aplicaMinimo && (
@@ -3291,9 +3311,9 @@ export default function GenerarPedidoModal({
                                         </span>
                                       </div>
                                       <div className="flex justify-between items-center text-xs text-gray-500 dark:text-dark-text-secondary">
-                                        <span>Fórmula: (ancho/100 × alto/100) × precio base × cantidad</span>
+                                        <span>Fórmula: m² facturados × precio base × cantidad</span>
                                         <span>
-                                          ({(Number(ancho)/100).toFixed(2)} × {(Number(alto)/100).toFixed(2)}) × {productoSeleccionado?.precio || 0} × {cantidad}
+                                          {areaFacturacionVeneciana.toFixed(2)} × {productoSeleccionado?.precio || 0} × {cantidad}
                                         </span>
                                       </div>
                                       {aplicaMinimo && (
