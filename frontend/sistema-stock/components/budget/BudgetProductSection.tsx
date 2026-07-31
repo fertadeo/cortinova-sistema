@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input, Button } from "@heroui/react";
 import { Product, TableItem } from '../../types/budget';
 import { useProductSearch } from '../../hooks/useProductSearch';
@@ -12,23 +12,30 @@ export const BudgetProductSection = ({ onProductSelect, onShowPedidoModal }: Bud
   const [showProductsList, setShowProductsList] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const productsListRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isLoading, products, searchProducts } = useProductSearch();
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const handleProductSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setProductSearch(value);
-    setShowProductsList(true);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!value.trim()) {
       setShowProductsList(false);
       return;
     }
 
-    const timeoutId = setTimeout(() => {
+    setShowProductsList(true);
+    debounceRef.current = setTimeout(() => {
       searchProducts(value);
     }, 300);
-
-    return () => clearTimeout(timeoutId);
   };
 
   const handleProductSelect = (product: Product) => {
@@ -52,7 +59,7 @@ export const BudgetProductSection = ({ onProductSelect, onShowPedidoModal }: Bud
       <div className="flex gap-2 items-center">
         <Input
           label="Buscar producto"
-          placeholder="Escribe para buscar..."
+          placeholder="Escribe para buscar o * para ver todos..."
           value={productSearch}
           onChange={handleProductSearch}
           className="w-full"
@@ -95,6 +102,11 @@ export const BudgetProductSection = ({ onProductSelect, onShowPedidoModal }: Bud
           ))}
         </div>
       )}
+      {showProductsList && !isLoading && productSearch.trim() && products.length === 0 && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card p-4 text-gray-500 dark:text-dark-text-secondary shadow-lg">
+          Sin resultados
+        </div>
+      )}
     </div>
   );
-}; 
+};

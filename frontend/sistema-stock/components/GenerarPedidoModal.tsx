@@ -2281,31 +2281,39 @@ export default function GenerarPedidoModal({
     // Permitir búsqueda si es '*' (con o sin espacios) o si hay texto
     const isAsterisk = value.trim() === '*';
     
-    const sistemaKey = selectedSistema?.toLowerCase();
-    // Usar sistemaToApiParamsProductos para buscar productos/sistemas/soportes
-    if (!sistemaKey || !sistemaToApiParamsProductos[sistemaKey]) {
-      console.log('[DEBUG] No sistema seleccionado o no hay mapeo', selectedSistema, 'key usado:', sistemaKey);
-      setRielesBarrales([]);
-      setShowRielesBarralesList(false);
-      return;
-    }
-    
     // Si no hay valor y no es '*', limpiar resultados
     if (!value.trim() && !isAsterisk) {
       setRielesBarrales([]);
       setShowRielesBarralesList(false);
       return;
     }
-    
-    const { sistemaId, rubroId, proveedorId } = sistemaToApiParamsProductos[sistemaKey];
-    // Si el valor es '*', buscar todos los productos (q=*)
-    const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
+
+    // Traer todos los productos de la base (sin filtrar por sistema/rubro/proveedor)
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/productos`;
     const res = await fetch(url);
     const data = await res.json();
-    console.log(`[Busqueda Sistema] Input: "${value}" | Ruta: ${url} | Respuesta:`, data);
-    console.log('[PRODUCTOS OBTENIDOS] Productos encontrados:', data);
-    setRielesBarrales(Array.isArray(data.data) ? data.data : []);
+    const productsList = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.productos)
+          ? data.productos
+          : [];
+
+    if (isAsterisk) {
+      setRielesBarrales(productsList);
+    } else {
+      const searchLower = value.toLowerCase();
+      const trimmed = value.trim();
+      setRielesBarrales(
+        productsList.filter((item: any) =>
+          item.nombreProducto?.toLowerCase().includes(searchLower) ||
+          item.descripcion?.toLowerCase().includes(searchLower) ||
+          String(item.id).includes(trimmed)
+        )
+      );
+    }
+    console.log(`[Busqueda Productos] Input: "${value}" | Total DB: ${productsList.length}`);
     setShowTelasList(false);
   };
 
