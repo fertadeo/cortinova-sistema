@@ -12,6 +12,8 @@ import PropiosForm from "./utils/abacos/forms/PropiosForm";
 import { TelasSearch } from "./utils/TelasSearch";
 import { type Tela } from '@/types/telas';
 import AbacoCohorteTable from "./utils/abacos/AbacoCohorteTable";
+import { useReglasNegocio, getAreaMinimaM2 } from "@/hooks/useReglasNegocio";
+import type { ReglaNegocio } from "@/types/reglasNegocio";
 
 
 interface MedidasPermitidas {
@@ -251,8 +253,14 @@ const getSistemaNombreById = (id: number | string): string | null => {
   return sistema ? sistema[0] : null;
 };
 
-// Función para calcular el área de tela necesaria con mínimos específicos por sistema
-const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = true, sistema?: string): number => {
+// Función para calcular el área de tela necesaria con mínimos configurables por sistema
+const calcularAreaTela = (
+  ancho: number,
+  alto: number,
+  telaRotable: boolean = true,
+  sistema?: string,
+  reglas: ReglaNegocio[] = []
+): number => {
   // Convertir cm a metros
   const anchoMetros = Number(ancho) / 100;
   const altoMetros = Number(alto) / 100;
@@ -267,22 +275,11 @@ const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = tr
     area = anchoMetros * altoMetros;
   }
   
-  // Aplicar mínimos específicos por sistema
-  if (sistema) {
-    const sistemaLower = sistema.toLowerCase();
-    if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
-      // Roller / Dubai: mínimo 1 metro cuadrado
-      return Math.max(area, 1.0);
-    } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
-      // Bandas verticales: mínimo 1.5 metros cuadrados
-      return Math.max(area, 1.5);
-    } else if (sistemaLower.includes('veneciana')) {
-      // Venecianas: mínimo 1 metro cuadrado (coherente con calcularPrecioSistema)
-      return Math.max(area, 1.0);
-    }
+  const areaMinima = getAreaMinimaM2(reglas, sistema);
+  if (areaMinima > 0) {
+    return Math.max(area, areaMinima);
   }
   
-  // Otros sistemas: sin mínimo
   return area;
 };
 
@@ -353,6 +350,8 @@ export default function GenerarPedidoModal({
   medidasPrecargadas,
   itemToEdit
 }: GenerarPedidoModalProps) {
+  const { reglas, getAreaMinima, getAnchoMinimo: getAnchoMinimoRegla } = useReglasNegocio();
+
   // Estado para controlar el paso actual
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -1133,12 +1132,9 @@ export default function GenerarPedidoModal({
   // Buscar el producto correspondiente al sistema seleccionado
   const productoSistema = sistemas.find(s => String(s.nombreSistemas) === selectedSistema);
 
-  // Función para obtener el ancho mínimo por sistema
+  // Función para obtener el ancho mínimo por sistema (desde reglas de negocio)
   const getAnchoMinimo = (sistema: string): number => {
-    const sistemaLower = sistema?.toLowerCase();
-    if (sistemaLower?.includes('roller') || sistemaLower?.includes('dubai')) return 100; // 100cm para Roller / Dubai
-    if (sistemaLower?.includes('barcelona') || sistemaLower?.includes('bandas verticales')) return 150; // 150cm para Banda Vertical
-    return 0; // Sin mínimo para otros sistemas
+    return getAnchoMinimoRegla(sistema);
   };
 
   // Función para calcular el ancho efectivo (aplicando mínimos)
@@ -1195,8 +1191,11 @@ export default function GenerarPedidoModal({
       }
       
       const precioBase = Number(productoSeleccionado.precio);
-      // Venecianas: igual que Roller — mínimo 1 m² facturado
-      const areaMetrosCuadrados = Math.max(anchoMetros * altoMetros, 1.0);
+      // Venecianas: mínimo facturable desde reglas de negocio
+      const areaMinima = getAreaMinima(selectedSistema);
+      const areaMetrosCuadrados = areaMinima > 0
+        ? Math.max(anchoMetros * altoMetros, areaMinima)
+        : anchoMetros * altoMetros;
       const precioCalculado = precioBase * areaMetrosCuadrados;
       
       // console.log('🪟 Cálculo Venecianas por metro cuadrado:', {
@@ -1277,7 +1276,7 @@ export default function GenerarPedidoModal({
     }
     
     // Para otros sistemas, mantener la lógica original con mínimos específicos por sistema
-    const area = calcularAreaTela(ancho, alto, esRotable, sistema);
+    const area = calcularAreaTela(ancho, alto, esRotable, sistema, reglas);
     return area * precioTela;
   };
 
@@ -3163,7 +3162,8 @@ export default function GenerarPedidoModal({
                                 <span>
                                   {(() => {
                                     const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
-                                    const areaConMinimo = Math.max(areaReal, 1.0);
+                                    const areaMinima = getAreaMinima(selectedSistema);
+                                    const areaConMinimo = areaMinima > 0 ? Math.max(areaReal, areaMinima) : areaReal;
                                     return areaConMinimo > areaReal 
                                       ? `${areaConMinimo.toFixed(2)} m² (mínimo aplicado)`
                                       : `${areaReal.toFixed(2)} m²`;
@@ -3207,7 +3207,12 @@ export default function GenerarPedidoModal({
                           : 0;
                       const areaFacturacionVeneciana =
                         selectedSistema.toLowerCase().includes('veneciana')
-                          ? Math.max(areaRealVeneciana, 1.0)
+                          ? (() => {
+                              const areaMinima = getAreaMinima(selectedSistema);
+                              return areaMinima > 0
+                                ? Math.max(areaRealVeneciana, areaMinima)
+                                : areaRealVeneciana;
+                            })()
                           : 0;
 
                       return (
@@ -3412,18 +3417,11 @@ export default function GenerarPedidoModal({
                                         }
                                       })()}
                                       {(() => {
-                                        // Mostrar información de mínimo aplicado para Roller, Dubai y Bandas Verticales
-                                        const sistemaLower = selectedSistema?.toLowerCase() || '';
-                                        if (sistemaLower.includes('roller') || sistemaLower.includes('dubai') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                        // Mostrar información de mínimo aplicado desde reglas de negocio
+                                        const areaMinima = getAreaMinima(selectedSistema);
+                                        if (areaMinima > 0) {
                                           const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
-                                          let areaMinima = 0;
-                                          if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
-                                            areaMinima = 1.0;
-                                          } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
-                                            areaMinima = 1.5;
-                                          }
-                                          
-                                          if (areaMinima > 0 && areaReal < areaMinima) {
+                                          if (areaReal < areaMinima) {
                                             return (
                                               <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
                                                 Mínimo: {areaMinima}m²
@@ -3463,18 +3461,12 @@ export default function GenerarPedidoModal({
                                     </div>
                                   )}
                                   {(() => {
-                                    // Mostrar cálculo detallado para Roller, Dubai y Bandas Verticales cuando se aplica mínimo
-                                    const sistemaLower = selectedSistema?.toLowerCase() || '';
-                                    if (sistemaLower.includes('roller') || sistemaLower.includes('dubai') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                    // Mostrar cálculo detallado cuando se aplica mínimo (reglas de negocio)
+                                    const areaMinima = getAreaMinima(selectedSistema);
+                                    if (areaMinima > 0) {
                                       const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
-                                      let areaMinima = 0;
-                                      if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
-                                        areaMinima = 1.0;
-                                      } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
-                                        areaMinima = 1.5;
-                                      }
                                       
-                                      if (areaMinima > 0 && areaReal < areaMinima) {
+                                      if (areaReal < areaMinima) {
                                         return (
                                           <div className="text-xs text-orange-700 bg-orange-50 p-2 rounded mt-1">
                                             ⚠️ Cálculo: {ancho}cm × {alto}cm = {areaReal.toFixed(2)}m² → Mínimo aplicado: {areaMinima}m² × ${Number(selectedTela.precio).toFixed(2)}/m² = ${(areaMinima * Number(selectedTela.precio)).toFixed(2)}

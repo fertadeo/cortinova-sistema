@@ -163,6 +163,21 @@ export const SideBar = () => {
               <span className="justify-center pl-2 align-middle" style={{ fontSize: '1.1rem' }}> Pedidos  </span>
             </Link>
 
+            <Link
+              href="/reglas-de-negocio"
+              className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 dark:text-dark-text-secondary rounded-md transition duration-150 ease-in-out hover:bg-teal-500 dark:hover:bg-primary/20 dark:hover:text-primary hover:text-white hover:scale-105"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
+                <path fillRule="evenodd" d="M2.25 4.125c0-1.036.84-1.875 1.875-1.875h10.5c1.036 0 1.875.84 1.875 1.875V17.25a.75.75 0 0 1-1.5 0V4.125a.375.375 0 0 0-.375-.375h-10.5a.375.375 0 0 0-.375.375v12.75c0 .621.504 1.125 1.125 1.125h9.75a.75.75 0 0 1 0 1.5H4.875A2.625 2.625 0 0 1 2.25 16.875V4.125Z" clipRule="evenodd" />
+                <path d="M10.5 7.5a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3ZM9.75 10.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1-.75-.75ZM10.5 12.75a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5h-1.5ZM17.25 19.5a.75.75 0 0 0 .75-.75V8.25a.75.75 0 0 0-1.5 0v10.5c0 .414.336.75.75.75Z" />
+                <path d="M19.5 21a.75.75 0 0 0 .75-.75v-9a.75.75 0 0 0-1.5 0v9c0 .414.336.75.75.75Z" />
+              </svg>
+              <span className="pl-2 align-middle" style={{ fontSize: '1.1rem' }}>Reglas de negocio</span>
+              <span className="ml-2 text-[10px] font-bold tracking-wide bg-amber-400 text-white px-1.5 py-0.5 rounded">
+                NUEVO
+              </span>
+            </Link>
+
             <Divider />
 
 

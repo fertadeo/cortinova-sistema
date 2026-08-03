@@ -10,6 +10,8 @@ import { useBudgetCalculations } from "../../hooks/useBudgetCalculations";
 import GenerarPedidoModal from "../GenerarPedidoModal";
 import BudgetResume from "../budgetResume";
 import { useSearchParams, useRouter } from 'next/navigation';
+import { getAreaMinimaM2 } from "../../hooks/useReglasNegocio";
+import type { ReglaNegocio } from "../../types/reglasNegocio";
 
 // Renombrar la declaración local
 interface LocalTableItem {
@@ -43,22 +45,19 @@ interface LocalTableItem {
   espacio?: string; // Agregar campo espacio
 }
 
-const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean, sistema?: string): number => {
+const calcularPrecioTela = (
+  ancho: number,
+  alto: number,
+  precioTela: number,
+  esRotable: boolean,
+  sistema?: string,
+  reglas: ReglaNegocio[] = []
+): number => {
   let area = ((ancho / 100) * (alto / 100));
-  
-  // Aplicar mínimos específicos por sistema
-  if (sistema) {
-    const sistemaLower = sistema.toLowerCase();
-    if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
-      // Roller / Dubai: mínimo 1 metro cuadrado
-      area = Math.max(area, 1.0);
-    } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
-      // Bandas verticales: mínimo 1.5 metros cuadrados
-      area = Math.max(area, 1.5);
-    }
-    // Otros sistemas: sin mínimo (mantener área original)
+  const areaMinima = getAreaMinimaM2(reglas, sistema);
+  if (areaMinima > 0) {
+    area = Math.max(area, areaMinima);
   }
-  
   return area * precioTela;
 };
 

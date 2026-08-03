@@ -1,0 +1,14 @@
+export default function ReglasNegocioLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col h-screen md:flex-row">
+      <aside className="w-full h-full bg-gray-100 dark:bg-dark-bg md:w-1/6"> </aside>
+      <main className="w-[95%] mx-auto flex flex-col gap-4 p-4">
+        {children}
+      </main>
+    </section>
+  );
+}
