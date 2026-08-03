@@ -49,8 +49,8 @@ const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esR
   // Aplicar mínimos específicos por sistema
   if (sistema) {
     const sistemaLower = sistema.toLowerCase();
-    if (sistemaLower.includes('roller')) {
-      // Roller: mínimo 1 metro cuadrado
+    if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
+      // Roller / Dubai: mínimo 1 metro cuadrado
       area = Math.max(area, 1.0);
     } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
       // Bandas verticales: mínimo 1.5 metros cuadrados

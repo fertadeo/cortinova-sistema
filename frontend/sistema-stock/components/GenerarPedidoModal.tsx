@@ -270,8 +270,8 @@ const calcularAreaTela = (ancho: number, alto: number, telaRotable: boolean = tr
   // Aplicar mínimos específicos por sistema
   if (sistema) {
     const sistemaLower = sistema.toLowerCase();
-    if (sistemaLower.includes('roller')) {
-      // Roller: mínimo 1 metro cuadrado
+    if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
+      // Roller / Dubai: mínimo 1 metro cuadrado
       return Math.max(area, 1.0);
     } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
       // Bandas verticales: mínimo 1.5 metros cuadrados
@@ -1136,7 +1136,7 @@ export default function GenerarPedidoModal({
   // Función para obtener el ancho mínimo por sistema
   const getAnchoMinimo = (sistema: string): number => {
     const sistemaLower = sistema?.toLowerCase();
-    if (sistemaLower?.includes('roller')) return 100; // 100cm para Roller
+    if (sistemaLower?.includes('roller') || sistemaLower?.includes('dubai')) return 100; // 100cm para Roller / Dubai
     if (sistemaLower?.includes('barcelona') || sistemaLower?.includes('bandas verticales')) return 150; // 150cm para Banda Vertical
     return 0; // Sin mínimo para otros sistemas
   };
@@ -1301,7 +1301,11 @@ export default function GenerarPedidoModal({
     let precioSistema = 0;
     if (selectedSistema?.toLowerCase().includes('dunes')) {
       precioSistema = calcularPrecioSistema();
-    } else if (selectedSistema?.toLowerCase().includes('veneciana') || selectedSistema?.toLowerCase().includes('roller')) {
+    } else if (
+      selectedSistema?.toLowerCase().includes('veneciana') ||
+      selectedSistema?.toLowerCase().includes('roller') ||
+      selectedSistema?.toLowerCase().includes('dubai')
+    ) {
       precioSistema = calcularPrecioSistema();
     } else {
       // Para otros sistemas (tradicional, propios, etc.)
@@ -3148,7 +3152,7 @@ export default function GenerarPedidoModal({
                     )}
 
                     {/* Cuarto paso - Resumen de precios */}
-                    {canProceedToNextStep() && selectedSistema === "Roller" && (
+                    {canProceedToNextStep() && (selectedSistema === "Roller" || selectedSistema?.toLowerCase() === "dubai") && (
                       <div className="pt-4 mt-4 border-t">
                         <div className="space-y-2">
                           <h3 className="text-lg font-semibold">Resumen de Precios</h3>
@@ -3408,12 +3412,12 @@ export default function GenerarPedidoModal({
                                         }
                                       })()}
                                       {(() => {
-                                        // Mostrar información de mínimo aplicado para Roller y Bandas Verticales
+                                        // Mostrar información de mínimo aplicado para Roller, Dubai y Bandas Verticales
                                         const sistemaLower = selectedSistema?.toLowerCase() || '';
-                                        if (sistemaLower.includes('roller') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                        if (sistemaLower.includes('roller') || sistemaLower.includes('dubai') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
                                           const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
                                           let areaMinima = 0;
-                                          if (sistemaLower.includes('roller')) {
+                                          if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
                                             areaMinima = 1.0;
                                           } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
                                             areaMinima = 1.5;
@@ -3459,12 +3463,12 @@ export default function GenerarPedidoModal({
                                     </div>
                                   )}
                                   {(() => {
-                                    // Mostrar cálculo detallado para Roller y Bandas Verticales cuando se aplica mínimo
+                                    // Mostrar cálculo detallado para Roller, Dubai y Bandas Verticales cuando se aplica mínimo
                                     const sistemaLower = selectedSistema?.toLowerCase() || '';
-                                    if (sistemaLower.includes('roller') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
+                                    if (sistemaLower.includes('roller') || sistemaLower.includes('dubai') || sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
                                       const areaReal = (Number(ancho) / 100) * (Number(alto) / 100);
                                       let areaMinima = 0;
-                                      if (sistemaLower.includes('roller')) {
+                                      if (sistemaLower.includes('roller') || sistemaLower.includes('dubai')) {
                                         areaMinima = 1.0;
                                       } else if (sistemaLower.includes('barcelona') || sistemaLower.includes('bandas verticales')) {
                                         areaMinima = 1.5;
