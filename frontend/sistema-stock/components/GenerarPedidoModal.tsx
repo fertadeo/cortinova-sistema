@@ -475,6 +475,10 @@ export default function GenerarPedidoModal({
   const [precioColocacion, setPrecioColocacion] = useState<number>(0);
 
   const [accesoriosAdicionales, setAccesoriosAdicionales] = useState<any[]>([]);
+  const [itemsManuales, setItemsManuales] = useState<Array<{ id: string; nombre: string; precio: number }>>([]);
+  const [itemManualNombre, setItemManualNombre] = useState("");
+  const [itemManualPrecio, setItemManualPrecio] = useState("");
+  const [itemManualError, setItemManualError] = useState("");
 
   // Estado para el multiplicador de tela
   const [multiplicadorTelaLocal, setMultiplicadorTelaLocal] = useState(1);
@@ -815,6 +819,10 @@ export default function GenerarPedidoModal({
     setSoporteDobleProducto(null);
     setSistemaPedidoDetalles(null);
     setAccesoriosAdicionales([]);
+    setItemsManuales([]);
+    setItemManualNombre("");
+    setItemManualPrecio("");
+    setItemManualError("");
     setAplicarRedondeo(false);
     // NO resetear precioColocacion aquí - se obtiene del API
     setCantidadTelaManual(null);
@@ -1394,8 +1402,13 @@ export default function GenerarPedidoModal({
       0
     );
 
-    // Calcular total: (sistema + tela + tela2 + segundo cabezal + soporte + colocación + motorización + accesorios) * cantidad
-    total = (precioSistema + precioTela + precioTela2 + precioSegundoCabezal + precioSoporte + precioColocacionFinal + precioMotorizacionFinal + totalAccesoriosAdicionales) * cantidadNum;
+    const totalItemsManuales = itemsManuales.reduce(
+      (sum, item) => sum + (Number(item.precio) || 0),
+      0
+    );
+
+    // Calcular total: (sistema + tela + tela2 + segundo cabezal + soporte + colocación + motorización + accesorios + ítems manuales) * cantidad
+    total = (precioSistema + precioTela + precioTela2 + precioSegundoCabezal + precioSoporte + precioColocacionFinal + precioMotorizacionFinal + totalAccesoriosAdicionales + totalItemsManuales) * cantidadNum;
 
     // Aplicar redondeo si está activado
     if (aplicarRedondeo) {
@@ -1766,6 +1779,7 @@ export default function GenerarPedidoModal({
           // Aquí puedes agregar otros accesorios según el sistema
         ].filter(Boolean),
         accesoriosAdicionales: accesoriosAdicionales.map(acc => acc.nombre || acc),
+        itemsManuales: itemsManuales,
         // Información específica para tela tradicional
         multiplicadorTela: multiplicadorTelaInfo,
         metrosTotalesTela: metrosTotalesTela,
@@ -2025,6 +2039,16 @@ export default function GenerarPedidoModal({
           if (itemToEdit.detalles.accesoriosAdicionales && Array.isArray(itemToEdit.detalles.accesoriosAdicionales)) {
             setAccesoriosAdicionales(itemToEdit.detalles.accesoriosAdicionales);
           }
+
+          if (itemToEdit.detalles.itemsManuales && Array.isArray(itemToEdit.detalles.itemsManuales)) {
+            setItemsManuales(
+              itemToEdit.detalles.itemsManuales.map((item: any, index: number) => ({
+                id: item?.id || `manual-${index}-${Date.now()}`,
+                nombre: typeof item === 'string' ? item : (item?.nombre || ''),
+                precio: Number(item?.precio) || 0
+              })).filter((item: { nombre: string }) => item.nombre)
+            );
+          }
           
           // Establecer sistemaPedidoDetalles con TODOS los datos disponibles para que los formularios específicos los usen
           const detallesCompletos: any = {
@@ -2039,6 +2063,7 @@ export default function GenerarPedidoModal({
             soporteDoble: itemToEdit.detalles.soporteDoble || false,
             accesorios: itemToEdit.detalles.accesorios || [],
             accesoriosAdicionales: itemToEdit.detalles.accesoriosAdicionales || [],
+            itemsManuales: itemToEdit.detalles.itemsManuales || [],
             tela: itemToEdit.detalles.tela || null,
             tela2: itemToEdit.detalles.tela2 || null,
             multiplicadorTela: itemToEdit.detalles.multiplicadorTela || null,
@@ -2486,6 +2511,38 @@ export default function GenerarPedidoModal({
     (sum, acc) => sum + (Number(acc.precio) * (acc.cantidad || 1)),
     0
   );
+
+  const totalItemsManuales = itemsManuales.reduce(
+    (sum, item) => sum + (Number(item.precio) || 0),
+    0
+  );
+
+  const handleAgregarItemManual = () => {
+    const nombre = itemManualNombre.trim();
+    const precio = Number(String(itemManualPrecio).replace(',', '.'));
+
+    if (!nombre) {
+      setItemManualError('Ingresá un nombre para el ítem.');
+      return;
+    }
+
+    if (!Number.isFinite(precio) || precio < 0) {
+      setItemManualError('Ingresá un precio válido.');
+      return;
+    }
+
+    setItemsManuales(prev => [
+      ...prev,
+      { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, nombre, precio }
+    ]);
+    setItemManualNombre("");
+    setItemManualPrecio("");
+    setItemManualError("");
+  };
+
+  const handleQuitarItemManual = (id: string) => {
+    setItemsManuales(prev => prev.filter(item => item.id !== id));
+  };
 
   // Usar el multiplicador local de tela
   const multiplicadorTela = multiplicadorTelaLocal;
@@ -3150,6 +3207,81 @@ export default function GenerarPedidoModal({
                       </div>
                     )}
 
+                    {/* PARTE 3.3: Ítem manual con nombre y precio */}
+                    {selectedSistema && (
+                      <div className="pt-4 mt-4 border-t border-gray-200 dark:border-dark-border">
+                        <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-dark-text">Ítem manual</h4>
+                        <p className="text-sm text-gray-600 dark:text-dark-text-secondary mb-4">
+                          Agregá un cargo extra con nombre y precio, sin buscarlo en el catálogo.
+                        </p>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                          <Input
+                            label="Nombre"
+                            placeholder="Ej: Flete, cadena extra, instalación"
+                            value={itemManualNombre}
+                            onValueChange={(value) => {
+                              setItemManualNombre(value);
+                              setItemManualError("");
+                            }}
+                            size="sm"
+                            className="flex-1"
+                          />
+                          <Input
+                            type="number"
+                            label="Precio"
+                            placeholder="0"
+                            value={itemManualPrecio}
+                            onValueChange={(value) => {
+                              setItemManualPrecio(value);
+                              setItemManualError("");
+                            }}
+                            size="sm"
+                            className="md:w-40"
+                            startContent={<span className="text-default-400 text-small">$</span>}
+                            onWheel={(e) => {
+                              e.currentTarget.blur();
+                              e.preventDefault();
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAgregarItemManual();
+                              }
+                            }}
+                          />
+                          <Button color="primary" size="sm" onClick={handleAgregarItemManual}>
+                            Agregar
+                          </Button>
+                        </div>
+                        {itemManualError && (
+                          <p className="mt-2 text-sm text-red-500">{itemManualError}</p>
+                        )}
+                        {itemsManuales.length > 0 && (
+                          <ul className="mt-3 space-y-2">
+                            {itemsManuales.map((item) => (
+                              <li
+                                key={item.id}
+                                className="flex items-center justify-between rounded-md border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card px-3 py-2"
+                              >
+                                <span className="text-sm text-gray-900 dark:text-dark-text">{item.nombre}</span>
+                                <span className="flex items-center gap-3 text-sm font-medium">
+                                  ${Number(item.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  <button
+                                    type="button"
+                                    className="text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                    aria-label={`Quitar ${item.nombre}`}
+                                    onClick={() => handleQuitarItemManual(item.id)}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+
                     {/* Cuarto paso - Resumen de precios */}
                     {canProceedToNextStep() && (selectedSistema === "Roller" || selectedSistema?.toLowerCase() === "dubai") && (
                       <div className="pt-4 mt-4 border-t">
@@ -3688,6 +3820,38 @@ export default function GenerarPedidoModal({
                                       >
                                         ×
                                       </button>
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {itemsManuales.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex justify-between items-center">
+                                <span>Ítems manuales:</span>
+                                <span className="font-medium">
+                                  ${totalItemsManuales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  {Number(cantidad) > 1 ? ` x${cantidad}` : ''}
+                                </span>
+                              </div>
+                              <ul className="text-xs text-gray-600 dark:text-dark-text-secondary mt-1">
+                                {itemsManuales.map((item) => (
+                                  <li key={item.id} className="flex items-center justify-between">
+                                    <span className="flex gap-2 items-center">
+                                      {item.nombre}
+                                      <button
+                                        type="button"
+                                        className="text-sm font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                        aria-label={`Quitar ${item.nombre}`}
+                                        onClick={() => handleQuitarItemManual(item.id)}
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                    <span>
+                                      ${Number(item.precio).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </li>
                                 ))}

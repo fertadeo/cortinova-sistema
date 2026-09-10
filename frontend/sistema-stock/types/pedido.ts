@@ -43,6 +43,7 @@ export interface Pedido {
     soporteDobleProducto: any;
     accesorios: string[];
     accesoriosAdicionales: string[];
+    itemsManuales?: Array<{ id: string; nombre: string; precio: number }>;
     multiplicadorTela?: number;
     metrosTotalesTela?: number;
     // Campos específicos para Dunes

@@ -23,6 +23,8 @@ interface LocalTableItem extends Omit<BaseTableItem, 'id' | 'detalles'> {
     precioMotorizacion?: number;
     tipoApertura?: string;
     ladoApertura?: string;
+    itemsManuales?: Array<{ id: string; nombre: string; precio: number }>;
+    esManual?: boolean;
     // Propiedades de la segunda tela
     tela2?: any;
     multiplicadorTela2?: number;
@@ -242,7 +244,7 @@ export const BudgetTable = ({
       case "actions":
         return (
           <TableCell className="flex justify-end gap-2 pr-0.5">
-            <Tooltip content="Modificar pedido">
+            <Tooltip content={item.esManual || item.detalles?.esManual ? "Modificar ítem manual" : "Modificar pedido"}>
               <Button 
                 color="success"
                 variant="flat"

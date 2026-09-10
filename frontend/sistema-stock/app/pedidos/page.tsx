@@ -265,6 +265,16 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
        
        info['Accesorios adicionales'] = accesoriosDetallados;
      }
+
+     if (detalles.itemsManuales?.length > 0) {
+       info['Ítems manuales'] = detalles.itemsManuales.map((item: any) => {
+         if (typeof item === 'string') return item;
+         const precio = Number(item.precio);
+         return Number.isFinite(precio)
+           ? `${item.nombre} ($${precio.toLocaleString('es-AR')})`
+           : item.nombre;
+       });
+     }
     
          // Observaciones
      if (detalles.detalle?.trim()) {
@@ -309,7 +319,7 @@ const DetalleModal = ({ isOpen, onClose, pedido, onMarcarComoListo, onMarcarComo
       Object.entries(detallesFormateados).forEach(([key, value]) => {
         doc.setFontSize(12);
         
-        if (key === 'Accesorios adicionales' && Array.isArray(value)) {
+        if ((key === 'Accesorios adicionales' || key === 'Ítems manuales') && Array.isArray(value)) {
           // Para accesorios adicionales, mostrar en lista
           doc.text(`- ${key}:`, 30, yPos);
           yPos += 6;
@@ -677,6 +687,16 @@ const formatearDetallesSegunSistema = (detalles: any) => {
     });
     
     info['🛠️ Accesorios adicionales'] = accesoriosDetallados.join(', ');
+  }
+
+  if (esValorRelevante(detalles.itemsManuales)) {
+    const itemsManualesDetallados = detalles.itemsManuales.map((item: any) => {
+      if (typeof item === 'string') return item;
+      return item.nombre;
+    }).filter(Boolean);
+    if (itemsManualesDetallados.length > 0) {
+      info['🧾 Ítems manuales'] = itemsManualesDetallados.join(', ');
+    }
   }
   
   // 📝 DETALLES E INSTRUCCIONES ESPECIALES

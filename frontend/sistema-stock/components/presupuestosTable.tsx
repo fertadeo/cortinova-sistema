@@ -493,6 +493,16 @@ const formatearDetallesProducto = (item: Item) => {
         detalles.push(`• Accesorios: ${accesoriosAdicionales}`);
         accesoriosEncontrados = true;
       }
+
+      const itemsManuales = (item.detalles as any).itemsManuales;
+      if (Array.isArray(itemsManuales) && itemsManuales.length > 0) {
+        const nombres = itemsManuales
+          .map((manualItem: any) => typeof manualItem === 'string' ? manualItem : manualItem?.nombre)
+          .filter(Boolean);
+        if (nombres.length > 0) {
+          detalles.push(`• Ítems manuales: ${nombres.join(', ')}`);
+        }
+      }
       
       // 3. Buscar en cualquier campo que contenga "accesorio" en el nombre
       if (!accesoriosEncontrados) {

@@ -1,3 +1,9 @@
+export interface ManualPedidoItem {
+  id: string;
+  nombre: string;
+  precio: number;
+}
+
 export interface TableItem {
   id: number;
   productId: number;
@@ -8,6 +14,7 @@ export interface TableItem {
   total: number;
   espacio?: string; // Nuevo campo para el espacio/ambiente
   opcion?: string; // Nuevo campo para opciones de presupuesto (A, B, C, etc.)
+  esManual?: boolean;
   detalles?: {
     sistema: string;
     detalle: string;
@@ -26,6 +33,8 @@ export interface TableItem {
     precioMotorizacion?: number;
     tipoApertura?: string;
     ladoApertura?: string;
+    itemsManuales?: ManualPedidoItem[];
+    esManual?: boolean;
   };
 }
 

@@ -26,6 +26,7 @@ interface LocalTableItem {
     soporteDoble: boolean; 
     accesorios?: any[];
     accesoriosAdicionales?: any[];
+    itemsManuales?: Array<{ id: string; nombre: string; precio: number }>;
     incluirMotorizacion?: boolean;
     precioMotorizacion?: number;
     tipoApertura?: string;
@@ -71,6 +72,7 @@ export const BudgetGenerator = () => {
   const [tableData, setTableData] = useState<TableItem[]>([]);
   const [showPedidoModal, setShowPedidoModal] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<TableItem | null>(null);
+  const [manualItemToEdit, setManualItemToEdit] = useState<TableItem | null>(null);
   
   // Estados de descuento y cálculos
   const [applyDiscount, setApplyDiscount] = useState(false);
@@ -249,6 +251,7 @@ export const BudgetGenerator = () => {
               price: precioUnitario,
               total: subtotalTotal,
               espacio: productoJson.espacio || item.espacio || 'Sin especificar',
+              esManual: Boolean(productoJson.esManual || detallesPersistidos?.esManual),
               detalles: {
                 ...detallesPersistidos,
                 sistema: detallesPersistidos?.sistema || productoJson.sistema || '',
@@ -288,7 +291,9 @@ export const BudgetGenerator = () => {
                 multiplicadorTela: productoJson.multiplicadorTela || detallesPersistidos?.multiplicadorTela || null,
                 multiplicadorTela2: productoJson.multiplicadorTela2 || detallesPersistidos?.multiplicadorTela2 || null,
                 cantidadTelaManual: productoJson.cantidadTelaManual || detallesPersistidos?.cantidadTelaManual || null,
-                cantidadTelaManual2: productoJson.cantidadTelaManual2 || detallesPersistidos?.cantidadTelaManual2 || null
+                cantidadTelaManual2: productoJson.cantidadTelaManual2 || detallesPersistidos?.cantidadTelaManual2 || null,
+                itemsManuales: productoJson.itemsManuales || detallesPersistidos?.itemsManuales || [],
+                esManual: Boolean(productoJson.esManual || detallesPersistidos?.esManual)
               } as any
             };
           });
@@ -489,12 +494,20 @@ export const BudgetGenerator = () => {
     const itemActualizado = {
       name: `Cortina ${pedido.sistema}`,
       description: (() => {
+        const itemsManualesNombres = (pedido.detalles?.itemsManuales || [])
+          .map((item: { nombre?: string }) => item?.nombre)
+          .filter(Boolean) as string[];
+        const withManualItems = (base: string) =>
+          itemsManualesNombres.length > 0
+            ? [base, ...itemsManualesNombres].filter(Boolean).join(' + ')
+            : base;
+
         // Lógica específica para Dunes
         if (pedido.sistema?.toLowerCase().includes('dunes')) {
           const productoDunes = pedido.detalles?.productoDunes;
           const telaDunes = pedido.detalles?.telaDunes;
           if (productoDunes && telaDunes) {
-            return `${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`;
+            return withManualItems(`${productoDunes.nombreProducto} + ${telaDunes.nombreProducto}`);
           }
         }
         // Para otros sistemas, incluir información de segunda tela si existe
@@ -502,14 +515,16 @@ export const BudgetGenerator = () => {
         const telaSecundaria = pedido.detalles?.tela2?.nombreProducto || '';
         
         if (telaSecundaria) {
-          return `${telaPrincipal} + ${telaSecundaria}`;
+          return withManualItems(`${telaPrincipal} + ${telaSecundaria}`);
         }
-        return telaPrincipal;
+
+        return withManualItems(telaPrincipal);
       })(),
       quantity: cantidadDelPedido,
       price: precioUnitarioCalculado,
       total: precioTotalDelModal,
       espacio: pedido.espacio === "Otro" ? pedido.espacioPersonalizado : pedido.espacio,
+      esManual: false,
       detalles: {
         // Preservar todos los campos que lleguen desde el modal (formularios específicos)
         ...(pedido.detalles || {}),
@@ -532,6 +547,7 @@ export const BudgetGenerator = () => {
         selectedRielBarralId: pedido.detalles?.selectedRielBarralId || pedido.detalles?.selectedRielBarral?.id || pedido.detalles?.productoSeleccionado?.id || null,
         accesorios: pedido.detalles?.accesorios || [],
         accesoriosAdicionales: pedido.detalles?.accesoriosAdicionales || [],
+        itemsManuales: pedido.detalles?.itemsManuales || [],
         medidaId: pedido.medidaId,
         ancho: pedido.detalles?.ancho,
         alto: pedido.detalles?.alto,
@@ -609,8 +625,33 @@ export const BudgetGenerator = () => {
     }
   };
 
+  const handleManualItemUpdate = (updatedItem: TableItem) => {
+    setTableData(prevData =>
+      prevData.map(item =>
+        item.id === updatedItem.id
+          ? {
+              ...item,
+              ...updatedItem,
+              total: updatedItem.price * (updatedItem.quantity || 1)
+            }
+          : item
+      )
+    );
+    setManualItemToEdit(null);
+  };
+
   // Manejador para editar un pedido
   const handleEditItem = (item: TableItem) => {
+    const esItemManual = Boolean(item.esManual || item.detalles?.esManual);
+
+    if (esItemManual) {
+      setShowPedidoModal(false);
+      setItemToEdit(null);
+      setManualItemToEdit(item);
+      return;
+    }
+
+    setManualItemToEdit(null);
     // Guardar el item a editar para pasarlo al modal
     setItemToEdit(item);
     
@@ -700,6 +741,8 @@ export const BudgetGenerator = () => {
             precioUnitario: precioUnitario,
             subtotal: subtotalTotal,
             espacio: item.espacio,
+            esManual: Boolean(item.esManual || item.detalles?.esManual),
+            itemsManuales: (item.detalles as any)?.itemsManuales || [],
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: precioMotorizacionUnitario,
             // Usamos cast a any porque la propiedad 'tela' no está definida en el tipo base de detalles
@@ -842,6 +885,8 @@ export const BudgetGenerator = () => {
             cantidad: cantidad,
             subtotal: subtotalTotal,
             espacio: item.espacio,
+            esManual: Boolean(item.esManual || item.detalles?.esManual),
+            itemsManuales: (item.detalles as any)?.itemsManuales || [],
             incluirMotorizacion: item.detalles?.incluirMotorizacion || false,
             precioMotorizacion: precioMotorizacionUnitario,
             tipoApertura: item.detalles?.tipoApertura || '',
@@ -908,7 +953,13 @@ export const BudgetGenerator = () => {
       
       <BudgetProductSection
         onProductSelect={handleProductSelect}
-        onShowPedidoModal={() => setShowPedidoModal(true)}
+        onShowPedidoModal={() => {
+          setManualItemToEdit(null);
+          setShowPedidoModal(true);
+        }}
+        manualItemToEdit={manualItemToEdit}
+        onManualItemUpdate={handleManualItemUpdate}
+        onCancelManualEdit={() => setManualItemToEdit(null)}
       />
       
       <Spacer y={2} />
