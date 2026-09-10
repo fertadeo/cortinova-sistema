@@ -297,7 +297,7 @@ export const BudgetProductSection = ({
             className="mt-3"
             onClick={() => openManualForm(productSearch.trim())}
           >
-            Agregar "{productSearch.trim()}" como ítem manual
+            {`Agregar "${productSearch.trim()}" como ítem manual`}
           </Button>
         </div>
       )}
