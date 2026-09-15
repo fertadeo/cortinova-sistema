@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, ModalContent, ModalBody } from "@heroui/react";
+import { Modal, ModalContent, ModalBody, ModalFooter, Button } from "@heroui/react";
 import BudgetResume from './budgetResume';
 
 interface BudgetPDFModalProps {
@@ -43,6 +43,8 @@ interface BudgetPDFModalProps {
 }
 
 const BudgetPDFModal: React.FC<BudgetPDFModalProps> = ({ isOpen, onClose, presupuestoData }) => {
+  const budgetResumeRef = React.useRef<{ handleDownloadPDF: () => void; handleSendWhatsApp: () => void } | null>(null);
+
   return (
     <Modal 
       isOpen={isOpen} 
@@ -56,8 +58,23 @@ const BudgetPDFModal: React.FC<BudgetPDFModalProps> = ({ isOpen, onClose, presup
     >
       <ModalContent>
         <ModalBody>
-          <BudgetResume presupuestoData={presupuestoData} />
+          <BudgetResume ref={budgetResumeRef} presupuestoData={presupuestoData} showButtons={false} />
         </ModalBody>
+        <ModalFooter>
+          <Button 
+            color="primary"
+            onClick={() => budgetResumeRef.current?.handleDownloadPDF()}
+          >
+            Descargar PDF
+          </Button>
+          <Button
+            color="success"
+            variant="bordered"
+            onClick={() => budgetResumeRef.current?.handleSendWhatsApp()}
+          >
+            Enviar por WhatsApp
+          </Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );

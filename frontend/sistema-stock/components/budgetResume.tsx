@@ -43,9 +43,15 @@ interface BudgetResumeProps {
     descuento: number;
     total: number;
   };
+  showButtons?: boolean;
 }
 
-const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
+export interface BudgetResumeRef {
+  handleDownloadPDF: () => void;
+  handleSendWhatsApp: () => void;
+}
+
+const BudgetResume = React.forwardRef<BudgetResumeRef, BudgetResumeProps>(({ presupuestoData, showButtons = true }, ref) => {
   const invoiceRef = React.useRef<HTMLDivElement>(null);
   
   console.log('🔍 [DEBUG] BudgetResume recibió:', {
@@ -405,6 +411,12 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
     }
   };
 
+  // Exponer las funciones mediante ref
+  React.useImperativeHandle(ref, () => ({
+    handleDownloadPDF,
+    handleSendWhatsApp
+  }));
+
   return (
     <Card className="mx-auto max-w-2xl bg-white">
       <CardBody className="p-8">
@@ -596,24 +608,28 @@ const BudgetResume: React.FC<BudgetResumeProps> = ({ presupuestoData }) => {
           </div>
         </div>
 
-        <div className="flex justify-end mt-8 space-x-4">
-          <Button 
-            color="primary"
-            onClick={handleDownloadPDF}
-          >
-            Descargar PDF
-          </Button>
-          <Button
-            color="success"
-            variant="ghost"
-            onClick={handleSendWhatsApp}
-          >
-            Enviar por WhatsApp
-          </Button>
-        </div>
+        {showButtons && (
+          <div className="flex justify-end mt-8 space-x-4">
+            <Button 
+              color="primary"
+              onClick={handleDownloadPDF}
+            >
+              Descargar PDF
+            </Button>
+            <Button
+              color="success"
+              variant="ghost"
+              onClick={handleSendWhatsApp}
+            >
+              Enviar por WhatsApp
+            </Button>
+          </div>
+        )}
       </CardBody>
     </Card>
   );
-};
+});
+
+BudgetResume.displayName = 'BudgetResume';
 
 export default BudgetResume;
