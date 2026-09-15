@@ -69,7 +69,7 @@ const mainNav: NavItem[] = [
   { href: "/home", label: "Inicio", icon: icons.home },
   { href: "/clientes", label: "Clientes", icon: icons.clientes },
   { href: "/productos", label: "Productos", icon: icons.productos },
-  { href: "/presupuestos", label: "Presupuestos", icon: icons.presupuestos },
+  { href: "/presupuestos/realizados", label: "Presupuestos emitidos", icon: icons.presupuestos },
   { href: "/medidas", label: "Medidas", icon: icons.medidas },
   { href: "/pedidos", label: "Pedidos", icon: icons.pedidos },
   { href: "/reglas-de-negocio", label: "Reglas de negocio", icon: icons.reglas, badge: "NUEVO" },
