@@ -816,12 +816,13 @@ export const BudgetGenerator = () => {
       return;
     }
     
+    // CRÍTICO: Usar editId como fallback si presupuestoId se perdió
+    // Definir ANTES del try para que esté disponible en el catch
+    const editIdFromUrl = searchParams.get('editId');
+    const effectivePresupuestoId = presupuestoId || (editIdFromUrl ? parseInt(editIdFromUrl) : null);
+    
     try {
       setIsLoading(true);
-      
-      // CRÍTICO: Usar editId como fallback si presupuestoId se perdió
-      const editIdFromUrl = searchParams.get('editId');
-      const effectivePresupuestoId = presupuestoId || (editIdFromUrl ? parseInt(editIdFromUrl) : null);
       
       // Generar ID basado en la fecha actual solo si no estamos editando
       let presupuestoIdString = null;
