@@ -52,18 +52,20 @@ const BudgetPDFModal: React.FC<BudgetPDFModalProps> = ({ isOpen, onClose, presup
       size="3xl"
       scrollBehavior="inside"
       classNames={{
-        body: "p-6",
-        base: "m-6 max-w-3xl",
+        body: "p-3 sm:p-6",
+        base: "m-2 sm:m-6 max-w-3xl max-h-[95vh]",
+        wrapper: "items-end sm:items-center",
       }}
     >
       <ModalContent>
-        <ModalBody>
+        <ModalBody className="max-h-[70vh] sm:max-h-[calc(95vh-8rem)] overflow-y-auto">
           <BudgetResume ref={budgetResumeRef} presupuestoData={presupuestoData} showButtons={false} />
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="flex-col sm:flex-row gap-2 sticky bottom-0 bg-white dark:bg-gray-800 p-3 sm:p-4 border-t">
           <Button 
             color="primary"
             onClick={() => budgetResumeRef.current?.handleDownloadPDF()}
+            className="w-full sm:w-auto min-h-[44px]"
           >
             Descargar PDF
           </Button>
@@ -71,6 +73,7 @@ const BudgetPDFModal: React.FC<BudgetPDFModalProps> = ({ isOpen, onClose, presup
             color="success"
             variant="bordered"
             onClick={() => budgetResumeRef.current?.handleSendWhatsApp()}
+            className="w-full sm:w-auto min-h-[44px]"
           >
             Enviar por WhatsApp
           </Button>
