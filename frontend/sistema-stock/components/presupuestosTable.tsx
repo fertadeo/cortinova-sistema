@@ -902,12 +902,12 @@ const formatearDetallesProducto = (item: Item) => {
         return (
           <Popover placement="bottom">
             <PopoverTrigger>
-              <Button size="sm" variant="flat">
+              <Button size="sm" variant="flat" className="min-h-[40px]">
                 Ver {presupuesto.items?.length || 0} productos
               </Button>
             </PopoverTrigger>
-            <PopoverContent>
-              <div className="overflow-auto p-4 w-80 max-h-72">
+            <PopoverContent className="w-[90vw] max-w-md">
+              <div className="overflow-auto p-4 max-h-72">
                 {presupuesto.items?.map((item, idx) => (
                   <div key={idx} className="pb-3 mb-3 border-b last:border-b-0">
                     <div className="font-medium">{item.nombre}</div>
@@ -959,6 +959,7 @@ const formatearDetallesProducto = (item: Item) => {
               onClick={() => handleOpenConfirmModal(presupuesto)}
               isDisabled={presupuesto.estado === "Confirmado" || isUpdating}
               isLoading={convertingPresupuestoId === presupuesto.id}
+              className="min-h-[40px] text-xs sm:text-sm"
             >
               {presupuesto.estado === "Confirmado" ? "Pedido Confirmado" : "Convertir a Pedido"}
             </Button>
@@ -1060,6 +1061,8 @@ const formatearDetallesProducto = (item: Item) => {
               size="sm"
               variant="ghost"
               onClick={() => handleViewPDF(presupuesto)}
+              className="min-h-[40px] min-w-[40px]"
+              isIconOnly
             >
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -1067,7 +1070,7 @@ const formatearDetallesProducto = (item: Item) => {
                 viewBox="0 0 24 24" 
                 strokeWidth="1.5" 
                 stroke="currentColor" 
-                className="size-6"
+                className="w-5 h-5"
               >
                 <path 
                   strokeLinecap="round" 
@@ -1083,6 +1086,8 @@ const formatearDetallesProducto = (item: Item) => {
                   size="sm"
                   variant="ghost"
                   isDisabled={deletingPresupuestoId === presupuesto.id}
+                  className="min-h-[40px] min-w-[40px]"
+                  isIconOnly
                 >
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
@@ -1090,7 +1095,7 @@ const formatearDetallesProducto = (item: Item) => {
                     viewBox="0 0 24 24" 
                     strokeWidth="1.5" 
                     stroke="currentColor" 
-                    className="size-6"
+                    className="w-5 h-5"
                   >
                     <path 
                       strokeLinecap="round" 
@@ -1323,13 +1328,19 @@ const formatearDetallesProducto = (item: Item) => {
           />
         </div>
       )}
-      <div className="p-4 presupuestos-table">
-        <Table 
-          className="presupuestos-table"
-          aria-label="Tabla de presupuestos"
+      <div className="presupuestos-table">
+        <div className="overflow-x-auto -mx-2 sm:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <Table 
+              className="presupuestos-table"
+              aria-label="Tabla de presupuestos"
+              classNames={{
+                wrapper: "min-w-full",
+                table: "min-w-[800px]"
+              }}
           bottomContent={
             pages > 1 ? (
-              <div className="flex justify-center w-full">
+              <div className="flex justify-center w-full py-2">
                 <Pagination
                   isCompact
                   showControls
@@ -1409,6 +1420,8 @@ const formatearDetallesProducto = (item: Item) => {
             </ModalFooter>
           </ModalContent>
         </Modal>
+      </div>
+      </div>
       </div>
     </div>
   );
