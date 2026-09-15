@@ -12,6 +12,8 @@ import BudgetResume from "../budgetResume";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getAreaMinimaM2 } from "../../hooks/useReglasNegocio";
 import type { ReglaNegocio } from "../../types/reglasNegocio";
+import { useDraftAutosave, formatRelativeTime, cleanStaleDrafts, type PresupuestoDraft } from "../../hooks/useDraftAutosave";
+import { DraftRestoreModal } from "./DraftRestoreModal";
 
 // Renombrar la declaración local
 interface LocalTableItem {
@@ -101,6 +103,43 @@ export const BudgetGenerator = () => {
   const [esEstimativo, setEsEstimativo] = useState(false);
   const [checkboxesCargados, setCheckboxesCargados] = useState(false);
 
+  // Estados para borradores
+  const [showDraftRestoreModal, setShowDraftRestoreModal] = useState(false);
+  const [draftToRestore, setDraftToRestore] = useState<PresupuestoDraft | null>(null);
+  const [draftEnabled, setDraftEnabled] = useState(true);
+  const [lastDraftSave, setLastDraftSave] = useState<string | null>(null);
+
+  // Hook de autosave
+  const editId = searchParams.get('editId');
+  const { saveDraft, clearDraft, loadDraft, getDraftKey } = useDraftAutosave({
+    presupuestoId,
+    editId,
+    selectedClient,
+    tableData,
+    esEstimativo,
+    applyDiscount,
+    discountValue,
+    discountType,
+    shouldRound,
+    showMeasuresInPDF,
+    isSubmitted,
+    enabled: draftEnabled,
+  });
+
+  // Actualizar timestamp de última guardada
+  useEffect(() => {
+    const key = getDraftKey();
+    const draft = loadDraft(key);
+    if (draft) {
+      setLastDraftSave(draft.lastSaved);
+    }
+  }, [selectedClient, tableData, getDraftKey, loadDraft]);
+
+  // Limpiar borradores obsoletos al montar
+  useEffect(() => {
+    cleanStaleDrafts();
+  }, []);
+
   // Efecto para manejar la precarga desde URL
   useEffect(() => {
     // Resetear el flag de checkboxes cargados al iniciar
@@ -113,6 +152,10 @@ export const BudgetGenerator = () => {
 
       // Si hay un editId, cargar el presupuesto para editar
       if (editId) {
+        // Verificar si hay borrador local
+        const draftKey = `cortinova_draft_edit_${editId}`;
+        const localDraft = loadDraft(draftKey);
+        
         try {
           const presupuestoResponse = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${editId}?include=clientes,producto`
@@ -124,6 +167,25 @@ export const BudgetGenerator = () => {
 
           const presupuestoData = await presupuestoResponse.json();
           const presupuesto = presupuestoData.data || presupuestoData;
+          
+          // Si hay borrador local, comparar fechas
+          if (localDraft) {
+            const draftDate = new Date(localDraft.lastSaved);
+            const serverDate = new Date(presupuesto.fecha_ultima_modificacion || presupuesto.fecha);
+            
+            if (draftDate > serverDate) {
+              // Borrador más reciente que servidor - ofrecer restaurar
+              console.log('📄 Borrador local más reciente que servidor, ofreciendo restaurar');
+              setDraftToRestore(localDraft);
+              setShowDraftRestoreModal(true);
+              setCheckboxesCargados(true);
+              return;
+            } else {
+              // Servidor más reciente, descartar borrador obsoleto
+              console.log('🗑️ Servidor más reciente, descartando borrador obsoleto');
+              localStorage.removeItem(draftKey);
+            }
+          }
 
           // Cargar cliente
           if (presupuesto.cliente_id) {
@@ -305,14 +367,36 @@ export const BudgetGenerator = () => {
           
         } catch (error) {
           console.error('Error al cargar presupuesto para editar:', error);
-          mostrarErrorToast(error instanceof Error ? error.message : "Error al cargar el presupuesto");
+          
+          // CRÍTICO: Si hay borrador local, ofrecerlo como alternativa
+          if (localDraft) {
+            console.log('⚠️ Error al cargar del servidor, pero hay borrador local disponible');
+            mostrarErrorToast('No se pudo cargar del servidor. Se ofrece restaurar el borrador local.');
+            setDraftToRestore(localDraft);
+            setShowDraftRestoreModal(true);
+          } else {
+            mostrarErrorToast(error instanceof Error ? error.message : "Error al cargar el presupuesto");
+          }
+          
+          setCheckboxesCargados(true);
+          // CRÍTICO: RETURN aquí para evitar continuar sin presupuestoId establecido
+          return;
         }
         return;
       }
 
       // Código original para cargar medidas precargadas
-      // Si no hay editId ni medidas para cargar, marcar checkboxes como cargados (valores por defecto)
+      // Si no hay editId ni medidas para cargar, verificar si hay borrador de nuevo presupuesto
       if (!clienteId || !medidasIds.length) {
+        const draftKey = 'cortinova_draft_new';
+        const localDraft = loadDraft(draftKey);
+        
+        if (localDraft) {
+          console.log('📄 Borrador de nuevo presupuesto encontrado');
+          setDraftToRestore(localDraft);
+          setShowDraftRestoreModal(true);
+        }
+        
         setCheckboxesCargados(true);
         return;
       }
@@ -404,6 +488,48 @@ export const BudgetGenerator = () => {
     setTimeout(() => {
       setShowErrorToast(false);
     }, 5000);
+  };
+
+  // Función para restaurar borrador
+  const handleRestoreDraft = () => {
+    if (!draftToRestore) return;
+    
+    console.log('📄 Restaurando borrador:', draftToRestore);
+    
+    // Restaurar todos los estados desde el borrador
+    if (draftToRestore.selectedClient) {
+      setSelectedClient(draftToRestore.selectedClient);
+    }
+    setTableData(draftToRestore.tableData);
+    setEsEstimativo(draftToRestore.esEstimativo);
+    setApplyDiscount(draftToRestore.applyDiscount);
+    setDiscountValue(draftToRestore.discountValue);
+    setDiscountType(draftToRestore.discountType);
+    setShouldRound(draftToRestore.shouldRound);
+    setShowMeasuresInPDF(draftToRestore.showMeasuresInPDF);
+    
+    // CRÍTICO: Restaurar presupuestoId desde el borrador
+    if (draftToRestore.presupuestoId) {
+      setPresupuestoId(draftToRestore.presupuestoId);
+      console.log('✅ presupuestoId restaurado desde borrador:', draftToRestore.presupuestoId);
+    }
+    
+    setCheckboxesCargados(true);
+    setShowDraftRestoreModal(false);
+    setDraftToRestore(null);
+  };
+
+  // Función para descartar borrador
+  const handleDiscardDraft = () => {
+    if (draftToRestore) {
+      const key = getDraftKey();
+      localStorage.removeItem(key);
+      console.log('🗑️ Borrador descartado por el usuario');
+    }
+    
+    setShowDraftRestoreModal(false);
+    setDraftToRestore(null);
+    setCheckboxesCargados(true);
   };
 
   // Manejadores de productos
@@ -684,13 +810,22 @@ export const BudgetGenerator = () => {
       return;
     }
     
+    // Validar que haya productos
+    if (tableData.length === 0) {
+      mostrarErrorToast("Debe agregar al menos un producto al presupuesto");
+      return;
+    }
+    
     try {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // CRÍTICO: Usar editId como fallback si presupuestoId se perdió
+      const editIdFromUrl = searchParams.get('editId');
+      const effectivePresupuestoId = presupuestoId || (editIdFromUrl ? parseInt(editIdFromUrl) : null);
       
       // Generar ID basado en la fecha actual solo si no estamos editando
       let presupuestoIdString = null;
-      if (!presupuestoId) {
+      if (!effectivePresupuestoId) {
         const now = new Date();
         const year = now.getFullYear();
         const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -832,11 +967,20 @@ export const BudgetGenerator = () => {
       });
 
       // Si estamos editando, hacer PUT, sino POST
-      const url = presupuestoId 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${presupuestoId}`
+      // CRÍTICO: Usar effectivePresupuestoId con fallback a editId
+      const url = effectivePresupuestoId 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/${effectivePresupuestoId}`
         : `${process.env.NEXT_PUBLIC_API_URL}/presupuestos`;
       
-      const method = presupuestoId ? 'PUT' : 'POST';
+      const method = effectivePresupuestoId ? 'PUT' : 'POST';
+      
+      console.log('📤 Guardando presupuesto:', {
+        method,
+        presupuestoId,
+        editIdFromUrl,
+        effectivePresupuestoId,
+        url
+      });
 
       const response = await fetch(url, {
         method: method,
@@ -853,10 +997,14 @@ export const BudgetGenerator = () => {
       }
 
       const presupuestoGuardado = await response.json();
-      console.log('Presupuesto guardado:', presupuestoGuardado);
+      console.log('✅ Presupuesto guardado:', presupuestoGuardado);
+      
+      // Limpiar borrador después de guardado exitoso
+      clearDraft();
+      console.log('🗑️ Borrador eliminado tras guardado exitoso');
       
       // Si estamos editando, usar el número existente del presupuesto guardado
-      const numeroPresupuestoFinal = presupuestoId 
+      const numeroPresupuestoFinal = effectivePresupuestoId 
         ? (presupuestoGuardado.data?.numero_presupuesto || presupuestoGuardado.numero_presupuesto)
         : presupuestoIdString;
       
@@ -914,15 +1062,16 @@ export const BudgetGenerator = () => {
       setIsSubmitted(true);
       
       // Si estamos editando, redirigir a home (donde está la tabla de presupuestos) después de un delay
-      if (presupuestoId) {
+      if (effectivePresupuestoId) {
         setTimeout(() => {
           router.push('/home');
         }, 2000);
       }
       
     } catch (error) {
-      console.error('Error al emitir presupuesto:', error);
-      mostrarErrorToast(error instanceof Error ? error.message : (presupuestoId ? 'Error al actualizar el presupuesto' : 'Error al emitir el presupuesto'));
+      console.error('❌ Error al emitir presupuesto:', error);
+      const errorMsg = error instanceof Error ? error.message : (effectivePresupuestoId ? 'Error al actualizar el presupuesto' : 'Error al emitir el presupuesto');
+      mostrarErrorToast(errorMsg);
       setSubmitStatus('error');
       setIsSubmitted(true);
     } finally {
@@ -942,6 +1091,17 @@ export const BudgetGenerator = () => {
   return (
     <Card className="p-8">
       <h1 style={{ fontSize: "200" }}>{presupuestoId ? "Editar Presupuesto" : "Generar Presupuesto"}</h1>
+      
+      {/* Indicador de borrador guardado */}
+      {lastDraftSave && !isSubmitted && (
+        <div className="flex items-center gap-2 text-sm text-gray-600 mt-2 mb-2">
+          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span>Borrador guardado {formatRelativeTime(lastDraftSave)}</span>
+        </div>
+      )}
+      
       <Spacer y={6} />
       
       <BudgetClientSection
@@ -1046,6 +1206,14 @@ export const BudgetGenerator = () => {
       {showResume && presupuestoGenerado && (
         <BudgetResume presupuestoData={presupuestoGenerado} />
       )}
+      
+      {/* Modal de restauración de borrador */}
+      <DraftRestoreModal
+        isOpen={showDraftRestoreModal}
+        draft={draftToRestore}
+        onRestore={handleRestoreDraft}
+        onDiscard={handleDiscardDraft}
+      />
       
       {/* Toast de error */}
       {showErrorToast && (
