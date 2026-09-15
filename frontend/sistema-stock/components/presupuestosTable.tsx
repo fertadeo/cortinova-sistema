@@ -145,13 +145,33 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         setLoading(true);
         setError(null); // Limpiar errores previos
         
-        const [presupuestosResponse, pedidosResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/presupuestos?include=clientes,producto`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/pedidos`)
-        ]);
+        // Validar que la URL de la API esté configurada
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!apiUrl || apiUrl === 'http://' || apiUrl === 'https://') {
+          throw new Error('La URL de la API no está configurada correctamente. Por favor, revise el archivo .env.production');
+        }
+        
+        // Fetch con timeout de 10 segundos
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        try {
+          const [presupuestosResponse, pedidosResponse] = await Promise.all([
+            fetch(`${apiUrl}/presupuestos?include=clientes,producto`, { signal: controller.signal }),
+            fetch(`${apiUrl}/pedidos`, { signal: controller.signal })
+          ]);
 
-        if (!presupuestosResponse.ok || !pedidosResponse.ok) {
-          throw new Error('Error al cargar los datos');
+          clearTimeout(timeoutId);
+
+          if (!presupuestosResponse.ok || !pedidosResponse.ok) {
+            throw new Error(`Error al cargar los datos: ${presupuestosResponse.status} / ${pedidosResponse.status}`);
+          }
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          if (fetchError.name === 'AbortError') {
+            throw new Error('La solicitud tardó demasiado tiempo. Verifique la conexión con el servidor.');
+          }
+          throw fetchError;
         }
 
         const presupuestosData = await presupuestosResponse.json();
@@ -353,9 +373,10 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
 
         setPresupuestos(presupuestosActualizados);
         onDataLoaded?.();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading data:', error);
-        setError('Error al cargar los datos');
+        const errorMessage = error?.message || 'Error desconocido al cargar los datos';
+        setError(`Error al cargar los presupuestos: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
