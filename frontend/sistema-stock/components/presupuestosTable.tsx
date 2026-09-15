@@ -155,8 +155,11 @@ export default function PresupuestosTable({ onDataLoaded }: PresupuestosTablePro
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
         
+        let presupuestosResponse;
+        let pedidosResponse;
+        
         try {
-          const [presupuestosResponse, pedidosResponse] = await Promise.all([
+          [presupuestosResponse, pedidosResponse] = await Promise.all([
             fetch(`${apiUrl}/presupuestos?include=clientes,producto`, { signal: controller.signal }),
             fetch(`${apiUrl}/pedidos`, { signal: controller.signal })
           ]);
