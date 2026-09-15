@@ -12,6 +12,7 @@ type NavItem = {
   icon: ReactNode;
   badge?: string;
   external?: boolean;
+  subitems?: NavItem[];
 };
 
 const navIconClass = "w-5 h-5 shrink-0";
@@ -77,6 +78,7 @@ const mainNav: NavItem[] = [
 
 export const SideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const router = useRouter();
   const pathname = usePathname();
   const { profile } = useProfile();
@@ -86,7 +88,25 @@ export const SideBar = () => {
     if (window.innerWidth < 640) {
       setIsOpen(false);
     }
+    
+    // Auto-expand parent items if child is active
+    mainNav.forEach((item) => {
+      if (item.subitems) {
+        const hasActiveChild = item.subitems.some(subitem => pathname === subitem.href || pathname.startsWith(`${subitem.href}/`));
+        if (hasActiveChild && !expandedItems.includes(item.href)) {
+          setExpandedItems(prev => [...prev, item.href]);
+        }
+      }
+    });
   }, [pathname]);
+
+  const toggleExpand = (href: string) => {
+    setExpandedItems(prev => 
+      prev.includes(href) 
+        ? prev.filter(item => item !== href)
+        : [...prev, href]
+    );
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -146,15 +166,59 @@ export const SideBar = () => {
           <ul className="flex flex-col gap-1">
             {mainNav.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className={linkClass(item.href)}>
-                  {item.icon}
-                  <span className="min-w-0 flex-1 truncate leading-tight">{item.label}</span>
-                  {item.badge && (
-                    <span className="shrink-0 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
+                {item.subitems ? (
+                  <>
+                    <button
+                      onClick={() => toggleExpand(item.href)}
+                      className={linkClass(item.href)}
+                    >
+                      {item.icon}
+                      <span className="min-w-0 flex-1 truncate leading-tight text-left">{item.label}</span>
+                      {item.badge && (
+                        <span className="shrink-0 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+                          {item.badge}
+                        </span>
+                      )}
+                      <svg 
+                        className={`w-4 h-4 transition-transform ${expandedItems.includes(item.href) ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {expandedItems.includes(item.href) && (
+                      <ul className="ml-7 mt-1 flex flex-col gap-1">
+                        {item.subitems.map((subitem) => (
+                          <li key={subitem.href}>
+                            <Link 
+                              href={subitem.href} 
+                              className={[
+                                "group flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150",
+                                isActive(subitem.href)
+                                  ? "bg-teal-400 text-white dark:bg-primary/20 dark:text-primary"
+                                  : "text-gray-600 dark:text-dark-text-secondary hover:bg-teal-400 hover:text-white dark:hover:bg-primary/15 dark:hover:text-primary",
+                              ].join(" ")}
+                            >
+                              <span className="min-w-0 flex-1 truncate leading-tight">{subitem.label}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <Link href={item.href} className={linkClass(item.href)}>
+                    {item.icon}
+                    <span className="min-w-0 flex-1 truncate leading-tight">{item.label}</span>
+                    {item.badge && (
+                      <span className="shrink-0 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
