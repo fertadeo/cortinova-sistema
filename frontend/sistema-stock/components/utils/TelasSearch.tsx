@@ -48,12 +48,14 @@ export const TelasSearch = ({
       let url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados`;
       
       // Determinar qué filtros usar basado en el sistema seleccionado
-      const isTradicional = selectedSistema?.toLowerCase().includes('tradicional') || selectedSistema?.toLowerCase().includes('propios');
+      const sistemaLower = selectedSistema?.toLowerCase() || '';
+      const isTradicional = sistemaLower.includes('tradicional') || sistemaLower.includes('propios');
+      const isDunes = sistemaLower.includes('dunes');
       
-      if (isTradicional || !sistemaId || !rubroId || !proveedorId) {
-        // Para sistemas Tradicional/Propios o cuando no hay parámetros específicos, usar filtro fijo
+      if (isTradicional || isDunes || !sistemaId || !rubroId || !proveedorId) {
+        // Tradicional/Propios/Dunes: buscar en rubro telas (Aurora, Solana, Nibia, etc.)
         url += '?rubroId=4';
-        console.log('🔍 [TELAS] Usando filtro fijo para sistema Tradicional/Propios');
+        console.log('🔍 [TELAS] Usando filtro fijo rubro telas (4)');
       } else {
         // Para otros sistemas, usar filtros dinámicos
         url += `?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}`;

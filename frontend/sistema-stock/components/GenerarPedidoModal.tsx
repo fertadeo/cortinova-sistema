@@ -1023,21 +1023,20 @@ export default function GenerarPedidoModal({
     try {
       // Usar el endpoint dinámico para telas según el sistema seleccionado
       const sistemaKey = selectedSistema?.toLowerCase();
-      // console.log('🔍 [TELAS] Sistema key:', sistemaKey);
-      
-      if (!sistemaKey || !sistemaToApiParams[sistemaKey]) {
-        console.log('[DEBUG] No sistema seleccionado para búsqueda de telas:', selectedSistema);
-        console.log('[DEBUG] SistemaToApiParams disponibles:', Object.keys(sistemaToApiParams));
-        setTelasFiltradas([]);
-        return;
-      }
-
-      const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
-      // console.log('🔍 [TELAS] Parámetros del sistema:', { sistemaId, rubroId, proveedorId });
+      const isDunes = sistemaKey?.includes('dunes');
+      const isTradicional = sistemaKey?.includes('tradicional') || sistemaKey?.includes('propios');
       
       // Si el valor es '*', buscar todas las telas (q=*)
       const queryParam = isAsterisk ? '*' : encodeURIComponent(value);
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
+      let url = `${process.env.NEXT_PUBLIC_API_URL}/presupuestos/productos-filtrados`;
+
+      // Dunes y Tradicional/Propios: buscar en rubro telas (4) para incluir Aurora, Solana, Nibia, etc.
+      if (isDunes || isTradicional || !sistemaKey || !sistemaToApiParams[sistemaKey]) {
+        url += `?rubroId=4&q=${queryParam}`;
+      } else {
+        const { sistemaId, rubroId, proveedorId } = sistemaToApiParams[sistemaKey];
+        url += `?sistemaId=${sistemaId}&rubroId=${rubroId}&proveedorId=${proveedorId}&q=${queryParam}`;
+      }
       
       // console.log('🔍 [TELAS] URL completa:', url);
       // console.log('🔍 [TELAS] Base URL:', process.env.NEXT_PUBLIC_API_URL);
@@ -1251,28 +1250,27 @@ export default function GenerarPedidoModal({
   // Función para calcular precio de tela con lógica específica para Propios/Tradicional y Dunes
   const calcularPrecioTela = (ancho: number, alto: number, precioTela: number, esRotable: boolean, sistema?: string, multiplicador?: number): number => {
     // NO aplicar ancho mínimo a las telas - usar el ancho ingresado originalmente
-    // Lógica específica para Dunes - Tela por m²
+    // Lógica específica para Dunes - Tela por m² (usa la tela seleccionada en el buscador)
     if (sistema && sistema.toLowerCase().includes('dunes')) {
-      const telaDunes = sistemaPedidoDetalles?.tela;
-      if (telaDunes && telaDunes.precio) {
-        const precioBase = Number(telaDunes.precio);
-        const anchoMetros = Number(ancho) / 100;
-        const altoMetros = Number(alto) / 100;
-        const area = anchoMetros * altoMetros;
-        const precioCalculado = area * precioBase;
-        console.log('🧵 Cálculo tela Dunes por m²:', {
-          sistema: sistema,
-          tela: telaDunes.nombreProducto,
-          precioBase: precioBase,
-          anchoMetros: anchoMetros,
-          altoMetros: altoMetros,
-          area: area,
-          precioCalculado: precioCalculado
-        });
-        return precioCalculado;
+      const precioBase = Number(precioTela) || Number(selectedTela?.precio) || 0;
+      if (!precioBase) {
+        console.log('⚠️ No hay tela Dunes seleccionada');
+        return 0;
       }
-      console.log('⚠️ No hay tela Dunes disponible');
-      return 0;
+      const anchoMetros = Number(ancho) / 100;
+      const altoMetros = Number(alto) / 100;
+      const area = anchoMetros * altoMetros;
+      const precioCalculado = area * precioBase;
+      console.log('🧵 Cálculo tela Dunes por m²:', {
+        sistema: sistema,
+        tela: selectedTela?.nombreProducto,
+        precioBase: precioBase,
+        anchoMetros: anchoMetros,
+        altoMetros: altoMetros,
+        area: area,
+        precioCalculado: precioCalculado
+      });
+      return precioCalculado;
     }
     
     // Para sistemas Propios/Tradicional, calcular solo con ancho × multiplicador × precio
@@ -1323,16 +1321,18 @@ export default function GenerarPedidoModal({
 
     // 2. Tela - solo para sistemas que no sean Veneciana
     let precioTela = 0;
-    if (selectedTela && !selectedSistema?.toLowerCase().includes('veneciana') && !selectedSistema?.toLowerCase().includes('dunes')) {
-      precioTela = calcularPrecioTelaMultiplicada();
-    } else if (selectedSistema?.toLowerCase().includes('dunes')) {
-      precioTela = calcularPrecioTela(
-        Number(ancho),
-        Number(alto),
-        0,
-        false,
-        selectedSistema
-      );
+    if (selectedTela && !selectedSistema?.toLowerCase().includes('veneciana')) {
+      if (selectedSistema?.toLowerCase().includes('dunes')) {
+        precioTela = calcularPrecioTela(
+          Number(ancho),
+          Number(alto),
+          selectedTela?.precio ? Number(selectedTela.precio) : 0,
+          false,
+          selectedSistema
+        );
+      } else {
+        precioTela = calcularPrecioTelaMultiplicada();
+      }
     }
 
     // 2.1 Segunda tela - para cortinas tradicionales (riel/barral) o Roller con soporte doble
@@ -1568,27 +1568,24 @@ export default function GenerarPedidoModal({
         ancho: ancho,
         alto: alto,
         producto: sistemaPedidoDetalles.producto,
-        tela: sistemaPedidoDetalles.tela
+        tela: selectedTela
       });
       
       const nuevoPrecioSistema = calcularPrecioSistema();
-      const nuevoPrecioTela = calcularPrecioTela(
-        Number(ancho),
-        Number(alto),
-        0,
-        false,
-        selectedSistema
-      );
-      
-      // console.log('💰 Nuevos precios Dunes:', {
-      //   precioSistema: nuevoPrecioSistema,
-      //   precioTela: nuevoPrecioTela
-      // });
+      const nuevoPrecioTela = selectedTela
+        ? calcularPrecioTela(
+            Number(ancho),
+            Number(alto),
+            selectedTela?.precio ? Number(selectedTela.precio) : 0,
+            false,
+            selectedSistema
+          )
+        : 0;
       
       setPrecioSistema(nuevoPrecioSistema);
       setPrecioTela(nuevoPrecioTela);
     }
-  }, [sistemaPedidoDetalles, selectedSistema, ancho, alto]);
+  }, [sistemaPedidoDetalles, selectedSistema, ancho, alto, selectedTela]);
 
   // useEffect para recalcular precio cuando cambie la segunda tela
   useEffect(() => {
@@ -1794,7 +1791,7 @@ export default function GenerarPedidoModal({
         // Información específica para Dunes
         ...(selectedSistema?.toLowerCase().includes('dunes') && {
           productoDunes: sistemaPedidoDetalles?.producto,
-          telaDunes: sistemaPedidoDetalles?.tela,
+          telaDunes: selectedTela,
           // Incluir todos los detalles del formulario de Dunes
           colorSistema: sistemaPedidoDetalles?.colorSistema,
           ladoComando: sistemaPedidoDetalles?.ladoComando,
@@ -1823,7 +1820,7 @@ export default function GenerarPedidoModal({
       console.log('Precio Total:', precioTotal);
       console.log('Cantidad:', cantidadNum);
       console.log('Producto Dunes:', sistemaPedidoDetalles?.producto);
-      console.log('Tela Dunes:', sistemaPedidoDetalles?.tela);
+      console.log('Tela Dunes:', selectedTela);
     }
     
     // Si estamos editando, pasar el ID del item
@@ -1942,10 +1939,15 @@ export default function GenerarPedidoModal({
             }
           
           // Precargar tela - buscar desde API si solo tenemos el nombre
-          if (itemToEdit.detalles.tela && typeof itemToEdit.detalles.tela === 'object') {
-            // Si ya tenemos el objeto completo de la tela
-            setSelectedTela(itemToEdit.detalles.tela);
-            setSearchTela(itemToEdit.detalles.tela.nombreProducto || itemToEdit.detalles.tela.nombre || '');
+          // Dunes guarda también en telaDunes; priorizar tela / telaDunes
+          const telaPrecarga =
+            (itemToEdit.detalles.tela && typeof itemToEdit.detalles.tela === 'object' && itemToEdit.detalles.tela) ||
+            (itemToEdit.detalles.telaDunes && typeof itemToEdit.detalles.telaDunes === 'object' && itemToEdit.detalles.telaDunes) ||
+            null;
+
+          if (telaPrecarga) {
+            setSelectedTela(telaPrecarga);
+            setSearchTela(telaPrecarga.nombreProducto || telaPrecarga.nombre || '');
           } else if (itemToEdit.detalles.tipoTela) {
             // Si solo tenemos el nombre, intentar buscarlo
             setTipoTela(itemToEdit.detalles.tipoTela);
@@ -2958,6 +2960,26 @@ export default function GenerarPedidoModal({
                                   detalle={detalle}
                                   onDetalleChange={setDetalle}
                                   onPedidoDetailsChange={setSistemaPedidoDetalles}
+                                  selectedTelaId={selectedTela?.id ?? null}
+                                  onTelaSelect={(tela) => {
+                                    if (!tela) {
+                                      setSelectedTela(null);
+                                      setSearchTela('');
+                                      return;
+                                    }
+                                    setSelectedTela({
+                                      id: tela.id,
+                                      nombreProducto: tela.nombreProducto,
+                                      tipo: tela.descripcion || tela.tipo || '',
+                                      color: tela.color || '',
+                                      precio: tela.precio != null ? Number(tela.precio).toString() : '0',
+                                    });
+                                    setSearchTela(tela.nombreProducto || '');
+                                  }}
+                                  initialTipoApertura={sistemaPedidoDetalles?.tipoApertura || null}
+                                  initialColorSistema={sistemaPedidoDetalles?.colorSistema || null}
+                                  initialLadoComando={sistemaPedidoDetalles?.ladoComando || null}
+                                  initialLadoApertura={sistemaPedidoDetalles?.ladoApertura || null}
                                 />
                               );
                             case "fit":
@@ -3062,7 +3084,7 @@ export default function GenerarPedidoModal({
                       </div>
                     )}
 
-                    {/* PARTE 3: Buscador de telas (no visible para Veneciana ni Dunes) */}
+                    {/* PARTE 3: Buscador de telas (no visible para Veneciana ni Dunes; Dunes elige tela en su formulario) */}
                     {selectedSistema && !selectedSistema.toLowerCase().includes('veneciana') && !selectedSistema.toLowerCase().includes('dunes') && (
                       <TelasSearch
                         searchTela={searchTela}
@@ -3355,9 +3377,9 @@ export default function GenerarPedidoModal({
                                   // Lógica específica para Dunes
                                   if (selectedSistema?.toLowerCase().includes('dunes')) {
                                     const productoDunes = sistemaPedidoDetalles?.producto;
-                                    const telaDunes = sistemaPedidoDetalles?.tela;
+                                    const telaDunes = selectedTela;
                                     
-                                    if (productoDunes && telaDunes) {
+                                    if (productoDunes) {
                                       return (
                                         <>
                                           {/* Producto Dunes */}
@@ -3385,30 +3407,35 @@ export default function GenerarPedidoModal({
                                             <span>Sistema: ({Number(ancho)/100}) × ${Number(productoDunes.precio).toLocaleString()}/m = ${precioSistema.toLocaleString()}</span>
                                           </div>
                                           
-                                          {/* Tela Dunes */}
-                                          <div className="flex justify-between items-center">
-                                            <span className="flex gap-2 items-center">
-                                              {telaDunes.nombreProducto} ({ancho}cm × {alto}cm)
-                                              <button
-                                                type="button"
-                                                className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
-                                                aria-label="Quitar tela Dunes"
-                                                onClick={() => {
-                                                  setSistemaPedidoDetalles(null);
-                                                }}
-                                              >
-                                                ×
-                                              </button>
-                                            </span>
-                                            <span className="font-medium">
-                                              ${precioTela.toLocaleString()}
-                                            </span>
-                                          </div>
-                                          
-                                          {/* Detalle del precio de la tela */}
-                                          <div className="flex justify-between items-center text-xs text-gray-500 dark:text-dark-text-secondary">
-                                            <span>Tela: ({Number(ancho)/100} × {Number(alto)/100}) × ${Number(telaDunes.precio).toLocaleString()}/m² = ${precioTela.toLocaleString()}</span>
-                                          </div>
+                                          {/* Tela Dunes (seleccionada en el buscador) */}
+                                          {telaDunes && Number(telaDunes.id) !== 0 && (
+                                            <>
+                                              <div className="flex justify-between items-center">
+                                                <span className="flex gap-2 items-center">
+                                                  {telaDunes.nombreProducto} ({ancho}cm × {alto}cm)
+                                                  <button
+                                                    type="button"
+                                                    className="ml-2 text-lg font-bold text-red-500 hover:text-red-700 focus:outline-none"
+                                                    aria-label="Quitar tela Dunes"
+                                                    onClick={() => {
+                                                      setSelectedTela(null);
+                                                      setSearchTela('');
+                                                      setPrecioTela(0);
+                                                    }}
+                                                  >
+                                                    ×
+                                                  </button>
+                                                </span>
+                                                <span className="font-medium">
+                                                  ${precioTela.toLocaleString()}
+                                                </span>
+                                              </div>
+                                              
+                                              <div className="flex justify-between items-center text-xs text-gray-500 dark:text-dark-text-secondary">
+                                                <span>Tela: ({Number(ancho)/100} × {Number(alto)/100}) × ${Number(telaDunes.precio).toLocaleString()}/m² = ${precioTela.toLocaleString()}</span>
+                                              </div>
+                                            </>
+                                          )}
                                         </>
                                       );
                                     }
