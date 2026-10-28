@@ -70,7 +70,15 @@ const mainNav: NavItem[] = [
   { href: "/home", label: "Inicio", icon: icons.home },
   { href: "/clientes", label: "Clientes", icon: icons.clientes },
   { href: "/productos", label: "Productos", icon: icons.productos },
-  { href: "/presupuestos/realizados", label: "Presupuestos emitidos", icon: icons.presupuestos },
+  {
+    href: "/presupuestos",
+    label: "Presupuestos",
+    icon: icons.presupuestos,
+    subitems: [
+      { href: "/presupuestos", label: "Nuevo presupuesto", icon: icons.presupuestos },
+      { href: "/presupuestos/realizados", label: "Presupuestos emitidos", icon: icons.presupuestos },
+    ],
+  },
   { href: "/medidas", label: "Medidas", icon: icons.medidas },
   { href: "/pedidos", label: "Pedidos", icon: icons.pedidos },
   { href: "/reglas-de-negocio", label: "Reglas de negocio", icon: icons.reglas, badge: "NUEVO" },
@@ -92,9 +100,14 @@ export const SideBar = () => {
     // Auto-expand parent items if child is active
     mainNav.forEach((item) => {
       if (item.subitems) {
-        const hasActiveChild = item.subitems.some(subitem => pathname === subitem.href || pathname.startsWith(`${subitem.href}/`));
-        if (hasActiveChild && !expandedItems.includes(item.href)) {
-          setExpandedItems(prev => [...prev, item.href]);
+        const hasActiveChild = item.subitems.some((subitem) =>
+          pathname === subitem.href ||
+          (subitem.href !== item.href && pathname.startsWith(`${subitem.href}/`))
+        );
+        if (hasActiveChild) {
+          setExpandedItems((prev) =>
+            prev.includes(item.href) ? prev : [...prev, item.href]
+          );
         }
       }
     });
@@ -114,13 +127,21 @@ export const SideBar = () => {
     router.push("/");
   };
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string, exact = false) =>
+    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
-  const linkClass = (href: string) => {
-    const active = isActive(href);
+  const isParentActive = (item: NavItem) => {
+    if (item.subitems?.length) {
+      return item.subitems.some((sub) => isActive(sub.href, sub.href === item.href));
+    }
+    return isActive(item.href);
+  };
+
+  const linkClass = (href: string, active?: boolean) => {
+    const isItemActive = active ?? isActive(href);
     return [
       "group flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[0.95rem] font-medium transition-colors duration-150",
-      active
+      isItemActive
         ? "bg-teal-500 text-white dark:bg-primary/25 dark:text-primary"
         : "text-gray-600 dark:text-dark-text-secondary hover:bg-teal-500 hover:text-white dark:hover:bg-primary/20 dark:hover:text-primary",
     ].join(" ");
@@ -170,7 +191,7 @@ export const SideBar = () => {
                   <>
                     <button
                       onClick={() => toggleExpand(item.href)}
-                      className={linkClass(item.href)}
+                      className={linkClass(item.href, isParentActive(item))}
                     >
                       {item.icon}
                       <span className="min-w-0 flex-1 truncate leading-tight text-left">{item.label}</span>
@@ -190,13 +211,15 @@ export const SideBar = () => {
                     </button>
                     {expandedItems.includes(item.href) && (
                       <ul className="ml-7 mt-1 flex flex-col gap-1">
-                        {item.subitems.map((subitem) => (
-                          <li key={subitem.href}>
+                        {item.subitems.map((subitem) => {
+                          const subExact = subitem.href === item.href;
+                          return (
+                          <li key={`${item.href}-${subitem.href}-${subitem.label}`}>
                             <Link 
                               href={subitem.href} 
                               className={[
                                 "group flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150",
-                                isActive(subitem.href)
+                                isActive(subitem.href, subExact)
                                   ? "bg-teal-400 text-white dark:bg-primary/20 dark:text-primary"
                                   : "text-gray-600 dark:text-dark-text-secondary hover:bg-teal-400 hover:text-white dark:hover:bg-primary/15 dark:hover:text-primary",
                               ].join(" ")}
@@ -204,7 +227,8 @@ export const SideBar = () => {
                               <span className="min-w-0 flex-1 truncate leading-tight">{subitem.label}</span>
                             </Link>
                           </li>
-                        ))}
+                          );
+                        })}
                       </ul>
                     )}
                   </>
